@@ -52,10 +52,25 @@
   96%, 100% { transform: translate(-50%, -82px) scale(.2);   opacity: 0; }
 }
 
-/* Wash bubbles — scale from nothing to 180 vmax */
-@keyframes wash-expand {
-  0%   { transform: translate(-50%, -50%) scale(0); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+/* Wash bubbles — float up from bottom */
+@keyframes bubble-rise {
+  0%        { transform: translateY(0);                    opacity: 0; }
+  8%        { opacity: 1; }
+  88%       { opacity: 0.9; }
+  100%      { transform: translateY(calc(-100vh - 60px)); opacity: 0; }
+}
+
+/* Wash bubbles — lateral sway while rising */
+@keyframes bubble-sway {
+  0%   { transform: translateX(-7px); }
+  100% { transform: translateX(7px); }
+}
+
+/* Sparkle stars around the logo */
+@keyframes sparkle {
+  0%, 100% { transform: translate(-50%, -50%) scale(0)   rotate(0deg);   opacity: 0; }
+  40%       { transform: translate(-50%, -50%) scale(1.2) rotate(45deg);  opacity: 1; }
+  65%       { transform: translate(-50%, -50%) scale(0.9) rotate(90deg);  opacity: 0.75; }
 }
 
 /* Logo — fade + rise in */
