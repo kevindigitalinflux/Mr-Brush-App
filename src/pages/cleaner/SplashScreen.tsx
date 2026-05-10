@@ -7,8 +7,8 @@ type Phase = 'loading' | 'washing' | 'splash'
 
 // ─── Bubble data ─────────────────────────────────────────────────────────────
 
-// 22 deterministic wash bubbles — spread across the screen width
-const WASH_BUBBLES = Array.from({ length: 22 }, (_, i) => ({
+// 45 deterministic wash bubbles — spread across the screen width
+const WASH_BUBBLES = Array.from({ length: 45 }, (_, i) => ({
   left:    `${4 + ((i * 41) % 90)}%`,
   size:    16 + ((i * 7)   % 24),
   dur:     1700 + ((i * 133) % 800),
@@ -16,16 +16,16 @@ const WASH_BUBBLES = Array.from({ length: 22 }, (_, i) => ({
   swayDur: 600  + ((i * 89)  % 400),
 }))
 
-// 8 sparkle positions around the logo circle (angle in degrees, radius in px)
+// 8 sparkle positions around the logo (angle in degrees, radius in px from 300px container center)
 const SPARKLE_RING = [
-  { angle: 0,   r: 68, delay: 0   },
-  { angle: 45,  r: 63, delay: 130 },
-  { angle: 90,  r: 70, delay: 260 },
-  { angle: 135, r: 61, delay: 80  },
-  { angle: 180, r: 68, delay: 210 },
-  { angle: 225, r: 64, delay: 170 },
-  { angle: 270, r: 70, delay: 320 },
-  { angle: 315, r: 62, delay: 100 },
+  { angle: 0,   r: 92, delay: 0   },
+  { angle: 45,  r: 87, delay: 130 },
+  { angle: 90,  r: 94, delay: 260 },
+  { angle: 135, r: 85, delay: 80  },
+  { angle: 180, r: 92, delay: 210 },
+  { angle: 225, r: 88, delay: 170 },
+  { angle: 270, r: 94, delay: 320 },
+  { angle: 315, r: 86, delay: 100 },
 ]
 
 // ─── Shared bubble appearance (exact values from design file) ────────────────
@@ -132,23 +132,23 @@ function StarIcon() {
 
 function SplashLogo() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, animation: 'logo-rise 550ms ease-out forwards', position: 'relative' }}>
-      {/* Sparkle ring */}
-      <div style={{ position: 'absolute', width: 200, height: 200, top: '50%', left: '50%', transform: 'translate(-50%, -57%)', pointerEvents: 'none' }}>
-        {SPARKLE_RING.map((s, i) => {
-          const x = 100 + Math.cos((s.angle * Math.PI) / 180) * s.r
-          const y = 100 + Math.sin((s.angle * Math.PI) / 180) * s.r
-          return (
-            <div key={i} style={{ position: 'absolute', left: x, top: y, animation: `sparkle 900ms ease-in-out ${s.delay}ms infinite` }}>
-              <StarIcon />
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Logo circle */}
-      <div style={{ width: 104, height: 104, borderRadius: '50%', background: 'white', border: '1px solid #D0CFCA', boxShadow: '0 4px 28px rgba(61,59,58,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        <img src={logoSrc} alt="Mr Brush & Co." style={{ width: 80, height: 80, objectFit: 'contain' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, animation: 'logo-rise 1050ms ease-out forwards' }}>
+      {/* Logo + sparkle ring */}
+      <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Sparkle container: 340×340 centered on logo */}
+        <div style={{ position: 'absolute', width: 340, height: 340, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
+          {SPARKLE_RING.map((s, i) => {
+            const x = 170 + Math.cos((s.angle * Math.PI) / 180) * s.r
+            const y = 170 + Math.sin((s.angle * Math.PI) / 180) * s.r
+            return (
+              <div key={i} style={{ position: 'absolute', left: x, top: y, animation: `sparkle 900ms ease-in-out ${s.delay}ms infinite` }}>
+                <StarIcon />
+              </div>
+            )
+          })}
+        </div>
+        {/* Logo — no frame, no background */}
+        <img src={logoSrc} alt="Mr Brush & Co." style={{ width: 160, height: 160, objectFit: 'contain' }} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -175,8 +175,8 @@ export function SplashScreen() {
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('washing'), 3000)
-    const t2 = setTimeout(() => setPhase('splash'),  5000)
-    const t3 = setTimeout(() => navigate('/language'), 6500)
+    const t2 = setTimeout(() => setPhase('splash'),  5500)
+    const t3 = setTimeout(() => navigate('/language'), 7000)
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [navigate])
 
