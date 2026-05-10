@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext'
 import { SplashScreen } from './pages/cleaner/SplashScreen'
 import { LanguageSelect } from './pages/cleaner/LanguageSelect'
 import { Login } from './pages/cleaner/Login'
+import { Home } from './pages/cleaner/Home'
 
 export default function App() {
   return (
@@ -12,7 +13,7 @@ export default function App() {
           <Route path="/" element={<SplashScreen />} />
           <Route path="/language" element={<LanguageSelect />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/cleaner/home" element={<Placeholder label="Home" />} />
+          <Route path="/cleaner/home" element={<Home />} />
           <Route path="/cleaner/job/:jobId" element={<Placeholder label="Zone List" />} />
           <Route path="/cleaner/job/:jobId/zone/:zoneId" element={<Placeholder label="Zone Submission" />} />
           <Route path="/cleaner/job/:jobId/zone/:zoneId/note" element={<Placeholder label="No Photo Note" />} />
