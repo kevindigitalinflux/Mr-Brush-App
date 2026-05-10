@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export type NavTab = 'jobs' | 'history' | 'notifications'
@@ -35,7 +36,7 @@ function BellIcon({ active }: { active: boolean }) {
 function NavItem({
   label, active, icon, onClick,
 }: {
-  label: string; active: boolean; icon: React.ReactNode; onClick: () => void
+  label: string; active: boolean; icon: ReactNode; onClick: () => void
 }) {
   return (
     <button
