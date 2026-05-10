@@ -1,0 +1,51 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@300;400;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  /* Brand colours */
+  --color-ivory: #F5F4EF;
+  --color-charcoal: #3D3B3A;
+  --color-brass: #B8A77A;
+  --color-green: #2F4A3D;
+  --color-slate: #434B4D;
+  --color-border: #D0CFCA;
+  --color-error: #BA1A1A;
+  --color-surface: #FFFFFF;
+
+  /* Typography */
+  --font-heading: "Poppins", sans-serif;
+  --font-body: "Lato", sans-serif;
+
+  /* Radii */
+  --radius-card: 12px;
+  --radius-btn: 12px;
+  --radius-input: 4px;
+
+  /* Sizing */
+  --height-btn: 56px;
+  --height-input: 52px;
+  --spacing-page-x: 24px;
+  --width-max: 480px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #F5F4EF;
+  font-family: "Lato", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
