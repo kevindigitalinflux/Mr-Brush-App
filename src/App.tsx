@@ -10,6 +10,7 @@ import { ZoneSubmissionSuccess } from './pages/cleaner/ZoneSubmissionSuccess'
 import { NoPhotoNote } from './pages/cleaner/NoPhotoNote'
 import { ShiftCompleted } from './pages/cleaner/ShiftCompleted'
 import { ShiftHistory } from './pages/cleaner/ShiftHistory'
+import { ShiftDetail } from './pages/cleaner/ShiftDetail'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/cleaner/job/:jobId/zone/:zoneId/note" element={<NoPhotoNote />} />
           <Route path="/cleaner/job/:jobId/complete" element={<ShiftCompleted />} />
           <Route path="/cleaner/history" element={<ShiftHistory />} />
+          <Route path="/cleaner/history/:shiftId" element={<ShiftDetail />} />
           {/* Supervisor + Manager — not yet built */}
           <Route path="/supervisor/*" element={<Placeholder label="Supervisor — not built yet" />} />
           <Route path="/manager/*" element={<Placeholder label="Manager — not built yet" />} />

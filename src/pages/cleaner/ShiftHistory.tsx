@@ -66,16 +66,18 @@ function ClockIcon() {
 
 // ─── ShiftCard ───────────────────────────────────────────────────────────────
 
-function ShiftCard({ shift }: { shift: MockShift }) {
+function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }) {
   const isComplete = shift.status === 'completed'
 
   return (
-    <div className={[
-      'w-full bg-white rounded-[12px] p-5 flex flex-col gap-3',
-      isComplete
-        ? 'border border-[#C3C8C2]'
-        : 'border-2 border-dashed border-[#C3C8C2] opacity-80',
-    ].join(' ')}>
+    <button
+      onClick={onPress}
+      className={[
+        'w-full bg-white rounded-[12px] p-5 flex flex-col gap-3 text-left cursor-pointer hover:shadow-md transition-shadow',
+        isComplete
+          ? 'border border-[#C3C8C2]'
+          : 'border-2 border-dashed border-[#C3C8C2] opacity-80',
+      ].join(' ')}>
 
       {/* Top row: date + badge */}
       <div className="flex items-start justify-between gap-3">
@@ -111,7 +113,7 @@ function ShiftCard({ shift }: { shift: MockShift }) {
           {shift.zonesDone}/{shift.zonesTotal} Zones
         </span>
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -164,7 +166,7 @@ export function ShiftHistory() {
               </div>
             ) : (
               MOCK_SHIFTS.map((shift) => (
-                <ShiftCard key={shift.id} shift={shift} />
+                <ShiftCard key={shift.id} shift={shift} onPress={() => navigate(`/cleaner/history/${shift.id}`)} />
               ))
             )}
           </div>
