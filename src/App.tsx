@@ -1,14 +1,15 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
+import { SplashScreen } from './pages/cleaner/SplashScreen'
+import { LanguageSelect } from './pages/cleaner/LanguageSelect'
 
 export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/language" replace />} />
-          {/* Cleaner screens — built screen by screen */}
-          <Route path="/language" element={<Placeholder label="Language Select" />} />
+          <Route path="/" element={<SplashScreen />} />
+          <Route path="/language" element={<LanguageSelect />} />
           <Route path="/login" element={<Placeholder label="Login" />} />
           <Route path="/cleaner/home" element={<Placeholder label="Home" />} />
           <Route path="/cleaner/job/:jobId" element={<Placeholder label="Zone List" />} />
