@@ -5,6 +5,9 @@ import { LanguageSelect } from './pages/cleaner/LanguageSelect'
 import { Login } from './pages/cleaner/Login'
 import { Home } from './pages/cleaner/Home'
 import { ZoneList } from './pages/cleaner/ZoneList'
+import { ZoneSubmission } from './pages/cleaner/ZoneSubmission'
+import { ZoneSubmissionSuccess } from './pages/cleaner/ZoneSubmissionSuccess'
+import { NoPhotoNote } from './pages/cleaner/NoPhotoNote'
 
 export default function App() {
   return (
@@ -16,8 +19,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/cleaner/home" element={<Home />} />
           <Route path="/cleaner/job/:jobId" element={<ZoneList />} />
-          <Route path="/cleaner/job/:jobId/zone/:zoneId" element={<Placeholder label="Zone Submission" />} />
-          <Route path="/cleaner/job/:jobId/zone/:zoneId/note" element={<Placeholder label="No Photo Note" />} />
+          <Route path="/cleaner/job/:jobId/zone/:zoneId" element={<ZoneSubmission />} />
+          <Route path="/cleaner/job/:jobId/zone/:zoneId/success" element={<ZoneSubmissionSuccess />} />
+          <Route path="/cleaner/job/:jobId/zone/:zoneId/note" element={<NoPhotoNote />} />
           <Route path="/cleaner/job/:jobId/complete" element={<Placeholder label="Shift Completed" />} />
           <Route path="/cleaner/history" element={<Placeholder label="Shift History" />} />
           {/* Supervisor + Manager — not yet built */}
