@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
+import { useApp } from './context/AppContext'
+import { OfflineBanner } from './components/OfflineBanner'
 import { SplashScreen } from './pages/cleaner/SplashScreen'
 import { LanguageSelect } from './pages/cleaner/LanguageSelect'
 import { Login } from './pages/cleaner/Login'
@@ -16,6 +18,7 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
+        <GlobalOfflineBanner />
         <Routes>
           <Route path="/" element={<SplashScreen />} />
           <Route path="/language" element={<LanguageSelect />} />
@@ -34,6 +37,16 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AppProvider>
+  )
+}
+
+function GlobalOfflineBanner() {
+  const { isOnline } = useApp()
+  if (isOnline) return null
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[200]">
+      <OfflineBanner />
+    </div>
   )
 }
 

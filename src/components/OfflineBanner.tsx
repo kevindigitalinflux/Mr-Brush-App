@@ -10,10 +10,10 @@ function WarningIcon() {
   )
 }
 
-/** Sticky offline banner shown at the top of any screen when the device has no network. */
+/** Offline warning strip — rendered inside a fixed global wrapper in App.tsx. */
 export function OfflineBanner() {
   return (
-    <div className="sticky top-0 z-50 w-full bg-[#F1DEAD] border-b border-[#D7C596]/40 px-4 py-3 flex items-start gap-2">
+    <div className="w-full bg-[#F1DEAD] border-b border-[#D7C596]/40 px-4 py-3 flex items-start gap-2">
       <WarningIcon />
       <p className="font-['Lato',sans-serif] text-sm text-[#6F613A] leading-[1.5]">
         <span className="font-bold">You're offline.</span> Submissions are being queued and will sync automatically when connected.
