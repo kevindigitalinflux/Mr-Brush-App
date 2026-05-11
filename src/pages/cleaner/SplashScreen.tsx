@@ -134,12 +134,12 @@ function SplashLogo() {
   return (
     <div style={{ animation: 'logo-rise 1250ms ease-out forwards' }}>
       {/* Logo + sparkle ring */}
-      <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* Sparkle container: 340×340 centered on logo */}
-        <div style={{ position: 'absolute', width: 340, height: 340, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
+      <div style={{ position: 'relative', width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Sparkle container: 420×420 centered on logo */}
+        <div style={{ position: 'absolute', width: 420, height: 420, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
           {SPARKLE_RING.map((s, i) => {
-            const x = 170 + Math.cos((s.angle * Math.PI) / 180) * s.r
-            const y = 170 + Math.sin((s.angle * Math.PI) / 180) * s.r
+            const x = 210 + Math.cos((s.angle * Math.PI) / 180) * (s.r + 20)
+            const y = 210 + Math.sin((s.angle * Math.PI) / 180) * (s.r + 20)
             return (
               <div key={i} style={{ position: 'absolute', left: x, top: y, animation: `sparkle 900ms ease-in-out ${s.delay}ms infinite` }}>
                 <StarIcon />
@@ -148,7 +148,7 @@ function SplashLogo() {
           })}
         </div>
         {/* Logo — no frame, no background */}
-        <img src={logoSrc} alt="Mr Brush & Co." style={{ width: 160, height: 160, objectFit: 'contain' }} />
+        <img src={logoSrc} alt="Mr Brush & Co." style={{ width: 220, height: 220, objectFit: 'contain' }} />
       </div>
     </div>
   )

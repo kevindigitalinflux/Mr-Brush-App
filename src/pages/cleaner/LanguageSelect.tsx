@@ -52,7 +52,7 @@ export function LanguageSelect() {
         <div className="flex flex-col">
           {/* Header */}
           <div className="flex flex-col items-center pb-16">
-            <img src={logoSrc} alt="Mr Brush & Co." className="ls-logo w-28 h-28 object-contain mb-8" />
+            <img src={logoSrc} alt="Mr Brush & Co." className="ls-logo w-40 h-40 object-contain mb-8" />
             <h1 className="ls-title font-['Poppins',sans-serif] text-[30px] leading-9 text-[#1B1C19] text-center mb-4">
               Choose your<br />language
             </h1>

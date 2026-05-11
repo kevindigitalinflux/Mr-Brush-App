@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { getRoleFromId, getRouteForRole } from '../../lib/auth'
 import { gsap, useGSAP } from '../../lib/gsap'
+import logoSrc from '../../assets/logo/logo.png'
 
 function EyeOffIcon() {
   return (
@@ -90,9 +91,7 @@ export function Login() {
 
         {/* Header */}
         <div className="login-logo flex flex-col items-center gap-4">
-          <div className="w-24 h-24 rounded-full bg-white border border-[#C3C8C2] shadow-sm flex items-center justify-center">
-            {/* Logo asset goes here */}
-          </div>
+          <img src={logoSrc} alt="Mr Brush & Co." className="w-28 h-28 object-contain" />
           <div className="login-title flex flex-col items-center gap-2">
             <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] leading-[38px] tracking-[-0.32px] text-[#1A1C19] text-center">
               Welcome back
