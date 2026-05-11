@@ -132,7 +132,7 @@ function StarIcon() {
 
 function SplashLogo() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, animation: 'logo-rise 1050ms ease-out forwards' }}>
+    <div style={{ animation: 'logo-rise 1250ms ease-out forwards' }}>
       {/* Logo + sparkle ring */}
       <div style={{ position: 'relative', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {/* Sparkle container: 340×340 centered on logo */}
@@ -149,15 +149,6 @@ function SplashLogo() {
         </div>
         {/* Logo — no frame, no background */}
         <img src={logoSrc} alt="Mr Brush & Co." style={{ width: 160, height: 160, objectFit: 'contain' }} />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        <span style={{ fontFamily: 'Poppins,sans-serif', fontWeight: 600, fontSize: 24, color: '#3D3B3A', letterSpacing: '-0.5px' }}>
-          Mr Brush &amp; Co.
-        </span>
-        <span style={{ fontFamily: 'Lato,sans-serif', fontSize: 14, color: '#434B4D' }}>
-          Cleaning Operations
-        </span>
       </div>
     </div>
   )
@@ -176,7 +167,7 @@ export function SplashScreen() {
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('washing'), 3000)
     const t2 = setTimeout(() => setPhase('splash'),  5500)
-    const t3 = setTimeout(() => navigate('/language'), 7000)
+    const t3 = setTimeout(() => navigate('/language'), 7200)
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [navigate])
 

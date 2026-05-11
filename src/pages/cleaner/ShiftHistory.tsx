@@ -124,8 +124,8 @@ export function ShiftHistory() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F4EE] flex justify-center">
-      <div className="w-full max-w-[480px] pb-[100px]">
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <div className="w-full max-w-[480px] mx-auto pb-[100px]">
 
         {/* Sticky header */}
         <div className="sticky top-0 bg-[#F4F4EE] z-10 flex items-center h-16 px-6 gap-4 border-b border-[#E3E3DD]">

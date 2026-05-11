@@ -318,8 +318,8 @@ export function ShiftDetail() {
   const doneZones = shift.zones.filter((z) => z.status === 'completed').length
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F4EE] flex justify-center">
-      <div className="w-full max-w-[480px] pb-12">
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <div className="w-full max-w-[480px] mx-auto pb-12">
 
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-[rgba(250,250,244,0.9)] backdrop-blur-[6px] border-b border-[#E8E8E3] flex items-center h-16 px-6 gap-4">

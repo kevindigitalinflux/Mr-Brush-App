@@ -165,14 +165,14 @@ export function Home() {
   const zonesRing = doneZones === totalZones ? 'black' : doneZones > 0 ? 'yellow' : 'gray'
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F4EE] flex justify-center">
-      <div className="w-full max-w-[480px] pb-[100px]">
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <div className="w-full max-w-[480px] mx-auto pb-[100px]">
 
         {/* Top section */}
-        <div className="flex flex-col items-center gap-4 pt-8">
+        <div className="flex flex-col gap-4 pt-8">
 
           {/* Welcome header */}
-          <div className="w-full px-6 flex items-start justify-between max-w-[374px]">
+          <div className="w-full px-6 flex items-start justify-between">
             <div>
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.32px] text-[#1A1C19] leading-[38px]">
                 {greeting},<br />{user?.name ?? 'Cleaner'}
@@ -189,16 +189,18 @@ export function Home() {
           </div>
 
           {/* Stats bar */}
-          <div className="w-full max-w-[374px] bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">
-            <StatBubble value={String(totalJobs)} label="Total Jobs" ring="black" />
-            <div className="w-px h-8 bg-[#E3E3DD]" />
-            <StatBubble value={`${doneZones}/${totalZones}`} label="Zones Done" ring={zonesRing} />
-            <div className="w-px h-8 bg-[#E3E3DD]" />
-            <StatBubble value={allDone ? '0h' : '4.5h'} label="Remaining" ring="gray" />
+          <div className="w-full px-6">
+            <div className="bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">
+              <StatBubble value={String(totalJobs)} label="Total Jobs" ring="black" />
+              <div className="w-px h-8 bg-[#E3E3DD]" />
+              <StatBubble value={`${doneZones}/${totalZones}`} label="Zones Done" ring={zonesRing} />
+              <div className="w-px h-8 bg-[#E3E3DD]" />
+              <StatBubble value={allDone ? '0h' : '4.5h'} label="Remaining" ring="gray" />
+            </div>
           </div>
 
           {/* Jobs list heading */}
-          <div className="w-full px-8 pt-4">
+          <div className="w-full px-6 pt-4">
             <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">
               Your Jobs Today
             </h3>
@@ -206,11 +208,11 @@ export function Home() {
 
           {/* Jobs or empty state */}
           {allDone ? (
-            <div className="w-full px-8">
+            <div className="w-full px-6">
               <AllDoneState />
             </div>
           ) : (
-            <div className="w-full px-8 flex flex-col gap-4">
+            <div className="w-full px-6 flex flex-col gap-4">
               {jobs.map((job) => (
                 <JobCard
                   key={job.id}

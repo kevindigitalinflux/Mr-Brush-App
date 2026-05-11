@@ -127,15 +127,15 @@ export function ZoneList() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F4EE] flex justify-center">
-      <div className="w-full max-w-[480px] pb-24 p-8 flex flex-col gap-8">
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <div className="w-full max-w-[480px] mx-auto pb-24 p-8 flex flex-col gap-8">
 
         {/* Progress bar section */}
         <div className="flex flex-col gap-4 pb-4">
           {/* Back + heading */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/cleaner/home')}
               aria-label="Go back"
               className="w-8 h-10 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer -ml-2"
             >

@@ -78,7 +78,7 @@ export function BottomNav({ active }: { active: NavTab }) {
         label="Notifications"
         active={active === 'notifications'}
         icon={<BellIcon active={active === 'notifications'} />}
-        onClick={() => {}}
+        onClick={() => navigate('/cleaner/notifications')}
       />
     </div>
   )

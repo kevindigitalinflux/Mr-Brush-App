@@ -73,6 +73,12 @@
   65%       { transform: translate(-50%, -50%) scale(0.9) rotate(90deg);  opacity: 0.75; }
 }
 
+/* Page entrance — fade + rise in (language select, etc.) */
+@keyframes page-enter {
+  0%   { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* Logo — fade + rise in */
 @keyframes logo-rise {
   0%   { opacity: 0; transform: scale(.9) translateY(10px); }

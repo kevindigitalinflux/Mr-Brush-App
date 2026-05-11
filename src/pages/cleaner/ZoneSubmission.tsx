@@ -154,8 +154,8 @@ export function ZoneSubmission() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#FAFAF4] flex justify-center">
-      <div className="w-full max-w-[576px] pt-8 px-4 pb-36 flex flex-col gap-8">
+    <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
+      <div className="w-full max-w-[576px] mx-auto pt-8 px-4 pb-36 flex flex-col gap-8">
 
         {/* Header */}
         <div className="flex items-center relative">

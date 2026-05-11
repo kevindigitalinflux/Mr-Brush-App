@@ -67,8 +67,8 @@ export function NoPhotoNote() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#FAFAF4] flex justify-center">
-      <div className="w-full max-w-[672px] flex flex-col">
+    <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
+      <div className="w-full max-w-[672px] mx-auto flex flex-col">
 
         {/* Header */}
         <div className="sticky top-0 bg-[#FAFAF4] z-10 flex items-center h-16 px-8">

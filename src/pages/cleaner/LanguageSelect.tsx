@@ -35,8 +35,8 @@ export function LanguageSelect() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#F5F4EF] flex justify-center">
-      <div className="flex flex-col justify-between w-full max-w-[448px] px-6 py-16 min-h-screen">
+    <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto" style={{ animation: 'page-enter 450ms ease-out forwards' }}>
+      <div className="flex flex-col justify-between w-full max-w-[448px] mx-auto px-6 py-16 min-h-full">
 
         <div className="flex flex-col">
           {/* Header */}
