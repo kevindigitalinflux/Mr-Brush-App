@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from '../lib/useTranslation'
 
 export type NavTab = 'jobs' | 'history' | 'notifications'
 
@@ -60,22 +61,23 @@ function NavItem({
 /** Persistent bottom navigation bar shared across cleaner screens. */
 export function BottomNav({ active }: { active: NavTab }) {
   const navigate = useNavigate()
+  const t = useTranslation()
   return (
     <div className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#C3C8C2] flex items-center px-4 pt-[17px] pb-4 z-50">
       <NavItem
-        label="Jobs"
+        label={t('nav_jobs')}
         active={active === 'jobs'}
         icon={<BriefcaseIcon active={active === 'jobs'} />}
         onClick={() => navigate('/cleaner/home')}
       />
       <NavItem
-        label="History"
+        label={t('nav_history')}
         active={active === 'history'}
         icon={<HistoryIcon active={active === 'history'} />}
         onClick={() => navigate('/cleaner/history')}
       />
       <NavItem
-        label="Notifications"
+        label={t('nav_notifications')}
         active={active === 'notifications'}
         icon={<BellIcon active={active === 'notifications'} />}
         onClick={() => navigate('/cleaner/notifications')}

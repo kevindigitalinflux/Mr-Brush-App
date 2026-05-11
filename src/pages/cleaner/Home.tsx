@@ -1,12 +1,16 @@
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { BottomNav } from '../../components/BottomNav'
+import { MOCK_JOBS } from '../../lib/mockJobs'
+import { useTranslation } from '../../lib/useTranslation'
+import type { Language } from '../../lib/i18n'
 
-// ─── Mock data — replace with Supabase query once DB is ready ───────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 type JobStatus = 'not_started' | 'in_progress' | 'completed'
 
-interface MockJob {
+interface DisplayJob {
   id: string
   siteName: string
   clientName: string
@@ -17,30 +21,13 @@ interface MockJob {
   zonesDone: number
 }
 
-const MOCK_JOBS: MockJob[] = [
-  {
-    id: 'job-001',
-    siteName: 'TechCorp HQ - Floor 3',
-    clientName: 'TechCorp Industries',
-    status: 'in_progress',
-    timeStart: '08:00 AM',
-    timeEnd: '11:30 AM',
-    zonesTotal: 6,
-    zonesDone: 3,
-  },
-  {
-    id: 'job-002',
-    siteName: 'Midtown Financial - Lobby',
-    clientName: 'Stirling & Co.',
-    status: 'not_started',
-    timeStart: '01:00 PM',
-    timeEnd: '03:00 PM',
-    zonesTotal: 6,
-    zonesDone: 0,
-  },
+const LANG_OPTIONS: { code: Language; label: string; flag: string }[] = [
+  { code: 'en', label: 'English',   flag: '🇬🇧' },
+  { code: 'es', label: 'Español',   flag: '🇪🇸' },
+  { code: 'pt', label: 'Português', flag: '🇧🇷' },
 ]
 
-// ─── Icons (inline SVG — no expiring Figma URLs) ────────────────────────────
+// ─── Icons ───────────────────────────────────────────────────────────────────
 
 function ClockIcon() {
   return (
@@ -56,6 +43,23 @@ function CheckCircleIcon() {
     <svg width="54" height="54" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" />
       <path d="M22 4L12 14.01l-3-3" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="#434844" strokeWidth="2" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#434844" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CheckSmall() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 12l5 5L20 7" stroke="#B8A77A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -80,19 +84,18 @@ function StatBubble({ value, label, ring }: { value: string; label: string; ring
       <div className={`w-12 h-12 rounded-full border-2 ${STAT_RING[ring]} flex items-center justify-center mb-1`}>
         <span className="font-['Poppins',sans-serif] font-semibold text-[15px] text-black leading-none">{value}</span>
       </div>
-      <span className="font-['Lato',sans-serif] text-[10px] tracking-[0.5px] uppercase text-[#6B5D36]">{label}</span>
+      <span className="font-['Lato',sans-serif] text-[10px] tracking-[0.5px] uppercase text-[#6B5D36] text-center">{label}</span>
     </div>
   )
 }
 
-function JobCard({ job, onPress }: { job: MockJob; onPress: () => void }) {
+function JobCard({ job, onPress }: { job: DisplayJob; onPress: () => void }) {
   const s = STATUS_STYLES[job.status]
   return (
     <button
       onClick={onPress}
       className="w-full bg-white border border-[#C3C8C2] rounded-[12px] p-[21px] flex flex-col gap-4 text-left cursor-pointer hover:shadow-md transition-shadow"
     >
-      {/* Top row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] leading-tight">
@@ -104,8 +107,6 @@ function JobCard({ job, onPress }: { job: MockJob; onPress: () => void }) {
           {s.label}
         </span>
       </div>
-
-      {/* Bottom row */}
       <div className="border-t border-[#E3E3DD] pt-[9px] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ClockIcon />
@@ -132,20 +133,80 @@ function AllDoneState() {
           All Jobs Completed
         </h3>
         <p className="font-['Lato',sans-serif] text-base text-[#6B5D36] text-center leading-[1.6]">
-          You've successfully finished all your scheduled tasks for today. Great work maintaining the standard!
+          You've successfully finished all your scheduled tasks for today. Great work!
         </p>
       </div>
     </div>
   )
 }
 
+// ─── Language dropdown ────────────────────────────────────────────────────────
+
+function LanguageDropdown() {
+  const { language, setLanguage } = useApp()
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        aria-label="Change language"
+        className="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] shadow-sm flex items-center justify-center mt-1 cursor-pointer hover:bg-[#F4F4EE] transition-colors"
+      >
+        <GlobeIcon />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-12 z-50 bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg overflow-hidden min-w-[160px]">
+          {LANG_OPTIONS.map((opt) => (
+            <button
+              key={opt.code}
+              onClick={() => { setLanguage(opt.code); setOpen(false) }}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#F4F4EE] transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg leading-none">{opt.flag}</span>
+                <span className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19]">
+                  {opt.label}
+                </span>
+              </div>
+              {language === opt.code && <CheckSmall />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
+/** Home screen — shows today's jobs and shift stats. */
 export function Home() {
-  const { user } = useApp()
+  const { user, completedZones } = useApp()
   const navigate = useNavigate()
+  const t = useTranslation()
 
-  const jobs = MOCK_JOBS
+  const jobs: DisplayJob[] = MOCK_JOBS.map((job) => {
+    const zonesDone = job.zones.filter((z) => completedZones.has(z.id)).length
+    const zonesTotal = job.zones.length
+    const status: JobStatus =
+      zonesDone === 0 ? 'not_started' :
+      zonesDone === zonesTotal ? 'completed' : 'in_progress'
+    return { id: job.id, siteName: job.siteName, clientName: job.clientName, timeStart: job.timeStart, timeEnd: job.timeEnd, zonesTotal, zonesDone, status }
+  })
+
   const totalJobs = jobs.length
   const totalZones = jobs.reduce((s, j) => s + j.zonesTotal, 0)
   const doneZones = jobs.reduce((s, j) => s + j.zonesDone, 0)
@@ -155,12 +216,9 @@ export function Home() {
     weekday: 'long', month: 'long', day: 'numeric',
   })
 
-  const greeting = (() => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Good morning'
-    if (h < 18) return 'Good afternoon'
-    return 'Good evening'
-  })()
+  const h = new Date().getHours()
+  const greetingKey = h < 12 ? 'good_morning' : h < 18 ? 'good_afternoon' : 'good_evening'
+  const greeting = t(greetingKey)
 
   const zonesRing = doneZones === totalZones ? 'black' : doneZones > 0 ? 'yellow' : 'gray'
 
@@ -179,34 +237,28 @@ export function Home() {
               </h2>
               <span className="font-['Lato',sans-serif] text-base text-[#6B5D36]">{today}</span>
             </div>
-            {/* Profile/settings button placeholder */}
-            <button className="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] shadow-sm flex items-center justify-center mt-1 cursor-pointer" aria-label="Profile">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="8" r="4" stroke="#434844" strokeWidth="2" />
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#434844" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
+            <LanguageDropdown />
           </div>
 
           {/* Stats bar */}
           <div className="w-full px-6">
             <div className="bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">
-              <StatBubble value={String(totalJobs)} label="Total Jobs" ring="black" />
+              <StatBubble value={String(totalJobs)} label={t('total_jobs')} ring="black" />
               <div className="w-px h-8 bg-[#E3E3DD]" />
-              <StatBubble value={`${doneZones}/${totalZones}`} label="Zones Done" ring={zonesRing} />
+              <StatBubble value={`${doneZones}/${totalZones}`} label={t('zones_done')} ring={zonesRing} />
               <div className="w-px h-8 bg-[#E3E3DD]" />
-              <StatBubble value={allDone ? '0h' : '4.5h'} label="Remaining" ring="gray" />
+              <StatBubble value={allDone ? '0h' : '4.5h'} label={t('remaining')} ring="gray" />
             </div>
           </div>
 
           {/* Jobs list heading */}
           <div className="w-full px-6 pt-4">
             <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">
-              Your Jobs Today
+              {t('your_jobs_today')}
             </h3>
           </div>
 
-          {/* Jobs or empty state */}
+          {/* Jobs or all-done state */}
           {allDone ? (
             <div className="w-full px-6">
               <AllDoneState />

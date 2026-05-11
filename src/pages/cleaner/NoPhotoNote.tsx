@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useApp } from '../../context/AppContext'
 
 const ZONE_NAMES: Record<string, string> = {
   z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
@@ -51,6 +52,7 @@ function SendIcon() {
 export function NoPhotoNote() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
+  const { markZoneComplete } = useApp()
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -63,6 +65,7 @@ export function NoPhotoNote() {
     setSubmitting(true)
     // Simulate webhook POST — replace with real n8n call once ready
     await new Promise((r) => setTimeout(r, 900))
+    markZoneComplete(zoneId!)
     navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
   }
 

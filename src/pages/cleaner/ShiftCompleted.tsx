@@ -1,10 +1,7 @@
+import { useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-
-const MOCK_JOBS: Record<string, { siteName: string; timeStart: string; timeEnd: string }> = {
-  'job-001': { siteName: 'TechCorp HQ — Floor 3', timeStart: '08:00 AM', timeEnd: '11:30 AM' },
-  'job-002': { siteName: 'Midtown Financial — Lobby', timeStart: '01:00 PM', timeEnd: '03:00 PM' },
-}
+import { MOCK_JOBS } from '../../lib/mockJobs'
 
 function BigCheckIcon() {
   return (
@@ -28,23 +25,39 @@ function ClockIcon() {
 export function ShiftCompleted() {
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
-  const { setUser } = useApp()
+  const { setUser, markJobComplete, completedZones } = useApp()
+  const calledRef = useRef(false)
 
-  const job = MOCK_JOBS[jobId ?? ''] ?? { siteName: 'Site', timeStart: '—', timeEnd: '—' }
+  const mockJob = MOCK_JOBS.find((j) => j.id === jobId)
+  const zonesTotal = mockJob?.zones.length ?? 0
+  const zonesDone = mockJob?.zones.filter((z) => completedZones.has(z.id)).length ?? zonesTotal
 
-  const now = new Date()
-  const completedAt = now.toLocaleDateString('en-GB', {
+  useEffect(() => {
+    if (calledRef.current || !mockJob) return
+    calledRef.current = true
+
+    const now = new Date()
+    markJobComplete({
+      id: jobId ?? '',
+      siteName: mockJob.siteName,
+      clientName: mockJob.clientName,
+      timeStart: mockJob.timeStart,
+      timeEnd: mockJob.timeEnd,
+      zonesTotal,
+      zonesDone,
+      dayLabel: now.toLocaleDateString('en-GB', { weekday: 'long' }),
+      date: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const siteName = mockJob?.siteName ?? 'Site'
+  const timeStart = mockJob?.timeStart ?? '—'
+  const timeEnd = mockJob?.timeEnd ?? '—'
+
+  const completedAt = new Date().toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
   })
-
-  function handleViewHistory() {
-    navigate('/cleaner/history')
-  }
-
-  function handleLogOut() {
-    setUser(null)
-    navigate('/login')
-  }
 
   return (
     <div className="min-h-screen w-full bg-[#111E17] flex items-center justify-center p-6">
@@ -63,7 +76,7 @@ export function ShiftCompleted() {
             Shift Completed!
           </h1>
           <p className="font-['Lato',sans-serif] text-xl text-[#D7C596]">
-            {job.siteName}
+            {siteName}
           </p>
         </div>
 
@@ -71,7 +84,7 @@ export function ShiftCompleted() {
         <div className="flex items-center gap-2">
           <ClockIcon />
           <span className="font-['Lato',sans-serif] text-sm text-[#D7C596]">
-            {job.timeStart} – {job.timeEnd} · {completedAt}
+            {timeStart} – {timeEnd} · {completedAt}
           </span>
         </div>
 
@@ -85,13 +98,13 @@ export function ShiftCompleted() {
         {/* Buttons */}
         <div className="w-full flex flex-col gap-3 pt-2">
           <button
-            onClick={handleViewHistory}
+            onClick={() => navigate('/cleaner/history')}
             className="w-full h-[56px] rounded-[12px] border-2 border-[#D7C596] font-['Poppins',sans-serif] font-semibold text-base text-[#D7C596] cursor-pointer hover:bg-[#D7C596]/10 transition-colors"
           >
             View Shift History
           </button>
           <button
-            onClick={handleLogOut}
+            onClick={() => { setUser(null); navigate('/login') }}
             className="w-full h-[56px] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white/50 cursor-pointer hover:text-white/80 transition-colors"
           >
             Log Out

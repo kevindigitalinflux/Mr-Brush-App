@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useApp } from '../../context/AppContext'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -117,6 +118,7 @@ const MAX_PHOTOS = 3
 export function ZoneSubmission() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
+  const { markZoneComplete } = useApp()
 
   const [photos, setPhotos] = useState<string[]>([])
   const [note, setNote] = useState('')
@@ -150,6 +152,7 @@ export function ZoneSubmission() {
     setSubmitting(true)
     // Simulate webhook POST — replace with real call once n8n webhook is ready
     await new Promise((r) => setTimeout(r, 900))
+    markZoneComplete(zoneId!)
     navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
   }
 

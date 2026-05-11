@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
+import { useApp } from '../../context/AppContext'
 import { BottomNav } from '../../components/BottomNav'
+import { useTranslation } from '../../lib/useTranslation'
 
 // ─── Mock data — replace with Supabase query once DB is ready ───────────────
 
@@ -47,14 +49,6 @@ const MOCK_SHIFTS: MockShift[] = [
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
-function BackIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function ClockIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -77,8 +71,8 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
         isComplete
           ? 'border border-[#C3C8C2]'
           : 'border-2 border-dashed border-[#C3C8C2] opacity-80',
-      ].join(' ')}>
-
+      ].join(' ')}
+    >
       {/* Top row: date + badge */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
@@ -90,12 +84,9 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
           </h4>
           <span className="font-['Lato',sans-serif] text-sm text-[#6B5D36]">{shift.clientName}</span>
         </div>
-
         <span className={[
           'shrink-0 font-["Lato",sans-serif] font-bold text-[13px] tracking-[0.65px] px-3 h-7 flex items-center rounded-full',
-          isComplete
-            ? 'bg-[#D7E6DB] text-[#2F4A3D]'
-            : 'bg-[#E3E3DD] text-[#737874]',
+          isComplete ? 'bg-[#D7E6DB] text-[#2F4A3D]' : 'bg-[#E3E3DD] text-[#737874]',
         ].join(' ')}>
           {isComplete ? 'Completed' : 'Incomplete'}
         </span>
@@ -119,45 +110,63 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
-/** Displays the cleaner's past shift history grouped by month. */
+/** Displays the cleaner's past shift history. */
 export function ShiftHistory() {
   const navigate = useNavigate()
+  const { user, completedJobs } = useApp()
+  const t = useTranslation()
+
+  const initials = user?.name
+    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    : 'CL'
+
+  const monthLabel = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+
+  const contextShifts: MockShift[] = completedJobs.map((j) => ({
+    id: j.id,
+    date: j.date,
+    dayLabel: j.dayLabel,
+    siteName: j.siteName,
+    clientName: j.clientName,
+    status: 'completed',
+    zonesTotal: j.zonesTotal,
+    zonesDone: j.zonesDone,
+    timeStart: j.timeStart,
+    timeEnd: j.timeEnd,
+  }))
+
+  const allShifts: MockShift[] = [...contextShifts, ...MOCK_SHIFTS]
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div className="w-full max-w-[480px] mx-auto pb-[100px]">
 
-        {/* Sticky header */}
-        <div className="sticky top-0 bg-[#F4F4EE] z-10 flex items-center h-16 px-6 gap-4 border-b border-[#E3E3DD]">
-          <button
-            onClick={() => navigate('/cleaner/home')}
-            aria-label="Go back"
-            className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0"
-          >
-            <BackIcon />
-          </button>
-          <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">
-            Shift History
+        {/* Large inline heading — matches Notifications screen */}
+        <div className="px-6 pt-10 pb-5">
+          <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+            {t('shift_history')}
           </h1>
+          <p className="font-['Lato',sans-serif] text-[15px] text-[#434844] mt-2 leading-[1.65]">
+            {t('shift_history_subtitle')}
+          </p>
         </div>
 
         {/* Content */}
-        <div className="flex flex-col gap-6 px-6 py-6">
+        <div className="flex flex-col gap-6 px-6">
 
           {/* Month group heading */}
           <div className="flex items-center justify-between">
             <h2 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.8px] text-[#1A1C19]">
-              May 2025
+              {monthLabel}
             </h2>
-            {/* Initials avatar */}
             <div className="w-10 h-10 rounded-full bg-[#B8A77A] flex items-center justify-center">
-              <span className="font-['Poppins',sans-serif] font-bold text-sm text-white">CL</span>
+              <span className="font-['Poppins',sans-serif] font-bold text-sm text-white">{initials}</span>
             </div>
           </div>
 
           {/* Shift cards */}
           <div className="flex flex-col gap-4">
-            {MOCK_SHIFTS.length === 0 ? (
+            {allShifts.length === 0 ? (
               <div className="bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-2">
                 <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No shifts yet</p>
                 <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center">
@@ -165,8 +174,12 @@ export function ShiftHistory() {
                 </p>
               </div>
             ) : (
-              MOCK_SHIFTS.map((shift) => (
-                <ShiftCard key={shift.id} shift={shift} onPress={() => navigate(`/cleaner/history/${shift.id}`)} />
+              allShifts.map((shift) => (
+                <ShiftCard
+                  key={shift.id}
+                  shift={shift}
+                  onPress={() => navigate(`/cleaner/history/${shift.id}`)}
+                />
               ))
             )}
           </div>
