@@ -14,6 +14,7 @@ import { ShiftCompleted } from './pages/cleaner/ShiftCompleted'
 import { ShiftHistory } from './pages/cleaner/ShiftHistory'
 import { ShiftDetail } from './pages/cleaner/ShiftDetail'
 import { Notifications } from './pages/cleaner/Notifications'
+import { NotificationDetail } from './pages/cleaner/NotificationDetail'
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/cleaner/history" element={<ShiftHistory />} />
           <Route path="/cleaner/history/:shiftId" element={<ShiftDetail />} />
           <Route path="/cleaner/notifications" element={<Notifications />} />
+          <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
           {/* Supervisor + Manager — not yet built */}
           <Route path="/supervisor/*" element={<Placeholder label="Supervisor — not built yet" />} />
           <Route path="/manager/*" element={<Placeholder label="Manager — not built yet" />} />
