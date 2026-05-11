@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom'
+import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { BottomNav } from '../../components/BottomNav'
+import type { Language } from '../../lib/i18n'
 
 // ─── Types & mock data ────────────────────────────────────────────────────────
 
@@ -11,30 +14,50 @@ interface MockNotif {
   avatarType: 'initials' | 'building' | 'alert'
   initials: string
   senderName: string
-  time: string
-  preview: string
+  time: Record<Language, string>
+  preview: Record<Language, string>
 }
 
 const MOCK_NOTIFS: MockNotif[] = [
   {
     id: 'n1', variant: 'unread', avatarType: 'initials', initials: 'SJ',
-    senderName: 'Sarah Jenkins', time: '10m ago',
-    preview: 'Great job on the 4th-floor lobby yesterday. Just a reminder to restock the cleaning cart before your next shift.',
+    senderName: 'Sarah Jenkins',
+    time: { en: '10m ago', es: 'hace 10 min', pt: 'há 10 min' },
+    preview: {
+      en: 'Great job on the 4th-floor lobby yesterday. Just a reminder to restock the cleaning cart before your next shift.',
+      es: 'Excelente trabajo en el vestíbulo del 4.º piso ayer. Recuerda reponer el carrito de limpieza antes de tu próximo turno.',
+      pt: 'Ótimo trabalho no lobby do 4.º andar ontem. Lembre-se de reabastecer o carrinho de limpeza antes do próximo turno.',
+    },
   },
   {
     id: 'n2', variant: 'read', avatarType: 'building', initials: 'BM',
-    senderName: 'Building Manager', time: '2h ago',
-    preview: 'Weekly maintenance schedule for the East Wing has been updated. Please review the new checklist in your dashboard.',
+    senderName: 'Building Manager',
+    time: { en: '2h ago', es: 'hace 2 h', pt: 'há 2 h' },
+    preview: {
+      en: 'Weekly maintenance schedule for the East Wing has been updated. Please review the new checklist in your dashboard.',
+      es: 'El horario de mantenimiento semanal para el Ala Este ha sido actualizado. Por favor revise la nueva lista en su panel.',
+      pt: 'O cronograma de manutenção semanal para a Ala Leste foi atualizado. Por favor revise a nova lista no seu painel.',
+    },
   },
   {
     id: 'n3', variant: 'read', avatarType: 'initials', initials: 'MT',
-    senderName: 'Mark Thompson', time: 'Yesterday',
-    preview: 'The delivery of the specialised stone polish has been delayed. Use the heritage wood wax on the library floor instead.',
+    senderName: 'Mark Thompson',
+    time: { en: 'Yesterday', es: 'Ayer', pt: 'Ontem' },
+    preview: {
+      en: 'The delivery of the specialised stone polish has been delayed. Use the heritage wood wax on the library floor instead.',
+      es: 'La entrega del lustrador de piedra especializado ha sido retrasada. Use la cera de madera heritage en el suelo de la biblioteca.',
+      pt: 'A entrega do polidor de pedra especializado foi atrasada. Use a cera de madeira heritage no piso da biblioteca.',
+    },
   },
   {
     id: 'n4', variant: 'urgent', avatarType: 'alert', initials: '!',
-    senderName: 'System Alert', time: 'Just now',
-    preview: 'Water leak reported in Utility Room 3B. Please proceed to the location immediately to assist with containment.',
+    senderName: 'System Alert',
+    time: { en: 'Just now', es: 'Ahora mismo', pt: 'Agora mesmo' },
+    preview: {
+      en: 'Water leak reported in Utility Room 3B. Please proceed to the location immediately to assist with containment.',
+      es: 'Fuga de agua en la Sala de Servicios 3B. Diríjase inmediatamente al lugar para ayudar con la contención.',
+      pt: 'Vazamento de água na Sala de Utilidades 3B. Dirija-se imediatamente ao local para ajudar na contenção.',
+    },
   },
 ]
 
@@ -86,12 +109,15 @@ function NotifAvatar({ notif }: { notif: MockNotif }) {
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 const CARD_CLASS: Record<NotifVariant, string> = {
-  unread:  'bg-[#F1DEAD] border border-[#D7C596]/60',
-  read:    'bg-white border border-[#D0CFCA]',
-  urgent:  'bg-white border-2 border-[#1A1C19]',
+  unread: 'bg-[#F1DEAD] border border-[#D7C596]/60',
+  read:   'bg-white border border-[#D0CFCA]',
+  urgent: 'bg-white border-2 border-[#1A1C19]',
 }
 
 function NotifCard({ notif, onPress }: { notif: MockNotif; onPress: () => void }) {
+  const { language } = useApp()
+  const t = useTranslation()
+
   return (
     <button
       onClick={onPress}
@@ -111,15 +137,17 @@ function NotifCard({ notif, onPress }: { notif: MockNotif; onPress: () => void }
           <div className="flex items-center gap-2 flex-shrink-0">
             {notif.variant === 'urgent' && (
               <span className="bg-[#BA1A1A] text-white font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.7px] px-2 py-0.5 rounded-full">
-                URGENT
+                {t('urgent')}
               </span>
             )}
-            <span className="font-['Lato',sans-serif] text-[13px] text-[#8A8A8A]">{notif.time}</span>
+            <span className="font-['Lato',sans-serif] text-[13px] text-[#8A8A8A]">
+              {notif.time[language]}
+            </span>
           </div>
         </div>
       </div>
       <p className="font-['Lato',sans-serif] text-sm text-[#434844] leading-[1.6] overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-        {notif.preview}
+        {notif.preview[language]}
       </p>
     </button>
   )
@@ -128,6 +156,7 @@ function NotifCard({ notif, onPress }: { notif: MockNotif; onPress: () => void }
 // ─── End-of-feed indicator ────────────────────────────────────────────────────
 
 function EndOfFeed() {
+  const t = useTranslation()
   return (
     <div className="flex flex-col items-center gap-2 py-10">
       <svg width="36" height="24" viewBox="0 0 36 24" fill="none" aria-hidden="true">
@@ -136,7 +165,7 @@ function EndOfFeed() {
         <path d="M29 9 L29.7 11.3 L32 12 L29.7 12.7 L29 15 L28.3 12.7 L26 12 L28.3 11.3 Z" fill="#C3C8C2"/>
       </svg>
       <span className="font-['Lato',sans-serif] text-[11px] tracking-[2px] text-[#B8B8B3] uppercase">
-        End of Updates
+        {t('end_of_updates')}
       </span>
     </div>
   )
@@ -147,16 +176,18 @@ function EndOfFeed() {
 /** Notification feed — messages and alerts from supervisors and building management. */
 export function Notifications() {
   const navigate = useNavigate()
+  const t = useTranslation()
+
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div className="w-full max-w-[480px] mx-auto pb-[100px]">
 
         <div className="px-6 pt-10 pb-5">
           <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
-            Notifications
+            {t('notifications_title')}
           </h1>
           <p className="font-['Lato',sans-serif] text-[15px] text-[#434844] mt-2 leading-[1.65]">
-            Stay updated with the latest instructions from your supervisors and building management.
+            {t('notifications_subtitle')}
           </p>
         </div>
 

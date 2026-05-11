@@ -62,6 +62,13 @@ export const strings: Record<Language, Record<string, string>> = {
     no_internet: 'No internet connection',
     offline_message: 'Your submission will be sent automatically when you reconnect.',
 
+    // Notifications detail
+    urgent: 'URGENT',
+    notif_message: 'Message',
+    attached_docs: 'Attached Documentation',
+    download: 'Download',
+    view: 'View',
+
     // Language names
     lang_en: 'English',
     lang_es: 'Español',
@@ -128,6 +135,13 @@ export const strings: Record<Language, Record<string, string>> = {
     no_internet: 'Sin conexión a internet',
     offline_message: 'Tu envío se enviará automáticamente cuando te reconectes.',
 
+    // Notifications detail
+    urgent: 'URGENTE',
+    notif_message: 'Mensaje',
+    attached_docs: 'Documentación adjunta',
+    download: 'Descargar',
+    view: 'Ver',
+
     // Language names
     lang_en: 'English',
     lang_es: 'Español',
@@ -193,6 +207,13 @@ export const strings: Record<Language, Record<string, string>> = {
     // Offline
     no_internet: 'Sem conexão à internet',
     offline_message: 'Seu envio será enviado automaticamente quando você se reconectar.',
+
+    // Notifications detail
+    urgent: 'URGENTE',
+    notif_message: 'Mensagem',
+    attached_docs: 'Documentação em anexo',
+    download: 'Baixar',
+    view: 'Ver',
 
     // Language names
     lang_en: 'English',

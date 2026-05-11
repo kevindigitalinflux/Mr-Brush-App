@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import type { Language } from '../../lib/i18n'
+import logoSrc from '../../assets/logo/logo.png'
 
 // Flag image URLs from Figma — swap for permanent assets before production
 const FLAG_URLS: Record<Language, string> = {
@@ -41,9 +42,7 @@ export function LanguageSelect() {
         <div className="flex flex-col">
           {/* Header */}
           <div className="flex flex-col items-center pb-16">
-            <div className="w-28 h-28 rounded-full bg-white shadow-sm mb-8 border border-[#D0CFCA]">
-              {/* Logo asset goes here */}
-            </div>
+            <img src={logoSrc} alt="Mr Brush & Co." className="w-28 h-28 object-contain mb-8" />
             <h1 className="font-['Poppins',sans-serif] text-[30px] leading-9 text-[#1B1C19] text-center mb-4">
               Choose your<br />language
             </h1>
