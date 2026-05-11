@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { BottomNav } from '../../components/BottomNav'
 import { MOCK_JOBS } from '../../lib/mockJobs'
 import { useTranslation } from '../../lib/useTranslation'
+import { gsap, useGSAP } from '../../lib/gsap'
 import type { Language } from '../../lib/i18n'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -94,7 +95,7 @@ function JobCard({ job, onPress }: { job: DisplayJob; onPress: () => void }) {
   return (
     <button
       onClick={onPress}
-      className="w-full bg-white border border-[#C3C8C2] rounded-[12px] p-[21px] flex flex-col gap-4 text-left cursor-pointer hover:shadow-md transition-shadow"
+      className="job-card w-full bg-white border border-[#C3C8C2] rounded-[12px] p-[21px] flex flex-col gap-4 text-left cursor-pointer hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
@@ -146,6 +147,18 @@ function LanguageDropdown() {
   const { language, setLanguage } = useApp()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Animate dropdown open
+  useEffect(() => {
+    if (!dropdownRef.current) return
+    if (open) {
+      gsap.fromTo(dropdownRef.current,
+        { opacity: 0, scale: 0.92, y: -8 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.2, ease: 'power2.out' }
+      )
+    }
+  }, [open])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -168,7 +181,11 @@ function LanguageDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg overflow-hidden min-w-[160px]">
+        <div
+          ref={dropdownRef}
+          className="absolute right-0 top-12 z-50 bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg overflow-hidden min-w-[160px]"
+          style={{ transformOrigin: 'top right' }}
+        >
           {LANG_OPTIONS.map((opt) => (
             <button
               key={opt.code}
@@ -197,6 +214,7 @@ export function Home() {
   const { user, completedZones } = useApp()
   const navigate = useNavigate()
   const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const jobs: DisplayJob[] = MOCK_JOBS.map((job) => {
     const zonesDone = job.zones.filter((z) => completedZones.has(z.id)).length
@@ -222,15 +240,23 @@ export function Home() {
 
   const zonesRing = doneZones === totalZones ? 'black' : doneZones > 0 ? 'yellow' : 'gray'
 
+  useGSAP(() => {
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
+
+    tl.from('.home-greeting', { opacity: 0, y: 14, duration: 0.45 })
+      .from('.home-stats',    { opacity: 0, y: 12, scale: 0.97, duration: 0.4 }, '-=0.25')
+      .from('.home-heading',  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+      .from('.job-card',      { opacity: 0, y: 22, duration: 0.45, stagger: 0.08 }, '-=0.15')
+  }, { scope: containerRef })
+
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto pb-[100px]">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-[100px]">
 
-        {/* Top section */}
         <div className="flex flex-col gap-4 pt-8">
 
           {/* Welcome header */}
-          <div className="w-full px-6 flex items-start justify-between">
+          <div className="home-greeting w-full px-6 flex items-start justify-between">
             <div>
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.32px] text-[#1A1C19] leading-[38px]">
                 {greeting},<br />{user?.name ?? 'Cleaner'}
@@ -241,7 +267,7 @@ export function Home() {
           </div>
 
           {/* Stats bar */}
-          <div className="w-full px-6">
+          <div className="home-stats w-full px-6">
             <div className="bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">
               <StatBubble value={String(totalJobs)} label={t('total_jobs')} ring="black" />
               <div className="w-px h-8 bg-[#E3E3DD]" />
@@ -251,8 +277,8 @@ export function Home() {
             </div>
           </div>
 
-          {/* Jobs list heading */}
-          <div className="w-full px-6 pt-4">
+          {/* Jobs heading */}
+          <div className="home-heading w-full px-6 pt-4">
             <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">
               {t('your_jobs_today')}
             </h3>

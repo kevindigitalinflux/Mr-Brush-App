@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { getRoleFromId, getRouteForRole } from '../../lib/auth'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 function EyeOffIcon() {
   return (
@@ -39,6 +40,7 @@ function mockAuth(displayId: string): boolean {
 export function Login() {
   const { setUser, language } = useApp()
   const navigate = useNavigate()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [cleanerId, setCleanerId] = useState('')
   const [password, setPassword] = useState('')
@@ -46,12 +48,18 @@ export function Login() {
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.login-logo',   { scale: 0.8, opacity: 0, duration: 0.45, ease: 'back.out(1.4)' })
+      .from('.login-title',  { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.login-card',   { opacity: 0, y: 16, duration: 0.4 }, '-=0.2')
+  }, { scope: containerRef })
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(false)
     setLoading(true)
 
-    // Simulate network delay — remove when wiring real auth
     await new Promise((r) => setTimeout(r, 800))
 
     const role = getRoleFromId(cleanerId.trim())
@@ -78,14 +86,14 @@ export function Login() {
 
   return (
     <div className="min-h-screen w-full bg-[#F4F4EE] flex items-center justify-center px-6 py-[103px]">
-      <div className="flex flex-col gap-8 w-full max-w-[448px]">
+      <div ref={containerRef} className="flex flex-col gap-8 w-full max-w-[448px]">
 
         {/* Header */}
-        <div className="flex flex-col items-center gap-4">
+        <div className="login-logo flex flex-col items-center gap-4">
           <div className="w-24 h-24 rounded-full bg-white border border-[#C3C8C2] shadow-sm flex items-center justify-center">
             {/* Logo asset goes here */}
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="login-title flex flex-col items-center gap-2">
             <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] leading-[38px] tracking-[-0.32px] text-[#1A1C19] text-center">
               Welcome back
             </h1>
@@ -98,7 +106,7 @@ export function Login() {
         {/* Form card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white border border-[#C3C8C2] rounded-[12px] shadow-[0px_1px_1px_rgba(0,0,0,0.05)] p-[25px] flex flex-col gap-8"
+          className="login-card bg-white border border-[#C3C8C2] rounded-[12px] shadow-[0px_1px_1px_rgba(0,0,0,0.05)] p-[25px] flex flex-col gap-8"
         >
           <div className="flex flex-col gap-4">
 

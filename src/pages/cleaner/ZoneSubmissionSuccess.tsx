@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 const ZONE_NAMES: Record<string, string> = {
   z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
@@ -32,8 +33,20 @@ export function ZoneSubmissionSuccess() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
   const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [progress, setProgress] = useState(0)
+
+  // Modal spring entrance
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.zss-overlay', { opacity: 0, duration: 0.3 })
+      .from('.zss-card',    { scale: 0.88, opacity: 0, y: 20, duration: 0.45, ease: 'back.out(1.4)' }, '-=0.15')
+      .from('.zss-icon',    { scale: 0, opacity: 0, duration: 0.35, ease: 'back.out(1.6)' }, '-=0.2')
+      .from('.zss-heading', { opacity: 0, y: 10, duration: 0.3 }, '-=0.1')
+      .from('.zss-preview', { opacity: 0, y: 8, duration: 0.3 }, '-=0.15')
+      .from('.zss-footer',  { opacity: 0, y: 8, duration: 0.3 }, '-=0.15')
+  }, { scope: containerRef })
 
   useEffect(() => {
     const start = Date.now()
@@ -54,20 +67,20 @@ export function ZoneSubmissionSuccess() {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-5 z-50">
+    <div ref={containerRef} className="fixed inset-0 flex items-center justify-center p-5 z-50">
       {/* Blurred background */}
-      <div className="absolute inset-0 bg-[#1B1C19]/20 backdrop-blur-sm" />
+      <div className="zss-overlay absolute inset-0 bg-[#1B1C19]/20 backdrop-blur-sm" />
 
       {/* Success modal */}
-      <div className="relative z-10 bg-white border-2 border-[#30312E] rounded-[12px] w-full max-w-[448px] shadow-2xl overflow-hidden flex flex-col items-center pt-8 pb-8 px-8 gap-6">
+      <div className="zss-card relative z-10 bg-white border-2 border-[#30312E] rounded-[12px] w-full max-w-[448px] shadow-2xl overflow-hidden flex flex-col items-center pt-8 pb-8 px-8 gap-6">
 
         {/* Check icon */}
-        <div className="w-24 h-24 rounded-full bg-[#CBEAD8] flex items-center justify-center">
+        <div className="zss-icon w-24 h-24 rounded-full bg-[#CBEAD8] flex items-center justify-center">
           <CheckIcon />
         </div>
 
         {/* Zone name + status */}
-        <div className="flex flex-col items-center gap-1">
+        <div className="zss-heading flex flex-col items-center gap-1">
           <h2 className="font-['Poppins',sans-serif] font-bold text-[32px] tracking-[-0.8px] text-[#496456] text-center leading-10">
             {zoneName}<br />Completed
           </h2>
@@ -77,7 +90,7 @@ export function ZoneSubmissionSuccess() {
         </div>
 
         {/* Photo preview placeholder */}
-        <div className="w-full border border-[#CDC6B7] rounded-[8px] h-48 overflow-hidden relative bg-[#F4F4EE] flex items-center justify-center">
+        <div className="zss-preview w-full border border-[#CDC6B7] rounded-[8px] h-48 overflow-hidden relative bg-[#F4F4EE] flex items-center justify-center">
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           <div className="absolute bottom-2 left-2 z-10">
             <div className="bg-[#2F4A3D] flex items-center gap-1 px-2 py-1 rounded-full">
@@ -87,7 +100,6 @@ export function ZoneSubmissionSuccess() {
               </span>
             </div>
           </div>
-          {/* Placeholder — replace with actual submitted photo when wiring real data */}
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="opacity-20">
             <rect x="3" y="3" width="18" height="18" rx="2" stroke="#3D3B3A" strokeWidth="1.5" />
             <circle cx="8.5" cy="8.5" r="1.5" stroke="#3D3B3A" strokeWidth="1.5" />
@@ -95,26 +107,27 @@ export function ZoneSubmissionSuccess() {
           </svg>
         </div>
 
-        {/* Auto-redirect progress bar */}
-        <div className="w-full flex flex-col gap-1.5">
-          <div className="w-full h-1 bg-[#E3E3DE] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#B8A77A] rounded-full transition-none"
-              style={{ width: `${progress}%` }}
-            />
+        {/* Auto-redirect progress + button */}
+        <div className="zss-footer w-full flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <div className="w-full h-1 bg-[#E3E3DE] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#B8A77A] rounded-full transition-none"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="font-['Lato',sans-serif] font-bold text-[12px] text-[#7C766A] text-center">
+              Redirecting to next task…
+            </p>
           </div>
-          <p className="font-['Lato',sans-serif] font-bold text-[12px] text-[#7C766A] text-center">
-            Redirecting to next task…
-          </p>
-        </div>
 
-        {/* Continue Now button */}
-        <button
-          onClick={handleContinueNow}
-          className="w-full h-14 bg-[#B8A77A] rounded-[4px] font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#F8F8F2] text-center cursor-pointer hover:bg-[#a8976a] transition-colors"
-        >
-          Continue Now
-        </button>
+          <button
+            onClick={handleContinueNow}
+            className="w-full h-14 bg-[#B8A77A] rounded-[4px] font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#F8F8F2] text-center cursor-pointer hover:bg-[#a8976a] transition-colors"
+          >
+            Continue Now
+          </button>
+        </div>
 
       </div>
     </div>

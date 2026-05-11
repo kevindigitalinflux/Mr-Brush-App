@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -174,11 +176,8 @@ function IncompleteBadgeIcon() {
 function IdentityCard({ shift }: { shift: MockShiftDetail }) {
   const isComplete = shift.status === 'completed'
   return (
-    <div className="relative bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_8px_30px_0px_rgba(17,30,23,0.04)] overflow-hidden p-[25px] flex flex-col gap-2">
-      {/* Gold gradient top accent */}
+    <div className="sd-identity relative bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_8px_30px_0px_rgba(17,30,23,0.04)] overflow-hidden p-[25px] flex flex-col gap-2">
       <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-[#D7C596] to-[#6B5D36] opacity-80" />
-
-      {/* Category + badge row */}
       <div className="flex items-center justify-between">
         <span className="font-['Lato',sans-serif] font-bold text-[13px] tracking-[1.4px] uppercase text-[#434844]">
           Commercial<br />Cleaning
@@ -193,13 +192,9 @@ function IdentityCard({ shift }: { shift: MockShiftDetail }) {
           {isComplete ? 'Completed' : 'Incomplete'}
         </div>
       </div>
-
-      {/* Site name */}
       <h2 className="font-['Poppins',sans-serif] font-bold text-[48px] leading-[1.1] tracking-[-0.96px] text-[#1A1C19]">
         {shift.siteName}
       </h2>
-
-      {/* Date */}
       <div className="flex items-center gap-2">
         <CalendarIcon />
         <span className="font-['Lato',sans-serif] text-[18px] text-[#434844]">{shift.date}</span>
@@ -211,8 +206,7 @@ function IdentityCard({ shift }: { shift: MockShiftDetail }) {
 function BentoCards({ shift }: { shift: MockShiftDetail }) {
   return (
     <div className="flex flex-col gap-4">
-      {/* Duration card */}
-      <div className="bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_4px_10px_rgba(17,30,23,0.02)] p-[17px] flex items-center gap-4">
+      <div className="sd-bento bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_4px_10px_rgba(17,30,23,0.02)] p-[17px] flex items-center gap-4">
         <div className="w-11 h-11 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0">
           <ClockIcon />
         </div>
@@ -222,9 +216,7 @@ function BentoCards({ shift }: { shift: MockShiftDetail }) {
           <span className="font-['Lato',sans-serif] text-[14px] text-[#737874]">{shift.timeStart} – {shift.timeEnd}</span>
         </div>
       </div>
-
-      {/* Lead Specialist card */}
-      <div className="bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_4px_10px_rgba(17,30,23,0.02)] p-[17px] flex items-center gap-4">
+      <div className="sd-bento bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_4px_10px_rgba(17,30,23,0.02)] p-[17px] flex items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0">
           <PersonIcon />
         </div>
@@ -249,15 +241,11 @@ function ZoneItem({ zone }: { zone: MockZone }) {
     : 'Skipped'
 
   return (
-    <div className="bg-white border border-[#E3E3DD] rounded-[12px] p-[17px] flex gap-4 items-start">
-      {/* Zone icon */}
+    <div className="sd-zone bg-white border border-[#E3E3DD] rounded-[12px] p-[17px] flex gap-4 items-start">
       <div className="w-11 h-11 rounded-[10px] bg-[#F4F4EE] border border-[#E3E3DD] flex items-center justify-center shrink-0 mt-0.5">
         <ZoneIcon />
       </div>
-
-      {/* Content */}
       <div className="flex-1 min-w-0 flex flex-col gap-1">
-        {/* Name + time */}
         <div className="flex items-start justify-between gap-2">
           <h4 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] leading-tight">
             {zone.name}
@@ -266,20 +254,14 @@ function ZoneItem({ zone }: { zone: MockZone }) {
             {zone.time}
           </span>
         </div>
-
-        {/* Description */}
         <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.6]">
           {zone.description}
         </p>
-
-        {/* Note (skipped zones) */}
         {zone.note && (
           <p className="font-['Lato',sans-serif] italic text-[14px] text-[#BA1A1A] leading-[1.5]">
             Note: {zone.note}
           </p>
         )}
-
-        {/* Status row */}
         <div className="flex items-center gap-2 pt-1">
           {statusIcon}
           <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#1A1C19]">
@@ -298,6 +280,16 @@ export function ShiftDetail() {
   const { shiftId } = useParams<{ shiftId: string }>()
   const navigate = useNavigate()
   const shift = MOCK_DETAILS[shiftId ?? '']
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (!shift) return
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.sd-identity', { opacity: 0, y: 16, scale: 0.97, duration: 0.45 })
+      .from('.sd-bento',    { opacity: 0, y: 12, duration: 0.35, stagger: 0.08 }, '-=0.2')
+      .from('.sd-section',  { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+      .from('.sd-zone',     { opacity: 0, y: 14, duration: 0.35, stagger: 0.07 }, '-=0.1')
+  }, { scope: containerRef })
 
   if (!shift) {
     return (
@@ -319,35 +311,28 @@ export function ShiftDetail() {
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto pb-12">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 bg-[rgba(250,250,244,0.9)] backdrop-blur-[6px] border-b border-[#E8E8E3] flex items-center h-16 px-6 gap-4">
+        <button
+          onClick={() => navigate('/cleaner/history')}
+          aria-label="Go back"
+          className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0"
+        >
+          <BackIcon />
+        </button>
+        <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">
+          Shift Details
+        </h1>
+      </div>
 
-        {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-[rgba(250,250,244,0.9)] backdrop-blur-[6px] border-b border-[#E8E8E3] flex items-center h-16 px-6 gap-4">
-          <button
-            onClick={() => navigate('/cleaner/history')}
-            aria-label="Go back"
-            className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0"
-          >
-            <BackIcon />
-          </button>
-          <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">
-            Shift Details
-          </h1>
-        </div>
-
-        {/* Main content */}
+      {/* Main content */}
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-12">
         <div className="flex flex-col gap-6 p-6">
-
-          {/* Identity card */}
           <IdentityCard shift={shift} />
-
-          {/* Bento info cards */}
           <BentoCards shift={shift} />
 
-          {/* Zones section */}
           <div className="flex flex-col gap-5">
-            {/* Section heading */}
-            <div className="flex items-center justify-between border-b border-[#E8E8E3] pb-3">
+            <div className="sd-section flex items-center justify-between border-b border-[#E8E8E3] pb-3">
               <h3 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.32px] text-[#1A1C19]">
                 Cleaned Zones
               </h3>
@@ -355,15 +340,12 @@ export function ShiftDetail() {
                 {doneZones} / {shift.zones.length} Zones
               </span>
             </div>
-
-            {/* Zone items */}
             <div className="flex flex-col gap-4">
               {shift.zones.map((zone) => (
                 <ZoneItem key={zone.id} zone={zone} />
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </div>

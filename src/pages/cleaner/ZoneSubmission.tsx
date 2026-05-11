@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -68,16 +69,17 @@ const ZONE_NAMES: Record<string, string> = {
 // ─── Photo slot ───────────────────────────────────────────────────────────────
 
 interface PhotoSlotProps {
+  index: number
   preview: string | null
   active: boolean
   onAdd: () => void
   onRemove: () => void
 }
 
-function PhotoSlot({ preview, active, onAdd, onRemove }: PhotoSlotProps) {
+function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) {
   if (preview) {
     return (
-      <div className="relative aspect-square rounded-[12px] overflow-hidden">
+      <div data-slot={index} className="relative aspect-square rounded-[12px] overflow-hidden">
         <img src={preview} alt="Zone photo" className="w-full h-full object-cover" />
         <button
           onClick={onRemove}
@@ -93,6 +95,7 @@ function PhotoSlot({ preview, active, onAdd, onRemove }: PhotoSlotProps) {
   if (active) {
     return (
       <button
+        data-slot={index}
         onClick={onAdd}
         className="aspect-square rounded-[12px] border-2 border-dashed border-[#6B5D36] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F1DEAD]/20 transition-colors"
       >
@@ -105,7 +108,7 @@ function PhotoSlot({ preview, active, onAdd, onRemove }: PhotoSlotProps) {
   }
 
   return (
-    <div className="aspect-square rounded-[12px] border-2 border-dashed border-[#C3C8C2] flex items-center justify-center opacity-50">
+    <div data-slot={index} className="aspect-square rounded-[12px] border-2 border-dashed border-[#C3C8C2] flex items-center justify-center opacity-50">
       <ImagePlaceholderIcon />
     </div>
   )
@@ -124,6 +127,34 @@ export function ZoneSubmission() {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevPhotoCount = useRef(0)
+
+  // Page entrance
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.zs-header',  { opacity: 0, y: 12, duration: 0.4 })
+      .from('.zs-info',    { opacity: 0, y: 14, duration: 0.4 }, '-=0.2')
+      .from('.zs-grid',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.zs-note',    { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+      .from('.zs-nophoto', { opacity: 0, duration: 0.3 }, '-=0.1')
+      .from('.zs-submit',  { opacity: 0, y: 20, duration: 0.4 }, '-=0.1')
+  }, { scope: containerRef })
+
+  // Pop-in animation each time a photo is added
+  useEffect(() => {
+    const newCount = photos.length
+    if (newCount > prevPhotoCount.current) {
+      const newSlot = containerRef.current?.querySelector(`[data-slot="${newCount - 1}"]`)
+      if (newSlot) {
+        gsap.fromTo(newSlot,
+          { scale: 0.75, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' }
+        )
+      }
+    }
+    prevPhotoCount.current = newCount
+  }, [photos])
 
   const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
   const canSubmit = photos.length > 0
@@ -158,10 +189,10 @@ export function ZoneSubmission() {
 
   return (
     <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
-      <div className="w-full max-w-[576px] mx-auto pt-8 px-4 pb-36 flex flex-col gap-8">
+      <div ref={containerRef} className="w-full max-w-[576px] mx-auto pt-8 px-4 pb-36 flex flex-col gap-8">
 
         {/* Header */}
-        <div className="flex items-center relative">
+        <div className="zs-header flex items-center relative">
           <button
             onClick={() => navigate(-1)}
             aria-label="Go back"
@@ -175,7 +206,7 @@ export function ZoneSubmission() {
         </div>
 
         {/* Instruction card */}
-        <div className="bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex gap-4 items-start">
+        <div className="zs-info bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex gap-4 items-start">
           <div className="w-9 h-9 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0">
             <InfoIcon />
           </div>
@@ -190,10 +221,11 @@ export function ZoneSubmission() {
         </div>
 
         {/* Photo upload grid */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="zs-grid grid grid-cols-3 gap-4">
           {Array.from({ length: MAX_PHOTOS }).map((_, i) => (
             <PhotoSlot
               key={i}
+              index={i}
               preview={photos[i] ?? null}
               active={i === photos.length && photos.length < MAX_PHOTOS}
               onAdd={handleAddPhoto}
@@ -214,7 +246,7 @@ export function ZoneSubmission() {
         />
 
         {/* Optional note */}
-        <div className="flex flex-col gap-2">
+        <div className="zs-note flex flex-col gap-2">
           <label htmlFor="zoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
             Add a note (optional)
           </label>
@@ -229,7 +261,7 @@ export function ZoneSubmission() {
         </div>
 
         {/* Can't submit photo link */}
-        <div className="flex justify-center">
+        <div className="zs-nophoto flex justify-center">
           <button
             onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
             className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer"
@@ -241,7 +273,7 @@ export function ZoneSubmission() {
       </div>
 
       {/* Fixed bottom submit bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[576px] mx-auto bg-gradient-to-t from-[#FAFAF4] via-[#FAFAF4] to-transparent pt-4 pb-8 px-4 z-50">
+      <div className="zs-submit fixed bottom-0 left-0 right-0 max-w-[576px] mx-auto bg-gradient-to-t from-[#FAFAF4] via-[#FAFAF4] to-transparent pt-4 pb-8 px-4 z-50">
         <button
           onClick={handleSubmit}
           disabled={!canSubmit || submitting}

@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { BottomNav } from '../../components/BottomNav'
 import { useTranslation } from '../../lib/useTranslation'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Mock data — replace with Supabase query once DB is ready ───────────────
 
@@ -67,7 +69,7 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
     <button
       onClick={onPress}
       className={[
-        'w-full bg-white rounded-[12px] p-5 flex flex-col gap-3 text-left cursor-pointer hover:shadow-md transition-shadow',
+        'shift-card w-full bg-white rounded-[12px] p-5 flex flex-col gap-3 text-left cursor-pointer hover:shadow-md transition-shadow',
         isComplete
           ? 'border border-[#C3C8C2]'
           : 'border-2 border-dashed border-[#C3C8C2] opacity-80',
@@ -115,6 +117,15 @@ export function ShiftHistory() {
   const navigate = useNavigate()
   const { user, completedJobs } = useApp()
   const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.history-heading', { opacity: 0, y: 20, duration: 0.45 })
+      .from('.history-subtitle', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+      .from('.history-month', { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+      .from('.shift-card', { opacity: 0, y: 20, duration: 0.4, stagger: 0.07 }, '-=0.15')
+  }, { scope: containerRef })
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -139,23 +150,20 @@ export function ShiftHistory() {
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto pb-[100px]">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-[100px]">
 
-        {/* Large inline heading — matches Notifications screen */}
         <div className="px-6 pt-10 pb-5">
-          <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+          <h1 className="history-heading font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
             {t('shift_history')}
           </h1>
-          <p className="font-['Lato',sans-serif] text-[15px] text-[#434844] mt-2 leading-[1.65]">
+          <p className="history-subtitle font-['Lato',sans-serif] text-[15px] text-[#434844] mt-2 leading-[1.65]">
             {t('shift_history_subtitle')}
           </p>
         </div>
 
-        {/* Content */}
         <div className="flex flex-col gap-6 px-6">
 
-          {/* Month group heading */}
-          <div className="flex items-center justify-between">
+          <div className="history-month flex items-center justify-between">
             <h2 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.8px] text-[#1A1C19]">
               {monthLabel}
             </h2>
@@ -164,10 +172,9 @@ export function ShiftHistory() {
             </div>
           </div>
 
-          {/* Shift cards */}
           <div className="flex flex-col gap-4">
             {allShifts.length === 0 ? (
-              <div className="bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-2">
+              <div className="shift-card bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-2">
                 <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No shifts yet</p>
                 <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center">
                   Completed shifts will appear here.

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 const ZONE_NAMES: Record<string, string> = {
   z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
@@ -55,6 +56,16 @@ export function NoPhotoNote() {
   const { markZoneComplete } = useApp()
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.npn-header',  { opacity: 0, y: -8, duration: 0.35 })
+      .from('.npn-warning', { opacity: 0, y: 14, duration: 0.4 }, '-=0.15')
+      .from('.npn-image',   { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.npn-form',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.npn-submit',  { opacity: 0, y: 16, duration: 0.4 }, '-=0.15')
+  }, { scope: containerRef })
 
   const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
   const charCount = reason.trim().length
@@ -63,7 +74,6 @@ export function NoPhotoNote() {
   async function handleSubmit() {
     if (!isValid) return
     setSubmitting(true)
-    // Simulate webhook POST — replace with real n8n call once ready
     await new Promise((r) => setTimeout(r, 900))
     markZoneComplete(zoneId!)
     navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
@@ -71,10 +81,10 @@ export function NoPhotoNote() {
 
   return (
     <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
-      <div className="w-full max-w-[672px] mx-auto flex flex-col">
+      <div ref={containerRef} className="w-full max-w-[672px] mx-auto flex flex-col">
 
         {/* Header */}
-        <div className="sticky top-0 bg-[#FAFAF4] z-10 flex items-center h-16 px-8">
+        <div className="npn-header sticky top-0 bg-[#FAFAF4] z-10 flex items-center h-16 px-8">
           <button
             onClick={() => navigate(-1)}
             aria-label="Go back"
@@ -91,7 +101,7 @@ export function NoPhotoNote() {
         <div className="flex flex-col gap-8 px-8 py-4">
 
           {/* Warning banner */}
-          <div className="bg-[#F1DEAD] border border-[#D7C596]/30 rounded-[8px] shadow-sm p-[17px] flex items-start gap-2">
+          <div className="npn-warning bg-[#F1DEAD] border border-[#D7C596]/30 rounded-[8px] shadow-sm p-[17px] flex items-start gap-2">
             <div className="shrink-0 mt-0.5">
               <WarningIcon />
             </div>
@@ -101,7 +111,7 @@ export function NoPhotoNote() {
           </div>
 
           {/* Zone image placeholder */}
-          <div className="bg-[#F4F4EE] border border-[#C3C8C2] rounded-[12px] overflow-hidden shadow-sm relative h-[181px] flex items-end">
+          <div className="npn-image bg-[#F4F4EE] border border-[#C3C8C2] rounded-[12px] overflow-hidden shadow-sm relative h-[181px] flex items-end">
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             <div className="relative z-10 flex items-center gap-2 p-4">
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -116,7 +126,7 @@ export function NoPhotoNote() {
           </div>
 
           {/* Reason textarea */}
-          <div className="flex flex-col gap-2 pt-4">
+          <div className="npn-form flex flex-col gap-2 pt-4">
             <label
               htmlFor="noPhotoReason"
               className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]"
@@ -148,7 +158,7 @@ export function NoPhotoNote() {
           </div>
 
           {/* Submit button */}
-          <div className="pb-12 pt-4">
+          <div className="npn-submit pb-12 pt-4">
             <button
               onClick={handleSubmit}
               disabled={!isValid || submitting}

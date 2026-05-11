@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { MOCK_JOBS } from '../../lib/mockJobs'
 import { useTranslation } from '../../lib/useTranslation'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types & styles ──────────────────────────────────────────────────────────
 
@@ -50,16 +52,13 @@ function ZoneCard({ zone, jobId }: { zone: DisplayZone; jobId: string }) {
       tabIndex={zone.status !== 'completed' ? 0 : undefined}
       onKeyDown={(e) => e.key === 'Enter' && handlePress()}
       className={[
-        'relative flex items-stretch overflow-hidden rounded-[12px] shadow-sm bg-white w-full',
+        'zone-card relative flex items-stretch overflow-hidden rounded-[12px] shadow-sm bg-white w-full',
         s.border,
         s.opacity,
         zone.status !== 'completed' ? 'cursor-pointer hover:shadow-md transition-shadow' : '',
       ].join(' ')}
     >
-      {/* Left accent bar */}
       <div className={`absolute left-0 top-0 bottom-0 w-2 ${s.accent}`} />
-
-      {/* Card content */}
       <div className="flex-1 flex flex-col gap-3 pl-8 pr-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <h4 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] leading-tight">
@@ -87,6 +86,8 @@ export function ZoneList() {
   const navigate = useNavigate()
   const { completedZones } = useApp()
   const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const progressFillRef = useRef<HTMLDivElement>(null)
 
   const mockJob = MOCK_JOBS.find((j) => j.id === jobId)
   const zones: DisplayZone[] = (mockJob?.zones ?? []).map((z) => ({
@@ -99,13 +100,38 @@ export function ZoneList() {
   const allDone = totalZones > 0 && doneZones === totalZones
   const progressPct = totalZones > 0 ? (doneZones / totalZones) * 100 : 0
 
+  useGSAP(() => {
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
+
+    // Header slides in from left
+    tl.from('.zonelist-header', { opacity: 0, x: -16, duration: 0.4 })
+
+    // Progress bar track fades in, then fill animates width
+    tl.from('.progress-track', { opacity: 0, duration: 0.3 }, '-=0.1')
+    if (progressFillRef.current) {
+      gsap.fromTo(progressFillRef.current,
+        { width: '0%' },
+        { width: `${progressPct}%`, duration: 0.7, ease: 'power2.out', delay: 0.35 }
+      )
+    }
+
+    tl.from('.progress-labels', { opacity: 0, duration: 0.3 }, '-=0.4')
+
+    // Zone heading + cards stagger in
+    tl.from('.zones-heading', { opacity: 0, y: 10, duration: 0.35 }, '-=0.1')
+    tl.from('.zone-card', { opacity: 0, y: 20, duration: 0.4, stagger: 0.07 }, '-=0.15')
+
+    // CTA button fades in last
+    tl.from('.shift-cta', { opacity: 0, y: 12, duration: 0.35 }, '-=0.1')
+  }, { scope: containerRef, dependencies: [progressPct] })
+
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto pb-24 p-8 flex flex-col gap-8">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-24 p-8 flex flex-col gap-8">
 
         {/* Progress section */}
         <div className="flex flex-col gap-4 pb-4">
-          <div className="flex items-center gap-4">
+          <div className="zonelist-header flex items-center gap-4">
             <button
               onClick={() => navigate('/cleaner/home')}
               aria-label="Go back"
@@ -119,13 +145,14 @@ export function ZoneList() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <div className="w-full h-3 bg-[#C3C8C2] rounded-full overflow-hidden">
+            <div className="progress-track w-full h-3 bg-[#C3C8C2] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#F1DEAD] rounded-full transition-all duration-500"
+                ref={progressFillRef}
+                className="h-full bg-[#F1DEAD] rounded-full"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
-            <div className="flex items-center justify-between">
+            <div className="progress-labels flex items-center justify-between">
               <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] uppercase">
                 {t('overall_progress')}
               </span>
@@ -138,7 +165,7 @@ export function ZoneList() {
 
         {/* Zone list */}
         <div className="flex flex-col gap-4 pt-4">
-          <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] pb-2">
+          <h3 className="zones-heading font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] pb-2">
             {t('your_zones')}
           </h3>
           <div className="flex flex-col gap-4">
@@ -149,7 +176,7 @@ export function ZoneList() {
         </div>
 
         {/* Mark Shift Complete */}
-        <div className="flex flex-col gap-2 pt-8">
+        <div className="shift-cta flex flex-col gap-2 pt-8">
           <button
             onClick={() => allDone && navigate(`/cleaner/job/${jobId}/complete`)}
             disabled={!allDone}

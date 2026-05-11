@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
+import { gsap, useGSAP } from '../../lib/gsap'
 import type { Language } from '../../lib/i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -320,6 +322,15 @@ export function NotificationDetail() {
   const navigate = useNavigate()
   const { language } = useApp()
   const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.nd-sender',  { opacity: 0, y: 14, duration: 0.4 })
+      .from('.nd-subject', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+      .from('.nd-body',    { opacity: 0, y: 12, duration: 0.4  }, '-=0.2')
+      .from('.nd-attach',  { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+  }, { scope: containerRef })
 
   const detail = id ? DETAIL_MAP[id] : undefined
 
@@ -337,7 +348,7 @@ export function NotificationDetail() {
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto pb-12">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-12">
 
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-[#F4F4EE]/95 backdrop-blur-sm border-b border-[#E3E3DD] flex items-center justify-between px-6 h-16">
@@ -355,7 +366,7 @@ export function NotificationDetail() {
         </div>
 
         {/* Sender info */}
-        <div className="px-6 pt-5 pb-4 flex items-center gap-3">
+        <div className="nd-sender px-6 pt-5 pb-4 flex items-center gap-3">
           <SenderAvatar detail={detail} size="lg" />
           <div className="flex-1 min-w-0">
             <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{detail.senderName}</p>
@@ -372,14 +383,14 @@ export function NotificationDetail() {
         <div className="w-full h-px bg-[#E3E3DD] mx-6" style={{ width: 'calc(100% - 48px)' }} />
 
         {/* Subject */}
-        <div className="px-6 pt-5 pb-4">
+        <div className="nd-subject px-6 pt-5 pb-4">
           <h1 className="font-['Poppins',sans-serif] font-bold text-[26px] text-[#1A1C19] leading-[1.25] tracking-[-0.3px]">
             {subject}
           </h1>
         </div>
 
         {/* Message body */}
-        <div className="px-6">
+        <div className="nd-body px-6">
           <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-5 flex flex-col gap-4">
             {body.map((para, i) => (
               <p key={i} className="font-['Lato',sans-serif] text-[15px] text-[#1A1C19] leading-[1.7]">
@@ -404,7 +415,7 @@ export function NotificationDetail() {
 
         {/* Attachments */}
         {detail.attachments && detail.attachments.length > 0 && (
-          <div className="px-6 pt-6">
+          <div className="nd-attach px-6 pt-6">
             <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.5px] uppercase text-[#6B5D36] mb-3">
               {t('attached_docs')}
             </p>

@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import type { Language } from '../../lib/i18n'
 import logoSrc from '../../assets/logo/logo.png'
+import { gsap, useGSAP } from '../../lib/gsap'
 
-// Flag image URLs from Figma — swap for permanent assets before production
 const FLAG_URLS: Record<Language, string> = {
   en: 'https://www.figma.com/api/mcp/asset/abac7baa-306e-4933-9bfa-fda48c5c11df',
   es: 'https://www.figma.com/api/mcp/asset/bc271660-c61d-4673-a90c-2d0ae2f5a30d',
@@ -29,6 +29,16 @@ export function LanguageSelect() {
   const { setLanguage } = useApp()
   const navigate = useNavigate()
   const [selected, setSelected] = useState<Language>('en')
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.ls-logo',     { scale: 0.7, opacity: 0, duration: 0.5, ease: 'back.out(1.5)' })
+      .from('.ls-title',    { opacity: 0, y: 14, duration: 0.4 }, '-=0.2')
+      .from('.ls-subtitle', { opacity: 0, y: 8, duration: 0.35 }, '-=0.2')
+      .from('.ls-lang',     { opacity: 0, y: 16, duration: 0.4, stagger: 0.08 }, '-=0.15')
+      .from('.ls-cta',      { opacity: 0, y: 12, duration: 0.35 }, '-=0.1')
+  }, { scope: containerRef })
 
   function handleContinue() {
     setLanguage(selected)
@@ -36,17 +46,17 @@ export function LanguageSelect() {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto" style={{ animation: 'page-enter 450ms ease-out forwards' }}>
-      <div className="flex flex-col justify-between w-full max-w-[448px] mx-auto px-6 py-16 min-h-full">
+    <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto">
+      <div ref={containerRef} className="flex flex-col justify-between w-full max-w-[448px] mx-auto px-6 py-16 min-h-full">
 
         <div className="flex flex-col">
           {/* Header */}
           <div className="flex flex-col items-center pb-16">
-            <img src={logoSrc} alt="Mr Brush & Co." className="w-28 h-28 object-contain mb-8" />
-            <h1 className="font-['Poppins',sans-serif] text-[30px] leading-9 text-[#1B1C19] text-center mb-4">
+            <img src={logoSrc} alt="Mr Brush & Co." className="ls-logo w-28 h-28 object-contain mb-8" />
+            <h1 className="ls-title font-['Poppins',sans-serif] text-[30px] leading-9 text-[#1B1C19] text-center mb-4">
               Choose your<br />language
             </h1>
-            <p className="font-['Lato',sans-serif] text-lg text-[#4B463B] opacity-70 text-center">
+            <p className="ls-subtitle font-['Lato',sans-serif] text-lg text-[#4B463B] opacity-70 text-center">
               Elige tu idioma / Escolha o seu idioma
             </p>
           </div>
@@ -61,7 +71,7 @@ export function LanguageSelect() {
                   onClick={() => setSelected(lang.code)}
                   aria-pressed={isSelected}
                   className={[
-                    'flex items-center justify-between w-full min-h-[84px] px-3 py-6 rounded-[12px] border-2 transition-colors cursor-pointer',
+                    'ls-lang flex items-center justify-between w-full min-h-[84px] px-3 py-6 rounded-[12px] border-2 transition-colors cursor-pointer',
                     isSelected
                       ? 'bg-[#B8A77A] border-[#B8A77A] shadow-md'
                       : 'bg-white border-[#CDC6B7]',
@@ -88,7 +98,7 @@ export function LanguageSelect() {
         </div>
 
         {/* Continue */}
-        <div className="pt-16">
+        <div className="ls-cta pt-16">
           <button
             onClick={handleContinue}
             className="w-full h-16 bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] text-lg text-[#F8F8F2] tracking-[0.9px] uppercase cursor-pointer hover:bg-[#a8976a] transition-colors"

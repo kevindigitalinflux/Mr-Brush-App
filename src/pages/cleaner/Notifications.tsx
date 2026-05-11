@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
+import { gsap, useGSAP } from '../../lib/gsap'
 import { BottomNav } from '../../components/BottomNav'
 import type { Language } from '../../lib/i18n'
 
@@ -121,7 +123,7 @@ function NotifCard({ notif, onPress }: { notif: MockNotif; onPress: () => void }
   return (
     <button
       onClick={onPress}
-      className={`${CARD_CLASS[notif.variant]} w-full rounded-[12px] p-4 flex flex-col gap-2 text-left cursor-pointer hover:shadow-sm transition-shadow`}
+      className={`notif-card ${CARD_CLASS[notif.variant]} w-full rounded-[12px] p-4 flex flex-col gap-2 text-left cursor-pointer hover:shadow-sm transition-shadow`}
     >
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -177,16 +179,25 @@ function EndOfFeed() {
 export function Notifications() {
   const navigate = useNavigate()
   const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.notif-heading', { opacity: 0, y: 20, duration: 0.45 })
+      .from('.notif-subtitle', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+      .from('.notif-card', { opacity: 0, y: 20, duration: 0.4, stagger: 0.07 }, '-=0.15')
+      .from('.notif-eof', { opacity: 0, duration: 0.4 }, '-=0.1')
+  }, { scope: containerRef })
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto pb-[100px]">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-[100px]">
 
         <div className="px-6 pt-10 pb-5">
-          <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+          <h1 className="notif-heading font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
             {t('notifications_title')}
           </h1>
-          <p className="font-['Lato',sans-serif] text-[15px] text-[#434844] mt-2 leading-[1.65]">
+          <p className="notif-subtitle font-['Lato',sans-serif] text-[15px] text-[#434844] mt-2 leading-[1.65]">
             {t('notifications_subtitle')}
           </p>
         </div>
@@ -197,7 +208,9 @@ export function Notifications() {
           ))}
         </div>
 
-        <EndOfFeed />
+        <div className="notif-eof">
+          <EndOfFeed />
+        </div>
       </div>
 
       <BottomNav active="notifications" />
