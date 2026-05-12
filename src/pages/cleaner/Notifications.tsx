@@ -189,12 +189,12 @@ function DesktopNotifications() {
   }, { scope: listRef })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="relative h-screen overflow-hidden bg-[#F4F4EE]">
       <DesktopSidebar active="notifications" />
 
-      {/* Left pane: list */}
-      <div ref={listRef} className="ml-60 w-[360px] shrink-0 border-r border-[#D5D5CF] overflow-y-auto flex flex-col">
-        <div className="px-5 pt-7 pb-4 border-b border-[#E3E3DD]">
+      {/* Left pane: list — fixed so it never shifts when switching messages */}
+      <div ref={listRef} className="fixed left-60 top-0 h-screen w-[360px] border-r border-[#D5D5CF] flex flex-col z-20">
+        <div className="sticky top-0 z-10 bg-[#F4F4EE] px-5 pt-7 pb-4 border-b border-[#E3E3DD]">
           <h1 className="dnotif-heading font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] tracking-[-0.4px]">
             {t('notifications_title')}
           </h1>
@@ -202,21 +202,23 @@ function DesktopNotifications() {
             {t('notifications_subtitle')}
           </p>
         </div>
-        <div className="flex flex-col gap-2 p-4 flex-1">
-          {MOCK_NOTIFS.map((n) => (
-            <NotifCard
-              key={n.id}
-              notif={n}
-              onPress={() => setSelectedId(n.id)}
-              selected={selectedId === n.id}
-            />
-          ))}
+        <div className="overflow-y-auto flex-1 flex flex-col">
+          <div className="flex flex-col gap-2 p-4">
+            {MOCK_NOTIFS.map((n) => (
+              <NotifCard
+                key={n.id}
+                notif={n}
+                onPress={() => setSelectedId(n.id)}
+                selected={selectedId === n.id}
+              />
+            ))}
+          </div>
+          <EndOfFeed />
         </div>
-        <EndOfFeed />
       </div>
 
-      {/* Right pane: detail */}
-      <div className="flex-1 overflow-y-auto bg-[#F4F4EE]">
+      {/* Right pane: detail — absolutely positioned in remaining space */}
+      <div className="absolute left-[600px] top-0 right-0 bottom-0 overflow-y-auto bg-[#F4F4EE]">
         {selectedDetail ? (
           <div className="max-w-2xl">
             <div className="sticky top-0 z-10 bg-[#F4F4EE]/95 backdrop-blur-sm border-b border-[#E3E3DD] flex items-center justify-between px-6 h-14">

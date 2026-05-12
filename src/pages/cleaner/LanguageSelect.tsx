@@ -47,58 +47,56 @@ export function LanguageSelect() {
 
   return (
     <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto">
-      <div ref={containerRef} className="flex flex-col justify-between w-full max-w-[448px] mx-auto px-6 py-16 min-h-full">
+      <div ref={containerRef} className="flex flex-col w-full max-w-[448px] mx-auto px-6 pt-10 pb-8">
 
-        <div className="flex flex-col">
-          {/* Header */}
-          <div className="flex flex-col items-center pb-16">
-            <img src={logoSrc} alt="Mr Brush & Co." className="ls-logo w-40 h-40 object-contain mb-8" />
-            <h1 className="ls-title font-['Poppins',sans-serif] text-[30px] leading-9 text-[#1B1C19] text-center mb-4">
-              Choose your<br />language
-            </h1>
-            <p className="ls-subtitle font-['Lato',sans-serif] text-lg text-[#4B463B] opacity-70 text-center">
-              Elige tu idioma / Escolha o seu idioma
-            </p>
-          </div>
+        {/* Header */}
+        <div className="flex flex-col items-center pb-8">
+          <img src={logoSrc} alt="Mr Brush & Co." className="ls-logo w-24 h-24 object-contain mb-5" />
+          <h1 className="ls-title font-['Poppins',sans-serif] text-[30px] leading-9 text-[#1B1C19] text-center mb-3">
+            Choose your<br />language
+          </h1>
+          <p className="ls-subtitle font-['Lato',sans-serif] text-lg text-[#4B463B] opacity-70 text-center">
+            Elige tu idioma / Escolha o seu idioma
+          </p>
+        </div>
 
-          {/* Language options */}
-          <div className="flex flex-col gap-4">
-            {LANGUAGES.map((lang) => {
-              const isSelected = selected === lang.code
-              return (
-                <button
-                  key={lang.code}
-                  onClick={() => setSelected(lang.code)}
-                  aria-pressed={isSelected}
-                  className={[
-                    'ls-lang flex items-center justify-between w-full min-h-[84px] px-3 py-6 rounded-[12px] border-2 transition-colors cursor-pointer',
-                    isSelected
-                      ? 'bg-[#B8A77A] border-[#B8A77A] shadow-md'
-                      : 'bg-white border-[#CDC6B7]',
-                  ].join(' ')}
-                >
-                  <div className="flex items-center gap-8 pl-2">
-                    <img
-                      src={FLAG_URLS[lang.code]}
-                      alt={`${lang.label} flag`}
-                      className="w-8 h-8 rounded-sm shadow-sm object-cover"
-                    />
-                    <span className={[
-                      "font-['Poppins',sans-serif] text-xl",
-                      isSelected ? 'text-[#F8F8F2]' : 'text-[#1B1C19]',
-                    ].join(' ')}>
-                      {lang.label}
-                    </span>
-                  </div>
-                  {isSelected && <CheckIcon />}
-                </button>
-              )
-            })}
-          </div>
+        {/* Language options */}
+        <div className="flex flex-col gap-4">
+          {LANGUAGES.map((lang) => {
+            const isSelected = selected === lang.code
+            return (
+              <button
+                key={lang.code}
+                onClick={() => setSelected(lang.code)}
+                aria-pressed={isSelected}
+                className={[
+                  'ls-lang flex items-center justify-between w-full min-h-[72px] px-3 py-4 rounded-[12px] border-2 transition-colors cursor-pointer',
+                  isSelected
+                    ? 'bg-[#B8A77A] border-[#B8A77A] shadow-md'
+                    : 'bg-white border-[#CDC6B7]',
+                ].join(' ')}
+              >
+                <div className="flex items-center gap-8 pl-2">
+                  <img
+                    src={FLAG_URLS[lang.code]}
+                    alt={`${lang.label} flag`}
+                    className="w-8 h-8 rounded-sm shadow-sm object-cover"
+                  />
+                  <span className={[
+                    "font-['Poppins',sans-serif] text-xl",
+                    isSelected ? 'text-[#F8F8F2]' : 'text-[#1B1C19]',
+                  ].join(' ')}>
+                    {lang.label}
+                  </span>
+                </div>
+                {isSelected && <CheckIcon />}
+              </button>
+            )
+          })}
         </div>
 
         {/* Continue */}
-        <div className="ls-cta pt-16">
+        <div className="ls-cta pt-6">
           <button
             onClick={handleContinue}
             className="w-full h-16 bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] text-lg text-[#F8F8F2] tracking-[0.9px] uppercase cursor-pointer hover:bg-[#a8976a] transition-colors"
