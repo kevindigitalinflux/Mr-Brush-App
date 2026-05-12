@@ -87,6 +87,8 @@ export const strings: Record<Language, Record<string, string>> = {
     no_photo_label: 'No Photo',
 
     // Shift history
+    not_started: 'Not Started',
+    zones_completed_label: 'zones completed',
     no_shifts_yet: 'No shifts yet',
     no_shifts_body: 'Completed shifts will appear here.',
     back_to_history: 'Back to history',
@@ -199,6 +201,8 @@ export const strings: Record<Language, Record<string, string>> = {
     no_photo_label: 'Sin foto',
 
     // Shift history
+    not_started: 'No iniciado',
+    zones_completed_label: 'zonas completadas',
     no_shifts_yet: 'Sin turnos todavía',
     no_shifts_body: 'Los turnos completados aparecerán aquí.',
     back_to_history: 'Volver al historial',
@@ -311,6 +315,8 @@ export const strings: Record<Language, Record<string, string>> = {
     no_photo_label: 'Sem foto',
 
     // Shift history
+    not_started: 'Não iniciado',
+    zones_completed_label: 'zonas concluídas',
     no_shifts_yet: 'Sem turnos ainda',
     no_shifts_body: 'Os turnos concluídos aparecerão aqui.',
     back_to_history: 'Voltar ao histórico',

@@ -143,12 +143,17 @@ function DesktopLogin() {
   return (
     <div ref={containerRef} className="flex h-screen overflow-hidden">
       {/* Left: brand panel */}
-      <div className="dl-panel hidden lg:flex w-[46%] xl:w-[42%] bg-[#111E17] flex-col justify-between p-12 xl:p-16 relative overflow-hidden shrink-0">
-        <div className="flex items-center gap-3">
+      <div
+        className="dl-panel hidden lg:flex w-1/2 flex-col justify-between p-12 xl:p-16 relative overflow-hidden shrink-0"
+        style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1350&q=60)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
+        {/* Dark overlay — keeps image faint, maintains brand colour */}
+        <div className="absolute inset-0 bg-[#111E17]/88" />
+        <div className="relative z-10 flex items-center gap-3">
           <img src={logoSrc} alt="Mr Brush & Co." className="w-9 h-9 object-contain" />
           <span className="font-['Poppins',sans-serif] font-semibold text-[#D7C596] text-[15px]">Mr Brush & Co.</span>
         </div>
-        <div>
+        <div className="relative z-10">
           <h2 className="font-['Poppins',sans-serif] font-bold text-[52px] xl:text-[60px] text-white leading-[1.08] tracking-[-1.5px]">
             Precision in<br />Every Detail.
           </h2>

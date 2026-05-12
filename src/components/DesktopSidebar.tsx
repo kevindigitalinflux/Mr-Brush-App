@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { Language } from '../lib/i18n'
@@ -8,7 +8,7 @@ type NavKey = 'jobs' | 'history' | 'notifications'
 
 interface Props { active: NavKey }
 
-const NAV: { key: NavKey; label: string; path: string; icon: () => JSX.Element }[] = [
+const NAV: { key: NavKey; label: string; path: string; icon: () => React.ReactElement }[] = [
   { key: 'jobs',          label: 'Jobs',          path: '/cleaner/home',          icon: BriefcaseIcon },
   { key: 'history',       label: 'History',       path: '/cleaner/history',       icon: ClockIcon },
   { key: 'notifications', label: 'Notifications', path: '/cleaner/notifications', icon: BellIcon },

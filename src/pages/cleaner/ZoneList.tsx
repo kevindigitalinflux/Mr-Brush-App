@@ -19,10 +19,10 @@ interface DisplayZone {
 }
 
 const ZONE_STYLES: Record<ZoneStatus, {
-  accent: string; badge: string; badgeText: string; border: string; opacity: string; label: string
+  accent: string; badge: string; badgeText: string; border: string; opacity: string
 }> = {
-  completed:   { accent: 'bg-black',     badge: 'bg-black',     badgeText: 'text-white',     border: 'border border-[#C3C8C2]', opacity: '',          label: 'Completed'   },
-  not_started: { accent: 'bg-[#C3C8C2]', badge: 'bg-[#E3E3DD]', badgeText: 'text-[#434844]', border: 'border border-[#C3C8C2]', opacity: 'opacity-75', label: 'Not Started' },
+  completed:   { accent: 'bg-black',     badge: 'bg-black',     badgeText: 'text-white',     border: 'border border-[#C3C8C2]', opacity: ''           },
+  not_started: { accent: 'bg-[#C3C8C2]', badge: 'bg-[#E3E3DD]', badgeText: 'text-[#434844]', border: 'border border-[#C3C8C2]', opacity: 'opacity-75' },
 }
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -62,7 +62,9 @@ function useZoneListData() {
 
 function ZoneCard({ zone, jobId }: { zone: DisplayZone; jobId: string }) {
   const navigate = useNavigate()
+  const t = useTranslation()
   const s = ZONE_STYLES[zone.status]
+  const statusLabel = zone.status === 'completed' ? t('completed') : t('not_started')
 
   function handlePress() {
     if (zone.status !== 'completed') navigate(`/cleaner/job/${jobId}/zone/${zone.id}`)
@@ -89,7 +91,7 @@ function ZoneCard({ zone, jobId }: { zone: DisplayZone; jobId: string }) {
           {zone.description}
         </p>
         <span className={`${s.badge} ${s.badgeText} font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] px-3 h-8 inline-flex items-center rounded-full self-start`}>
-          {s.label}
+          {statusLabel}
         </span>
       </div>
     </div>
@@ -154,7 +156,7 @@ function DesktopZoneList() {
                   {t('overall_progress')}
                 </span>
                 <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">
-                  {doneZones} of {totalZones} zones completed
+                  {doneZones} {t('of_count')} {totalZones} {t('zones_completed_label')}
                 </span>
               </div>
             </div>

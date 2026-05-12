@@ -150,7 +150,7 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
 
 function DesktopZoneSubmission() {
   const state = useZoneSubmissionState()
-  const { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
+  const { jobId, zoneId, navigate, photos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
@@ -256,7 +256,7 @@ function DesktopZoneSubmission() {
 // ─── Mobile layout ────────────────────────────────────────────────────────────
 
 function MobileZoneSubmission() {
-  const { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
+  const { jobId, zoneId, navigate, photos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
