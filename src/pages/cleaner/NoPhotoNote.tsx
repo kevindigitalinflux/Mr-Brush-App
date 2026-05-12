@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -78,26 +79,27 @@ function useNoPhotoState() {
 
 function NoPhotoForm({ state, idSuffix }: { state: ReturnType<typeof useNoPhotoState>; idSuffix: string }) {
   const { reason, setReason, submitting, charCount, isValid, handleSubmit } = state
+  const t = useTranslation()
   return (
     <>
       <div className="flex flex-col gap-2 pt-4">
         <label htmlFor={`noPhotoReason-${idSuffix}`}
           className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">
-          Reason for no photo
+          {t('reason_for_no_photo')}
         </label>
         <textarea
           id={`noPhotoReason-${idSuffix}`}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={5}
-          placeholder="Explain why you were unable to submit a photo..."
+          placeholder={t('explain_no_photo')}
           className="w-full border border-[#737874] rounded-[6px] px-4 py-4 font-['Lato',sans-serif] text-base text-[#434844] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] shadow-sm resize-none transition-colors"
         />
         <div className="flex items-center justify-between pl-1 pt-1">
           <div className="flex items-center gap-1 opacity-80">
             <InfoHintIcon />
             <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">
-              Minimum {MIN_CHARS} characters
+              {t('no_photo_reason')} ({MIN_CHARS})
             </span>
           </div>
           <span className={['font-["Lato",sans-serif] text-[14px] font-bold', isValid ? 'text-[#2F4A3D]' : 'text-[#9E9E9E]'].join(' ')}>
@@ -114,7 +116,7 @@ function NoPhotoForm({ state, idSuffix }: { state: ReturnType<typeof useNoPhotoS
           isValid && !submitting ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]' : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
         ].join(' ')}
       >
-        {submitting ? 'Submitting…' : 'Submit Without Photo'}
+        {submitting ? t('submitting') : t('submit_without_photo')}
         {!submitting && <SendIcon />}
       </button>
     </>
@@ -126,6 +128,7 @@ function NoPhotoForm({ state, idSuffix }: { state: ReturnType<typeof useNoPhotoS
 function DesktopNoPhotoNote() {
   const state = useNoPhotoState()
   const { navigate, zoneName } = state
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -148,14 +151,14 @@ function DesktopNoPhotoNote() {
               <BackIcon />
             </button>
             <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.5px] text-[#1A1C19]">
-              {zoneName} — No Photo
+              {zoneName} — {t('no_photo_label')}
             </h1>
           </div>
 
           <div className="dnpn-warning bg-[#F1DEAD] border border-[#D7C596]/30 rounded-[8px] shadow-sm p-[17px] flex items-start gap-2">
             <div className="shrink-0 mt-0.5"><WarningIcon /></div>
             <p className="font-['Lato',sans-serif] text-base text-[#6F613A] leading-[1.6]">
-              Missing photos can affect quality assurance records. Please provide a detailed reason below to proceed with the report.
+              {t('no_photo_warning_body')}
             </p>
           </div>
 
@@ -168,7 +171,7 @@ function DesktopNoPhotoNote() {
                 <path d="m21 15-5-5L5 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
               <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-white">
-                Visual documentation required
+                {t('visual_doc_required')}
               </span>
             </div>
           </div>
@@ -188,6 +191,7 @@ function DesktopNoPhotoNote() {
 function MobileNoPhotoNote() {
   const state = useNoPhotoState()
   const { navigate, zoneName } = state
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -209,7 +213,7 @@ function MobileNoPhotoNote() {
             <BackIcon />
           </button>
           <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19] whitespace-nowrap">
-            {zoneName} — No Photo
+            {zoneName} — {t('no_photo_label')}
           </h1>
         </div>
 
@@ -217,7 +221,7 @@ function MobileNoPhotoNote() {
           <div className="npn-warning bg-[#F1DEAD] border border-[#D7C596]/30 rounded-[8px] shadow-sm p-[17px] flex items-start gap-2">
             <div className="shrink-0 mt-0.5"><WarningIcon /></div>
             <p className="font-['Lato',sans-serif] text-base text-[#6F613A] leading-[1.6]">
-              Missing photos can affect quality assurance records. Please provide a detailed reason below to proceed with the report.
+              {t('no_photo_warning_body')}
             </p>
           </div>
 
@@ -230,7 +234,7 @@ function MobileNoPhotoNote() {
                 <path d="m21 15-5-5L5 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
               <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-white">
-                Visual documentation required
+                {t('visual_doc_required')}
               </span>
             </div>
           </div>

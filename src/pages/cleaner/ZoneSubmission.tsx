@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -117,6 +118,7 @@ interface PhotoSlotProps {
 }
 
 function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) {
+  const t = useTranslation()
   if (preview) {
     return (
       <div data-slot={index} className="relative aspect-square rounded-[12px] overflow-hidden">
@@ -133,7 +135,7 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
       <button data-slot={index} onClick={onAdd}
         className="aspect-square rounded-[12px] border-2 border-dashed border-[#6B5D36] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F1DEAD]/20 transition-colors">
         <CameraIcon />
-        <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#6B5D36]">Add photo</span>
+        <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#6B5D36]">{t('add_photo')}</span>
       </button>
     )
   }
@@ -149,6 +151,7 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
 function DesktopZoneSubmission() {
   const state = useZoneSubmissionState()
   const { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
 
@@ -194,10 +197,10 @@ function DesktopZoneSubmission() {
             </div>
             <div className="flex flex-col gap-1">
               <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">
-                Take a photo after cleaning this zone.
+                {t('take_photo_instruction')}
               </p>
               <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">
-                Minimum 1 photo required. Ensure the entire area is visible and well-lit.
+                {t('photo_requirements')}
               </p>
             </div>
           </div>
@@ -220,10 +223,10 @@ function DesktopZoneSubmission() {
           {/* Note */}
           <div className="dzs-note flex flex-col gap-2">
             <label htmlFor="dZoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
-              Add a note (optional)
+              {t('add_note')}
             </label>
             <textarea id="dZoneNote" value={note} onChange={(e) => setNote(e.target.value)}
-              rows={3} placeholder="Any notes about this zone..."
+              rows={3} placeholder={t('note_placeholder')}
               className="w-full border border-[#C3C8C2] rounded-[6px] px-4 py-3 font-['Lato',sans-serif] text-base text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] resize-none transition-colors"
             />
           </div>
@@ -232,14 +235,14 @@ function DesktopZoneSubmission() {
           <div className="dzs-footer flex items-center justify-between gap-4">
             <button onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
               className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer">
-              I can't submit a photo
+              {t('cant_submit_photo')}
             </button>
             <button onClick={handleSubmit} disabled={!canSubmit || submitting}
               className={[
                 'h-[56px] px-8 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center gap-2 shadow-lg transition-colors',
                 canSubmit && !submitting ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]' : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
               ].join(' ')}>
-              {submitting ? 'Submitting…' : 'Submit Zone'}
+              {submitting ? t('submitting') : t('submit_zone')}
               {!submitting && <SendIcon />}
             </button>
           </div>
@@ -254,6 +257,7 @@ function DesktopZoneSubmission() {
 
 function MobileZoneSubmission() {
   const { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
 
@@ -296,10 +300,10 @@ function MobileZoneSubmission() {
           </div>
           <div className="flex flex-col gap-1">
             <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">
-              Take a photo after cleaning this zone.
+              {t('take_photo_instruction')}
             </p>
             <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">
-              Minimum 1 photo required. Ensure the entire area is visible and well-lit.
+              {t('photo_requirements')}
             </p>
           </div>
         </div>
@@ -320,10 +324,10 @@ function MobileZoneSubmission() {
 
         <div className="zs-note flex flex-col gap-2">
           <label htmlFor="zoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
-            Add a note (optional)
+            {t('add_note')}
           </label>
           <textarea id="zoneNote" value={note} onChange={(e) => setNote(e.target.value)}
-            rows={3} placeholder="Any notes about this zone..."
+            rows={3} placeholder={t('note_placeholder')}
             className="w-full border border-[#C3C8C2] rounded-[6px] px-4 py-3 font-['Lato',sans-serif] text-base text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] resize-none transition-colors"
           />
         </div>
@@ -331,7 +335,7 @@ function MobileZoneSubmission() {
         <div className="zs-nophoto flex justify-center">
           <button onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
             className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer">
-            I can't submit a photo
+            {t('cant_submit_photo')}
           </button>
         </div>
 
@@ -343,7 +347,7 @@ function MobileZoneSubmission() {
             'w-full py-4 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center justify-center gap-2 shadow-lg transition-colors',
             canSubmit && !submitting ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]' : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
           ].join(' ')}>
-          {submitting ? 'Submitting…' : 'Submit Zone'}
+          {submitting ? t('submitting') : t('submit_zone')}
           {!submitting && <SendIcon />}
         </button>
       </div>

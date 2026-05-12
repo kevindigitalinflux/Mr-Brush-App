@@ -6,6 +6,9 @@ import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { useTranslation } from '../../lib/useTranslation'
 import { gsap, useGSAP } from '../../lib/gsap'
+import type { Language } from '../../lib/i18n'
+
+const DATE_LOCALE: Record<Language, string> = { en: 'en-GB', es: 'es-ES', pt: 'pt-BR' }
 
 // ─── Types & mock data ────────────────────────────────────────────────────────
 
@@ -53,7 +56,7 @@ function ChevronRightIcon() {
 // ─── Shared data hook ─────────────────────────────────────────────────────────
 
 function useShiftHistoryData() {
-  const { user, completedJobs } = useApp()
+  const { user, completedJobs, language } = useApp()
   const navigate = useNavigate()
   const t = useTranslation()
 
@@ -61,7 +64,7 @@ function useShiftHistoryData() {
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
     : 'CL'
 
-  const monthLabel = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const monthLabel = new Date().toLocaleDateString(DATE_LOCALE[language], { month: 'long', year: 'numeric' })
 
   const contextShifts: MockShift[] = completedJobs.map((j) => ({
     id: j.id, date: j.date, dayLabel: j.dayLabel, siteName: j.siteName, clientName: j.clientName,
@@ -78,6 +81,7 @@ function useShiftHistoryData() {
 
 function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }) {
   const isComplete = shift.status === 'completed'
+  const t = useTranslation()
   return (
     <button
       onClick={onPress}
@@ -100,7 +104,7 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
           'shrink-0 font-["Lato",sans-serif] font-bold text-[13px] tracking-[0.65px] px-3 h-7 flex items-center rounded-full',
           isComplete ? 'bg-[#D7E6DB] text-[#2F4A3D]' : 'bg-[#E3E3DD] text-[#737874]',
         ].join(' ')}>
-          {isComplete ? 'Completed' : 'Incomplete'}
+          {isComplete ? t('completed') : t('incomplete')}
         </span>
       </div>
       <div className="border-t border-[#E3E3DD] pt-3 flex items-center justify-between">
@@ -109,7 +113,7 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
           <span className="font-['Lato',sans-serif] text-sm text-[#737874]">{shift.timeStart} – {shift.timeEnd}</span>
         </div>
         <span className="font-['Lato',sans-serif] font-bold text-sm text-[#434844] bg-[#F4F4EE] border border-[#C3C8C2] rounded-full px-3 py-1">
-          {shift.zonesDone}/{shift.zonesTotal} Zones
+          {shift.zonesDone}/{shift.zonesTotal} {t('zones')}
         </span>
       </div>
     </button>
@@ -120,6 +124,7 @@ function ShiftCard({ shift, onPress }: { shift: MockShift; onPress: () => void }
 
 function ShiftRow({ shift, onPress }: { shift: MockShift; onPress: () => void }) {
   const isComplete = shift.status === 'completed'
+  const t = useTranslation()
   const dateNum = shift.date.split(' ')[0]
   const dayAbbr = shift.dayLabel.slice(0, 3).toUpperCase()
 
@@ -135,7 +140,7 @@ function ShiftRow({ shift, onPress }: { shift: MockShift; onPress: () => void })
       <div className="flex-1 px-5 py-4 flex flex-col justify-center gap-0.5">
         <h4 className="font-['Poppins',sans-serif] font-semibold text-lg text-[#1A1C19] leading-tight">{shift.siteName}</h4>
         <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
-          {shift.timeStart} – {shift.timeEnd} · {shift.zonesDone} of {shift.zonesTotal} zones
+          {shift.timeStart} – {shift.timeEnd} · {shift.zonesDone} {t('of_count')} {shift.zonesTotal} {t('zones').toLowerCase()}
         </p>
       </div>
       <div className="flex items-center gap-3 pr-5">
@@ -143,7 +148,7 @@ function ShiftRow({ shift, onPress }: { shift: MockShift; onPress: () => void })
           'font-["Lato",sans-serif] font-bold text-[13px] tracking-[0.65px] px-3 h-7 flex items-center rounded-full',
           isComplete ? 'bg-[#D7E6DB] text-[#2F4A3D]' : 'bg-[#E3E3DD] text-[#737874]',
         ].join(' ')}>
-          {isComplete ? 'Completed' : 'Incomplete'}
+          {isComplete ? t('completed') : t('incomplete')}
         </span>
         <ChevronRightIcon />
       </div>
@@ -190,13 +195,13 @@ function DesktopShiftHistory() {
                 {monthLabel}
               </h2>
               <span className="ml-auto font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#B8A77A]">
-                {allShifts.filter(s => s.status === 'completed').length} completed
+                {allShifts.filter(s => s.status === 'completed').length} {t('completed').toLowerCase()}
               </span>
             </div>
             {allShifts.length === 0 ? (
               <div className="bg-white border border-[#C3C8C2] rounded-[12px] p-12 flex flex-col items-center gap-2">
-                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No shifts yet</p>
-                <p className="font-['Lato',sans-serif] text-base text-[#737874]">Completed shifts will appear here.</p>
+                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">{t('no_shifts_yet')}</p>
+                <p className="font-['Lato',sans-serif] text-base text-[#737874]">{t('no_shifts_body')}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -253,8 +258,8 @@ function MobileShiftHistory() {
           <div className="flex flex-col gap-4">
             {allShifts.length === 0 ? (
               <div className="shift-card bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-2">
-                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No shifts yet</p>
-                <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center">Completed shifts will appear here.</p>
+                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">{t('no_shifts_yet')}</p>
+                <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center">{t('no_shifts_body')}</p>
               </div>
             ) : (
               allShifts.map((shift) => (

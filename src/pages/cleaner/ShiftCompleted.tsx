@@ -4,6 +4,10 @@ import { useApp } from '../../context/AppContext'
 import { MOCK_JOBS } from '../../lib/mockJobs'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
+import { useTranslation } from '../../lib/useTranslation'
+import type { Language } from '../../lib/i18n'
+
+const DATE_LOCALE: Record<Language, string> = { en: 'en-GB', es: 'es-ES', pt: 'pt-BR' }
 
 function BigCheckIcon() {
   return (
@@ -28,7 +32,8 @@ export function ShiftCompleted() {
   const isDesktop = useIsDesktop()
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
-  const { setUser, markJobComplete, completedZones } = useApp()
+  const t = useTranslation()
+  const { setUser, markJobComplete, completedZones, language } = useApp()
   const calledRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -49,8 +54,8 @@ export function ShiftCompleted() {
       timeEnd: mockJob.timeEnd,
       zonesTotal,
       zonesDone,
-      dayLabel: now.toLocaleDateString('en-GB', { weekday: 'long' }),
-      date: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      dayLabel: now.toLocaleDateString(DATE_LOCALE[language], { weekday: 'long' }),
+      date: now.toLocaleDateString(DATE_LOCALE[language], { day: 'numeric', month: 'short' }),
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -72,7 +77,7 @@ export function ShiftCompleted() {
   const siteName = mockJob?.siteName ?? 'Site'
   const timeStart = mockJob?.timeStart ?? '—'
   const timeEnd = mockJob?.timeEnd ?? '—'
-  const completedAt = new Date().toLocaleDateString('en-GB', {
+  const completedAt = new Date().toLocaleDateString(DATE_LOCALE[language], {
     weekday: 'long', day: 'numeric', month: 'long',
   })
 
@@ -92,7 +97,7 @@ export function ShiftCompleted() {
         {/* Heading + subtitle */}
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="sc-heading font-['Poppins',sans-serif] font-bold text-[48px] leading-[1.1] tracking-[-1px] text-white">
-            Shift Completed!
+            {t('shift_completed_title')}
           </h1>
           <p className="sc-site font-['Lato',sans-serif] text-xl text-[#D7C596]">
             {siteName}
@@ -110,7 +115,7 @@ export function ShiftCompleted() {
         {/* Confirmation card */}
         <div className="sc-card w-full bg-white/[0.07] border border-white/10 rounded-[12px] p-6 text-center">
           <p className="font-['Lato',sans-serif] text-base text-white/75 leading-[1.7]">
-            All zones have been verified and submitted successfully. Your supervisor has been notified. Great work today!
+            {t('shift_completed_body')}
           </p>
         </div>
 
@@ -120,13 +125,13 @@ export function ShiftCompleted() {
             onClick={() => navigate('/cleaner/history')}
             className="sc-btn w-full h-[56px] rounded-[12px] border-2 border-[#D7C596] font-['Poppins',sans-serif] font-semibold text-base text-[#D7C596] cursor-pointer hover:bg-[#D7C596]/10 transition-colors"
           >
-            View Shift History
+            {t('view_history')}
           </button>
           <button
             onClick={() => { setUser(null); navigate('/login') }}
             className="sc-btn w-full h-[56px] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white/50 cursor-pointer hover:text-white/80 transition-colors"
           >
-            Log Out
+            {t('log_out')}
           </button>
         </div>
 

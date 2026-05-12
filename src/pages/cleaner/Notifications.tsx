@@ -189,7 +189,7 @@ function DesktopNotifications() {
   }, { scope: listRef })
 
   return (
-    <div className="relative h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <DesktopSidebar active="notifications" />
 
       {/* Left pane: list — fixed so it never shifts when switching messages */}
@@ -217,8 +217,8 @@ function DesktopNotifications() {
         </div>
       </div>
 
-      {/* Right pane: detail — absolutely positioned in remaining space */}
-      <div className="absolute left-[600px] top-0 right-0 bottom-0 overflow-y-auto bg-[#F4F4EE]">
+      {/* Right pane: offset past the fixed sidebar (240px) + fixed list (360px) */}
+      <div className="flex-1 ml-[600px] overflow-y-auto bg-[#F4F4EE]">
         {selectedDetail ? (
           <div className="max-w-2xl">
             <div className="sticky top-0 z-10 bg-[#F4F4EE]/95 backdrop-blur-sm border-b border-[#E3E3DD] flex items-center justify-between px-6 h-14">

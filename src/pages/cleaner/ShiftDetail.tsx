@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
+import { useTranslation } from '../../lib/useTranslation'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -161,11 +162,12 @@ function IncompleteBadgeIcon() {
 
 function IdentityCard({ shift }: { shift: MockShiftDetail }) {
   const isComplete = shift.status === 'completed'
+  const t = useTranslation()
   return (
     <div className="sd-identity relative bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_8px_30px_0px_rgba(17,30,23,0.04)] overflow-hidden p-[25px] flex flex-col gap-2">
       <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-[#D7C596] to-[#6B5D36] opacity-80" />
       <div className="flex items-center justify-between">
-        <span className="font-['Lato',sans-serif] font-bold text-[13px] tracking-[1.4px] uppercase text-[#434844]">Commercial<br />Cleaning</span>
+        <span className="font-['Lato',sans-serif] font-bold text-[13px] tracking-[1.4px] uppercase text-[#434844]">{t('commercial_cleaning')}</span>
         <div className={[
           'flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-bold tracking-[0.7px]',
           isComplete
@@ -173,7 +175,7 @@ function IdentityCard({ shift }: { shift: MockShiftDetail }) {
             : "bg-[#FFDAD6] border-[rgba(186,26,26,0.2)] text-[#93000A] font-['Lato',sans-serif]",
         ].join(' ')}>
           {isComplete ? <CompletedBadgeIcon /> : <IncompleteBadgeIcon />}
-          {isComplete ? 'Completed' : 'Incomplete'}
+          {isComplete ? t('completed') : t('incomplete')}
         </div>
       </div>
       <h2 className="font-['Poppins',sans-serif] font-bold text-[48px] leading-[1.1] tracking-[-0.96px] text-[#1A1C19]">
@@ -188,12 +190,13 @@ function IdentityCard({ shift }: { shift: MockShiftDetail }) {
 }
 
 function BentoCards({ shift }: { shift: MockShiftDetail }) {
+  const t = useTranslation()
   return (
     <div className="flex flex-col gap-4">
       <div className="sd-bento bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_4px_10px_rgba(17,30,23,0.02)] p-[17px] flex items-center gap-4">
         <div className="w-11 h-11 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0"><ClockIcon /></div>
         <div className="flex flex-col">
-          <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">Duration</span>
+          <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">{t('duration')}</span>
           <span className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">{shift.duration}</span>
           <span className="font-['Lato',sans-serif] text-[14px] text-[#737874]">{shift.timeStart} – {shift.timeEnd}</span>
         </div>
@@ -201,7 +204,7 @@ function BentoCards({ shift }: { shift: MockShiftDetail }) {
       <div className="sd-bento bg-white border border-[#E3E3DD] rounded-[12px] shadow-[0px_4px_10px_rgba(17,30,23,0.02)] p-[17px] flex items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0"><PersonIcon /></div>
         <div className="flex flex-col">
-          <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">Lead Specialist</span>
+          <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">{t('lead_specialist')}</span>
           <span className="font-['Lato',sans-serif] font-bold text-[18px] text-[#1A1C19]">{shift.leadSpecialist}</span>
         </div>
       </div>
@@ -210,8 +213,9 @@ function BentoCards({ shift }: { shift: MockShiftDetail }) {
 }
 
 function ZoneItem({ zone }: { zone: MockZone }) {
+  const t = useTranslation()
   const statusIcon = zone.status === 'completed' ? <CheckCircleIcon /> : zone.status === 'incomplete' ? <XCircleIcon /> : <SkipIcon />
-  const statusLabel = zone.status === 'completed' ? 'Completed' : zone.status === 'incomplete' ? 'Incomplete' : 'Skipped'
+  const statusLabel = zone.status === 'completed' ? t('completed') : zone.status === 'incomplete' ? t('incomplete') : t('zone_skipped')
 
   return (
     <div className="sd-zone bg-white border border-[#E3E3DD] rounded-[12px] p-[17px] flex gap-4 items-start">
@@ -224,7 +228,7 @@ function ZoneItem({ zone }: { zone: MockZone }) {
           <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] shrink-0 mt-1">{zone.time}</span>
         </div>
         <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.6]">{zone.description}</p>
-        {zone.note && <p className="font-['Lato',sans-serif] italic text-[14px] text-[#BA1A1A] leading-[1.5]">Note: {zone.note}</p>}
+        {zone.note && <p className="font-['Lato',sans-serif] italic text-[14px] text-[#BA1A1A] leading-[1.5]">{t('note_prefix')} {zone.note}</p>}
         <div className="flex items-center gap-2 pt-1">
           {statusIcon}
           <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#1A1C19]">{statusLabel}</span>
@@ -237,13 +241,14 @@ function ZoneItem({ zone }: { zone: MockZone }) {
 // ─── Not found state ──────────────────────────────────────────────────────────
 
 function ShiftNotFound({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const t = useTranslation()
   return (
     <div className="min-h-screen w-full bg-[#F4F4EE] flex items-center justify-center p-8">
       <div className="bg-white border border-[#C3C8C2] rounded-[12px] p-8 text-center max-w-sm w-full">
-        <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19] mb-2">Shift not found</p>
+        <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19] mb-2">{t('shift_not_found')}</p>
         <button onClick={() => navigate('/cleaner/history')}
           className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#B8A77A] underline cursor-pointer">
-          Back to history
+          {t('back_to_history')}
         </button>
       </div>
     </div>
@@ -255,6 +260,7 @@ function ShiftNotFound({ navigate }: { navigate: ReturnType<typeof useNavigate> 
 function DesktopShiftDetail() {
   const { shiftId } = useParams<{ shiftId: string }>()
   const navigate = useNavigate()
+  const t = useTranslation()
   const shift = MOCK_DETAILS[shiftId ?? '']
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -280,7 +286,7 @@ function DesktopShiftDetail() {
             className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">
             <BackIcon />
           </button>
-          <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">Shift Details</h1>
+          <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">{t('shift_details')}</h1>
         </div>
 
         <div ref={containerRef} className="max-w-5xl mx-auto px-8 py-8 pb-12">
@@ -292,10 +298,10 @@ function DesktopShiftDetail() {
           <div className="flex flex-col gap-5">
             <div className="sd-section flex items-center justify-between border-b border-[#E8E8E3] pb-3">
               <h3 className="font-['Poppins',sans-serif] font-semibold text-[28px] tracking-[-0.3px] text-[#1A1C19]">
-                Cleaned Zones
+                {t('cleaned_zones')}
               </h3>
               <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#D7C596]">
-                {doneZones} / {shift.zones.length} Zones
+                {doneZones} / {shift.zones.length} {t('zones')}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -313,6 +319,7 @@ function DesktopShiftDetail() {
 function MobileShiftDetail() {
   const { shiftId } = useParams<{ shiftId: string }>()
   const navigate = useNavigate()
+  const t = useTranslation()
   const shift = MOCK_DETAILS[shiftId ?? '']
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -336,7 +343,7 @@ function MobileShiftDetail() {
           className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">
           <BackIcon />
         </button>
-        <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">Shift Details</h1>
+        <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19]">{t('shift_details')}</h1>
       </div>
 
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-12">
@@ -345,8 +352,8 @@ function MobileShiftDetail() {
           <BentoCards shift={shift} />
           <div className="flex flex-col gap-5">
             <div className="sd-section flex items-center justify-between border-b border-[#E8E8E3] pb-3">
-              <h3 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.32px] text-[#1A1C19]">Cleaned Zones</h3>
-              <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#D7C596]">{doneZones} / {shift.zones.length} Zones</span>
+              <h3 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.32px] text-[#1A1C19]">{t('cleaned_zones')}</h3>
+              <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#D7C596]">{doneZones} / {shift.zones.length} {t('zones')}</span>
             </div>
             <div className="flex flex-col gap-4">
               {shift.zones.map((zone) => <ZoneItem key={zone.id} zone={zone} />)}

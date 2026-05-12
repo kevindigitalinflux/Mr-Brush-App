@@ -69,6 +69,45 @@ export const strings: Record<Language, Record<string, string>> = {
     download: 'Download',
     view: 'View',
 
+    // Zone submission
+    take_photo_instruction: 'Take a photo after cleaning this zone.',
+    photo_requirements: 'Minimum 1 photo required. Ensure the area is fully visible and well-lit.',
+    note_placeholder: 'Any notes about this zone...',
+    cant_submit_photo: "I can't submit a photo",
+    submit_zone: 'Submit Zone',
+    submitting: 'Submitting…',
+    add_photo: 'Add photo',
+
+    // No photo note
+    no_photo_warning_body: 'Missing photos can affect quality assurance records. Please provide a detailed reason below to proceed with the report.',
+    visual_doc_required: 'Visual documentation required',
+    reason_for_no_photo: 'Reason for no photo',
+    explain_no_photo: 'Explain why you were unable to submit a photo...',
+    submit_without_photo: 'Submit Without Photo',
+    no_photo_label: 'No Photo',
+
+    // Shift history
+    no_shifts_yet: 'No shifts yet',
+    no_shifts_body: 'Completed shifts will appear here.',
+    back_to_history: 'Back to history',
+    zones: 'Zones',
+    of_count: 'of',
+
+    // Shift detail
+    shift_details: 'Shift Details',
+    commercial_cleaning: 'Commercial Cleaning',
+    duration: 'Duration',
+    lead_specialist: 'Lead Specialist',
+    cleaned_zones: 'Cleaned Zones',
+    zone_skipped: 'Skipped',
+    note_prefix: 'Note:',
+    shift_not_found: 'Shift not found',
+
+    // Shift completed
+    shift_completed_title: 'Shift Completed!',
+    shift_completed_body: 'All zones have been verified and submitted successfully. Your supervisor has been notified. Great work today!',
+    log_out: 'Log Out',
+
     // Language names
     lang_en: 'English',
     lang_es: 'Español',
@@ -142,6 +181,45 @@ export const strings: Record<Language, Record<string, string>> = {
     download: 'Descargar',
     view: 'Ver',
 
+    // Zone submission
+    take_photo_instruction: 'Toma una foto después de limpiar esta zona.',
+    photo_requirements: 'Se requiere mínimo 1 foto. Asegúrate de que el área sea completamente visible y bien iluminada.',
+    note_placeholder: 'Notas sobre esta zona...',
+    cant_submit_photo: 'No puedo enviar una foto',
+    submit_zone: 'Enviar zona',
+    submitting: 'Enviando…',
+    add_photo: 'Añadir foto',
+
+    // No photo note
+    no_photo_warning_body: 'La falta de fotos puede afectar los registros de control de calidad. Proporcione una razón detallada a continuación para continuar con el informe.',
+    visual_doc_required: 'Documentación visual requerida',
+    reason_for_no_photo: 'Motivo por falta de foto',
+    explain_no_photo: 'Explica por qué no pudiste enviar una foto...',
+    submit_without_photo: 'Enviar sin foto',
+    no_photo_label: 'Sin foto',
+
+    // Shift history
+    no_shifts_yet: 'Sin turnos todavía',
+    no_shifts_body: 'Los turnos completados aparecerán aquí.',
+    back_to_history: 'Volver al historial',
+    zones: 'Zonas',
+    of_count: 'de',
+
+    // Shift detail
+    shift_details: 'Detalles del turno',
+    commercial_cleaning: 'Limpieza Comercial',
+    duration: 'Duración',
+    lead_specialist: 'Especialista principal',
+    cleaned_zones: 'Zonas limpiadas',
+    zone_skipped: 'Omitido',
+    note_prefix: 'Nota:',
+    shift_not_found: 'Turno no encontrado',
+
+    // Shift completed
+    shift_completed_title: '¡Turno completado!',
+    shift_completed_body: 'Todas las zonas han sido verificadas y enviadas correctamente. Tu supervisor ha sido notificado. ¡Buen trabajo hoy!',
+    log_out: 'Cerrar sesión',
+
     // Language names
     lang_en: 'English',
     lang_es: 'Español',
@@ -214,6 +292,45 @@ export const strings: Record<Language, Record<string, string>> = {
     attached_docs: 'Documentação em anexo',
     download: 'Baixar',
     view: 'Ver',
+
+    // Zone submission
+    take_photo_instruction: 'Tire uma foto após limpar esta zona.',
+    photo_requirements: 'Mínimo 1 foto obrigatória. Certifique-se de que a área esteja totalmente visível e bem iluminada.',
+    note_placeholder: 'Notas sobre esta zona...',
+    cant_submit_photo: 'Não consigo enviar uma foto',
+    submit_zone: 'Enviar zona',
+    submitting: 'Enviando…',
+    add_photo: 'Adicionar foto',
+
+    // No photo note
+    no_photo_warning_body: 'A falta de fotos pode afetar os registros de controle de qualidade. Forneça um motivo detalhado abaixo para prosseguir com o relatório.',
+    visual_doc_required: 'Documentação visual necessária',
+    reason_for_no_photo: 'Motivo da falta de foto',
+    explain_no_photo: 'Explique por que não conseguiu enviar uma foto...',
+    submit_without_photo: 'Enviar sem foto',
+    no_photo_label: 'Sem foto',
+
+    // Shift history
+    no_shifts_yet: 'Sem turnos ainda',
+    no_shifts_body: 'Os turnos concluídos aparecerão aqui.',
+    back_to_history: 'Voltar ao histórico',
+    zones: 'Zonas',
+    of_count: 'de',
+
+    // Shift detail
+    shift_details: 'Detalhes do turno',
+    commercial_cleaning: 'Limpeza Comercial',
+    duration: 'Duração',
+    lead_specialist: 'Especialista principal',
+    cleaned_zones: 'Zonas limpas',
+    zone_skipped: 'Ignorado',
+    note_prefix: 'Nota:',
+    shift_not_found: 'Turno não encontrado',
+
+    // Shift completed
+    shift_completed_title: 'Turno concluído!',
+    shift_completed_body: 'Todas as zonas foram verificadas e enviadas com sucesso. Seu supervisor foi notificado. Ótimo trabalho hoje!',
+    log_out: 'Sair',
 
     // Language names
     lang_en: 'English',
