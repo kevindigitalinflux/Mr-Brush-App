@@ -36,6 +36,16 @@ function ErrorIcon() {
   )
 }
 
+const MOCK_NAMES: Record<string, string> = {
+  C001: 'James Carter',
+  C002: 'Maria Santos',
+  C003: 'David Park',
+  C004: 'Lena Webb',
+  S001: 'Sarah Jenkins',
+  S002: 'Tom Bradley',
+  M001: 'Alistair Sterling',
+}
+
 /** Mock auth — replace with Supabase call once DB is ready. Any password accepted for now. */
 function mockAuth(displayId: string): boolean {
   return getRoleFromId(displayId) !== null
@@ -60,7 +70,8 @@ function useLoginForm() {
     const role = getRoleFromId(cleanerId.trim())
     const valid = mockAuth(cleanerId.trim()) && password.length > 0
     if (!valid || !role) { setError(true); setLoading(false); return }
-    setUser({ id: crypto.randomUUID(), display_id: cleanerId.trim().toUpperCase(), role, name: cleanerId.trim().toUpperCase(), language })
+    const displayId = cleanerId.trim().toUpperCase()
+    setUser({ id: crypto.randomUUID(), display_id: displayId, role, name: MOCK_NAMES[displayId] ?? displayId, language })
     navigate(getRouteForRole(role))
   }
 

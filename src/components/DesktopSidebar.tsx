@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { Language } from '../lib/i18n'
@@ -13,10 +14,10 @@ const NAV: { key: NavKey; label: string; path: string; icon: () => JSX.Element }
   { key: 'notifications', label: 'Notifications', path: '/cleaner/notifications', icon: BellIcon },
 ]
 
-const LANGS: { code: Language; label: string }[] = [
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'pt', label: 'PT' },
+const LANGS: { code: Language; label: string; flag: string }[] = [
+  { code: 'en', label: 'English',    flag: '🇬🇧' },
+  { code: 'es', label: 'Español',    flag: '🇪🇸' },
+  { code: 'pt', label: 'Português',  flag: '🇧🇷' },
 ]
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -57,11 +58,27 @@ function GlobeIcon() {
   )
 }
 
+function ChevronUpIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function LogOutIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 12l5 5L20 7" stroke="#B8A77A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -72,18 +89,25 @@ function LogOutIcon() {
 export function DesktopSidebar({ active }: Props) {
   const { user, setUser, language, setLanguage } = useApp()
   const navigate = useNavigate()
+  const [langOpen, setLangOpen] = useState(false)
+  const langRef = useRef<HTMLDivElement>(null)
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
     : 'CL'
 
-  function cycleLanguage() {
-    const idx = LANGS.findIndex((l) => l.code === language)
-    setLanguage(LANGS[(idx + 1) % LANGS.length].code)
-  }
+  const activeLang = LANGS.find((l) => l.code === language) ?? LANGS[0]
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
 
   return (
-    <aside className="w-60 shrink-0 bg-[#EEEEE8] border-r border-[#D5D5CF] flex flex-col h-screen sticky top-0 z-40">
+    <aside className="w-60 shrink-0 bg-[#EEEEE8] border-r border-[#D5D5CF] flex flex-col overflow-y-auto">
 
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-4">
@@ -126,9 +150,7 @@ export function DesktopSidebar({ active }: Props) {
               ].join(' ')}
             >
               <Icon />
-              <span className="font-['Poppins',sans-serif] font-semibold text-[14px]">
-                {label}
-              </span>
+              <span className="font-['Poppins',sans-serif] font-semibold text-[14px]">{label}</span>
             </button>
           )
         })}
@@ -136,15 +158,41 @@ export function DesktopSidebar({ active }: Props) {
 
       {/* Bottom */}
       <div className="p-4 border-t border-[#D5D5CF] flex flex-col gap-1">
-        <button
-          onClick={cycleLanguage}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-[8px] text-[#737874] hover:bg-[#E5E5DF] hover:text-[#1A1C19] transition-colors"
-        >
-          <GlobeIcon />
-          <span className="font-['Lato',sans-serif] text-[13px] font-bold tracking-[0.8px]">
-            {language.toUpperCase()}
-          </span>
-        </button>
+
+        {/* Language selector */}
+        <div ref={langRef} className="relative">
+          <button
+            onClick={() => setLangOpen((p) => !p)}
+            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-[8px] text-[#737874] hover:bg-[#E5E5DF] hover:text-[#1A1C19] transition-colors"
+          >
+            <GlobeIcon />
+            <span className="font-['Lato',sans-serif] text-[13px] font-bold tracking-[0.8px] flex-1 text-left">
+              {activeLang.label}
+            </span>
+            <span className={`transition-transform duration-200 ${langOpen ? '' : 'rotate-180'}`}>
+              <ChevronUpIcon />
+            </span>
+          </button>
+
+          {langOpen && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-[#D0CFCA] rounded-[10px] shadow-lg overflow-hidden">
+              {LANGS.map((opt) => (
+                <button
+                  key={opt.code}
+                  onClick={() => { setLanguage(opt.code); setLangOpen(false) }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[#F4F4EE] transition-colors cursor-pointer"
+                >
+                  <span className="text-base leading-none">{opt.flag}</span>
+                  <span className="font-['Poppins',sans-serif] font-semibold text-[13px] text-[#1A1C19] flex-1 text-left">
+                    {opt.label}
+                  </span>
+                  {language === opt.code && <CheckIcon />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => { setUser(null); navigate('/login') }}
           className="flex items-center gap-2.5 w-full px-3 py-2 rounded-[8px] text-[#737874] hover:bg-[#E5E5DF] hover:text-[#1A1C19] transition-colors"
