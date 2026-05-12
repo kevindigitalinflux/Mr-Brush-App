@@ -107,7 +107,7 @@ export function DesktopSidebar({ active }: Props) {
   }, [])
 
   return (
-    <aside className="w-60 shrink-0 bg-[#EEEEE8] border-r border-[#D5D5CF] flex flex-col overflow-y-auto">
+    <aside className="fixed left-0 top-0 h-screen w-60 bg-[#EEEEE8] border-r border-[#D5D5CF] flex flex-col overflow-y-auto z-30">
 
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-4">

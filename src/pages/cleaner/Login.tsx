@@ -159,7 +159,7 @@ function DesktopLogin() {
       </div>
 
       {/* Right: form */}
-      <div className="flex-1 bg-[#F4F4EE] flex items-center justify-center px-10 py-12 overflow-y-auto">
+      <div className="flex-1 bg-[#F4F4EE] flex items-start justify-center px-10 pt-14 pb-12 overflow-y-auto">
         <div className="dl-card w-full max-w-[420px] flex flex-col gap-8">
           <div className="flex flex-col items-center gap-3">
             <img src={logoSrc} alt="Mr Brush & Co." className="w-16 h-16 object-contain" />
@@ -194,7 +194,7 @@ function MobileLogin() {
   }, { scope: containerRef })
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F4EE] flex items-center justify-center px-6 py-[103px]">
+    <div className="min-h-screen w-full bg-[#F4F4EE] flex items-start justify-center px-6 pt-16 pb-12">
       <div ref={containerRef} className="flex flex-col gap-8 w-full max-w-[448px]">
         <div className="login-logo flex flex-col items-center gap-4">
           <img src={logoSrc} alt="Mr Brush & Co." className="w-28 h-28 object-contain" />

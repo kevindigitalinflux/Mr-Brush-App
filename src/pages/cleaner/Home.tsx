@@ -217,7 +217,7 @@ function DesktopHome() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <DesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-60">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10 flex flex-col gap-10">
 
           {/* Header */}

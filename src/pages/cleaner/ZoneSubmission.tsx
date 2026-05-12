@@ -173,7 +173,7 @@ function DesktopZoneSubmission() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#FAFAF4]">
       <DesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-60">
         <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 pb-24 flex flex-col gap-8">
 
           {/* Header */}

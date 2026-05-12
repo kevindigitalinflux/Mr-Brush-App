@@ -193,7 +193,7 @@ function DesktopNotifications() {
       <DesktopSidebar active="notifications" />
 
       {/* Left pane: list */}
-      <div ref={listRef} className="w-[360px] shrink-0 border-r border-[#D5D5CF] overflow-y-auto flex flex-col">
+      <div ref={listRef} className="ml-60 w-[360px] shrink-0 border-r border-[#D5D5CF] overflow-y-auto flex flex-col">
         <div className="px-5 pt-7 pb-4 border-b border-[#E3E3DD]">
           <h1 className="dnotif-heading font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] tracking-[-0.4px]">
             {t('notifications_title')}

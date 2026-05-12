@@ -274,7 +274,7 @@ function DesktopShiftDetail() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <DesktopSidebar active="history" />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-60">
         <div className="sticky top-0 z-10 bg-[rgba(244,244,238,0.95)] backdrop-blur-[6px] border-b border-[#E8E8E3] flex items-center h-16 px-8 gap-4">
           <button onClick={() => navigate('/cleaner/history')} aria-label="Go back"
             className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">

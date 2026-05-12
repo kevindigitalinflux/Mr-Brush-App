@@ -206,7 +206,7 @@ function DesktopNotificationDetail() {
     return (
       <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
         <DesktopSidebar active="notifications" />
-        <main className="flex-1 flex items-center justify-center">
+        <main className="flex-1 flex items-center justify-center ml-60">
           <p className="font-['Lato',sans-serif] text-[#434844]">Notification not found.</p>
         </main>
       </div>
@@ -216,7 +216,7 @@ function DesktopNotificationDetail() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <DesktopSidebar active="notifications" />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-60">
         <div className="sticky top-0 z-10 bg-[#F4F4EE]/95 backdrop-blur-sm border-b border-[#E3E3DD] flex items-center justify-between px-8 h-16">
           <button
             onClick={() => navigate('/cleaner/notifications')}
