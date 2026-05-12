@@ -141,7 +141,7 @@ function DesktopLogin() {
   }, { scope: containerRef })
 
   return (
-    <div ref={containerRef} className="flex h-screen overflow-hidden">
+    <div ref={containerRef} className="flex h-screen overflow-hidden w-full">
       {/* Left: brand panel */}
       <div
         className="dl-panel hidden lg:flex flex-1 flex-col justify-between p-12 xl:p-16 relative overflow-hidden"
