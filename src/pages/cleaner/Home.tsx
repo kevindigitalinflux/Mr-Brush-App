@@ -171,7 +171,7 @@ function LanguageDropdown() {
   }, [])
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative z-50">
       <button
         onClick={() => setOpen((prev) => !prev)}
         aria-label="Change language"
@@ -183,7 +183,7 @@ function LanguageDropdown() {
       {open && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 top-12 z-50 bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg overflow-hidden min-w-[160px]"
+          className="absolute right-0 top-12 bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg overflow-hidden min-w-[160px]"
           style={{ transformOrigin: 'top right' }}
         >
           {LANG_OPTIONS.map((opt) => (
