@@ -144,7 +144,7 @@ function DesktopLogin() {
     <div ref={containerRef} className="flex h-screen overflow-hidden">
       {/* Left: brand panel */}
       <div
-        className="dl-panel hidden lg:flex w-1/2 flex-col justify-between p-12 xl:p-16 relative overflow-hidden shrink-0"
+        className="dl-panel hidden lg:flex flex-1 flex-col justify-between p-12 xl:p-16 relative overflow-hidden"
         style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1350&q=60)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         {/* Dark overlay — keeps image faint, maintains brand colour */}
@@ -164,7 +164,7 @@ function DesktopLogin() {
       </div>
 
       {/* Right: form */}
-      <div className="flex-1 bg-[#F4F4EE] flex items-start justify-center px-10 pt-14 pb-12 overflow-y-auto">
+      <div className="w-[480px] xl:w-[520px] shrink-0 bg-[#F4F4EE] flex items-start justify-center px-10 pt-14 pb-12 overflow-y-auto">
         <div className="dl-card w-full max-w-[420px] flex flex-col gap-8">
           <div className="flex flex-col items-center gap-3">
             <img src={logoSrc} alt="Mr Brush & Co." className="w-16 h-16 object-contain" />
