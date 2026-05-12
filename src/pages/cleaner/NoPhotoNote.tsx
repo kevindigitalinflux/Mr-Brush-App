@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { DesktopSidebar } from '../../components/DesktopSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 
 const ZONE_NAMES: Record<string, string> = {
   z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
@@ -48,24 +50,14 @@ function SendIcon() {
   )
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// ─── Shared logic ─────────────────────────────────────────────────────────────
 
-export function NoPhotoNote() {
+function useNoPhotoState() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
   const { markZoneComplete } = useApp()
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useGSAP(() => {
-    gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.npn-header',  { opacity: 0, y: -8, duration: 0.35 })
-      .from('.npn-warning', { opacity: 0, y: 14, duration: 0.4 }, '-=0.15')
-      .from('.npn-image',   { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
-      .from('.npn-form',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
-      .from('.npn-submit',  { opacity: 0, y: 16, duration: 0.4 }, '-=0.15')
-  }, { scope: containerRef })
 
   const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
   const charCount = reason.trim().length
@@ -79,17 +71,141 @@ export function NoPhotoNote() {
     navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
   }
 
+  return { navigate, reason, setReason, submitting, zoneName, charCount, isValid, handleSubmit }
+}
+
+// ─── Shared form ──────────────────────────────────────────────────────────────
+
+function NoPhotoForm({ state, idSuffix }: { state: ReturnType<typeof useNoPhotoState>; idSuffix: string }) {
+  const { reason, setReason, submitting, charCount, isValid, handleSubmit } = state
+  return (
+    <>
+      <div className="flex flex-col gap-2 pt-4">
+        <label htmlFor={`noPhotoReason-${idSuffix}`}
+          className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">
+          Reason for no photo
+        </label>
+        <textarea
+          id={`noPhotoReason-${idSuffix}`}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={5}
+          placeholder="Explain why you were unable to submit a photo..."
+          className="w-full border border-[#737874] rounded-[6px] px-4 py-4 font-['Lato',sans-serif] text-base text-[#434844] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] shadow-sm resize-none transition-colors"
+        />
+        <div className="flex items-center justify-between pl-1 pt-1">
+          <div className="flex items-center gap-1 opacity-80">
+            <InfoHintIcon />
+            <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">
+              Minimum {MIN_CHARS} characters
+            </span>
+          </div>
+          <span className={['font-["Lato",sans-serif] text-[14px] font-bold', isValid ? 'text-[#2F4A3D]' : 'text-[#9E9E9E]'].join(' ')}>
+            {charCount}/{MIN_CHARS}
+          </span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={!isValid || submitting}
+        className={[
+          'w-full py-4 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center justify-center gap-2 shadow-sm transition-colors',
+          isValid && !submitting ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]' : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
+        ].join(' ')}
+      >
+        {submitting ? 'Submitting…' : 'Submit Without Photo'}
+        {!submitting && <SendIcon />}
+      </button>
+    </>
+  )
+}
+
+// ─── Desktop layout ───────────────────────────────────────────────────────────
+
+function DesktopNoPhotoNote() {
+  const state = useNoPhotoState()
+  const { navigate, zoneName } = state
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.dnpn-header',  { opacity: 0, x: -16, duration: 0.35 })
+      .from('.dnpn-warning', { opacity: 0, y: 14, duration: 0.4 }, '-=0.15')
+      .from('.dnpn-image',   { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.dnpn-form',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+  }, { scope: containerRef })
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#FAFAF4]">
+      <DesktopSidebar active="jobs" />
+      <main className="flex-1 overflow-y-auto">
+        <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 flex flex-col gap-6 pb-12">
+
+          <div className="dnpn-header flex items-center gap-4">
+            <button onClick={() => navigate(-1)} aria-label="Go back"
+              className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">
+              <BackIcon />
+            </button>
+            <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.5px] text-[#1A1C19]">
+              {zoneName} — No Photo
+            </h1>
+          </div>
+
+          <div className="dnpn-warning bg-[#F1DEAD] border border-[#D7C596]/30 rounded-[8px] shadow-sm p-[17px] flex items-start gap-2">
+            <div className="shrink-0 mt-0.5"><WarningIcon /></div>
+            <p className="font-['Lato',sans-serif] text-base text-[#6F613A] leading-[1.6]">
+              Missing photos can affect quality assurance records. Please provide a detailed reason below to proceed with the report.
+            </p>
+          </div>
+
+          <div className="dnpn-image bg-[#F4F4EE] border border-[#C3C8C2] rounded-[12px] overflow-hidden shadow-sm relative h-[181px] flex items-end">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="relative z-10 flex items-center gap-2 p-4">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="white" strokeWidth="1.5" />
+                <circle cx="8.5" cy="8.5" r="1.5" stroke="white" strokeWidth="1.5" />
+                <path d="m21 15-5-5L5 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-white">
+                Visual documentation required
+              </span>
+            </div>
+          </div>
+
+          <div className="dnpn-form flex flex-col gap-5">
+            <NoPhotoForm state={state} idSuffix="d" />
+          </div>
+
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ─── Mobile layout ────────────────────────────────────────────────────────────
+
+function MobileNoPhotoNote() {
+  const state = useNoPhotoState()
+  const { navigate, zoneName } = state
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.npn-header',  { opacity: 0, y: -8, duration: 0.35 })
+      .from('.npn-warning', { opacity: 0, y: 14, duration: 0.4 }, '-=0.15')
+      .from('.npn-image',   { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.npn-form',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.npn-submit',  { opacity: 0, y: 16, duration: 0.4 }, '-=0.15')
+  }, { scope: containerRef })
+
   return (
     <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
       <div ref={containerRef} className="w-full max-w-[672px] mx-auto flex flex-col">
 
-        {/* Header */}
         <div className="npn-header sticky top-0 bg-[#FAFAF4] z-10 flex items-center h-16 px-8">
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-            className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer mr-4 shrink-0"
-          >
+          <button onClick={() => navigate(-1)} aria-label="Go back"
+            className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer mr-4 shrink-0">
             <BackIcon />
           </button>
           <h1 className="font-['Poppins',sans-serif] font-semibold text-2xl tracking-[-0.6px] text-[#1A1C19] whitespace-nowrap">
@@ -97,20 +213,14 @@ export function NoPhotoNote() {
           </h1>
         </div>
 
-        {/* Content */}
         <div className="flex flex-col gap-8 px-8 py-4">
-
-          {/* Warning banner */}
           <div className="npn-warning bg-[#F1DEAD] border border-[#D7C596]/30 rounded-[8px] shadow-sm p-[17px] flex items-start gap-2">
-            <div className="shrink-0 mt-0.5">
-              <WarningIcon />
-            </div>
+            <div className="shrink-0 mt-0.5"><WarningIcon /></div>
             <p className="font-['Lato',sans-serif] text-base text-[#6F613A] leading-[1.6]">
               Missing photos can affect quality assurance records. Please provide a detailed reason below to proceed with the report.
             </p>
           </div>
 
-          {/* Zone image placeholder */}
           <div className="npn-image bg-[#F4F4EE] border border-[#C3C8C2] rounded-[12px] overflow-hidden shadow-sm relative h-[181px] flex items-end">
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             <div className="relative z-10 flex items-center gap-2 p-4">
@@ -125,57 +235,20 @@ export function NoPhotoNote() {
             </div>
           </div>
 
-          {/* Reason textarea */}
-          <div className="npn-form flex flex-col gap-2 pt-4">
-            <label
-              htmlFor="noPhotoReason"
-              className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]"
-            >
-              Reason for no photo
-            </label>
-            <textarea
-              id="noPhotoReason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={5}
-              placeholder="Explain why you were unable to submit a photo..."
-              className="w-full border border-[#737874] rounded-[6px] px-4 py-4 font-['Lato',sans-serif] text-base text-[#434844] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] shadow-sm resize-none transition-colors"
-            />
-            <div className="flex items-center justify-between pl-1 pt-1">
-              <div className="flex items-center gap-1 opacity-80">
-                <InfoHintIcon />
-                <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844]">
-                  Minimum {MIN_CHARS} characters
-                </span>
-              </div>
-              <span className={[
-                'font-["Lato",sans-serif] text-[14px] font-bold',
-                isValid ? 'text-[#2F4A3D]' : 'text-[#9E9E9E]',
-              ].join(' ')}>
-                {charCount}/{MIN_CHARS}
-              </span>
-            </div>
+          <div className="npn-form flex flex-col gap-5">
+            <NoPhotoForm state={state} idSuffix="m" />
           </div>
-
-          {/* Submit button */}
-          <div className="npn-submit pb-12 pt-4">
-            <button
-              onClick={handleSubmit}
-              disabled={!isValid || submitting}
-              className={[
-                'w-full py-4 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center justify-center gap-2 shadow-sm transition-colors',
-                isValid && !submitting
-                  ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]'
-                  : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
-              ].join(' ')}
-            >
-              {submitting ? 'Submitting…' : 'Submit Without Photo'}
-              {!submitting && <SendIcon />}
-            </button>
-          </div>
-
         </div>
+
       </div>
     </div>
   )
+}
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
+
+/** No-photo exemption form — requires a written reason to proceed. */
+export function NoPhotoNote() {
+  const isDesktop = useIsDesktop()
+  return isDesktop ? <DesktopNoPhotoNote /> : <MobileNoPhotoNote />
 }

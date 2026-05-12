@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { MOCK_JOBS } from '../../lib/mockJobs'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 
 function BigCheckIcon() {
   return (
@@ -24,6 +25,7 @@ function ClockIcon() {
 
 /** Shown when a cleaner marks an entire shift as complete. Dark green celebration screen. */
 export function ShiftCompleted() {
+  const isDesktop = useIsDesktop()
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
   const { setUser, markJobComplete, completedZones } = useApp()
@@ -76,7 +78,7 @@ export function ShiftCompleted() {
 
   return (
     <div className="min-h-screen w-full bg-[#111E17] flex items-center justify-center p-6">
-      <div ref={containerRef} className="w-full max-w-[480px] flex flex-col items-center gap-8">
+      <div ref={containerRef} className={`w-full flex flex-col items-center gap-8 ${isDesktop ? 'max-w-2xl' : 'max-w-[480px]'}`}>
 
         {/* Animated checkmark rings */}
         <div className="sc-ring-outer w-[130px] h-[130px] rounded-full bg-white/10 flex items-center justify-center">

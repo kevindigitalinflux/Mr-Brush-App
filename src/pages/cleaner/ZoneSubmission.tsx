@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { DesktopSidebar } from '../../components/DesktopSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -57,7 +59,7 @@ function XIcon() {
   )
 }
 
-// ─── Mock zone lookup ─────────────────────────────────────────────────────────
+// ─── Zone name lookup ─────────────────────────────────────────────────────────
 
 const ZONE_NAMES: Record<string, string> = {
   z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
@@ -66,110 +68,28 @@ const ZONE_NAMES: Record<string, string> = {
   z10: 'Ground Floor WC', z11: 'Lobby Seating Area', z12: 'Security Desk Area',
 }
 
-// ─── Photo slot ───────────────────────────────────────────────────────────────
-
-interface PhotoSlotProps {
-  index: number
-  preview: string | null
-  active: boolean
-  onAdd: () => void
-  onRemove: () => void
-}
-
-function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) {
-  if (preview) {
-    return (
-      <div data-slot={index} className="relative aspect-square rounded-[12px] overflow-hidden">
-        <img src={preview} alt="Zone photo" className="w-full h-full object-cover" />
-        <button
-          onClick={onRemove}
-          aria-label="Remove photo"
-          className="absolute top-1.5 right-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center cursor-pointer"
-        >
-          <XIcon />
-        </button>
-      </div>
-    )
-  }
-
-  if (active) {
-    return (
-      <button
-        data-slot={index}
-        onClick={onAdd}
-        className="aspect-square rounded-[12px] border-2 border-dashed border-[#6B5D36] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F1DEAD]/20 transition-colors"
-      >
-        <CameraIcon />
-        <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#6B5D36]">
-          Add photo
-        </span>
-      </button>
-    )
-  }
-
-  return (
-    <div data-slot={index} className="aspect-square rounded-[12px] border-2 border-dashed border-[#C3C8C2] flex items-center justify-center opacity-50">
-      <ImagePlaceholderIcon />
-    </div>
-  )
-}
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 const MAX_PHOTOS = 3
 
-export function ZoneSubmission() {
+// ─── Shared state hook ────────────────────────────────────────────────────────
+
+function useZoneSubmissionState() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
   const { markZoneComplete } = useApp()
-
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [photos, setPhotos] = useState<string[]>([])
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const prevPhotoCount = useRef(0)
-
-  // Page entrance
-  useGSAP(() => {
-    gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.zs-header',  { opacity: 0, y: 12, duration: 0.4 })
-      .from('.zs-info',    { opacity: 0, y: 14, duration: 0.4 }, '-=0.2')
-      .from('.zs-grid',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
-      .from('.zs-note',    { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
-      .from('.zs-nophoto', { opacity: 0, duration: 0.3 }, '-=0.1')
-      .from('.zs-submit',  { opacity: 0, y: 20, duration: 0.4 }, '-=0.1')
-  }, { scope: containerRef })
-
-  // Pop-in animation each time a photo is added
-  useEffect(() => {
-    const newCount = photos.length
-    if (newCount > prevPhotoCount.current) {
-      const newSlot = containerRef.current?.querySelector(`[data-slot="${newCount - 1}"]`)
-      if (newSlot) {
-        gsap.fromTo(newSlot,
-          { scale: 0.75, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' }
-        )
-      }
-    }
-    prevPhotoCount.current = newCount
-  }, [photos])
 
   const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
   const canSubmit = photos.length > 0
 
-  function handleAddPhoto() {
-    fileInputRef.current?.click()
-  }
+  function handleAddPhoto() { fileInputRef.current?.click() }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
-    const remaining = MAX_PHOTOS - photos.length
-    const toAdd = files.slice(0, remaining)
-    toAdd.forEach((file) => {
-      const url = URL.createObjectURL(file)
-      setPhotos((prev) => [...prev, url])
+    files.slice(0, MAX_PHOTOS - photos.length).forEach((file) => {
+      setPhotos((prev) => [...prev, URL.createObjectURL(file)])
     })
     e.target.value = ''
   }
@@ -181,23 +101,188 @@ export function ZoneSubmission() {
   async function handleSubmit() {
     if (!canSubmit) return
     setSubmitting(true)
-    // Simulate webhook POST — replace with real call once n8n webhook is ready
     await new Promise((r) => setTimeout(r, 900))
     markZoneComplete(zoneId!)
     navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
   }
 
+  return { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit }
+}
+
+// ─── Photo slot ───────────────────────────────────────────────────────────────
+
+interface PhotoSlotProps {
+  index: number; preview: string | null; active: boolean
+  onAdd: () => void; onRemove: () => void
+}
+
+function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) {
+  if (preview) {
+    return (
+      <div data-slot={index} className="relative aspect-square rounded-[12px] overflow-hidden">
+        <img src={preview} alt="Zone photo" className="w-full h-full object-cover" />
+        <button onClick={onRemove} aria-label="Remove photo"
+          className="absolute top-1.5 right-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center cursor-pointer">
+          <XIcon />
+        </button>
+      </div>
+    )
+  }
+  if (active) {
+    return (
+      <button data-slot={index} onClick={onAdd}
+        className="aspect-square rounded-[12px] border-2 border-dashed border-[#6B5D36] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F1DEAD]/20 transition-colors">
+        <CameraIcon />
+        <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#6B5D36]">Add photo</span>
+      </button>
+    )
+  }
+  return (
+    <div data-slot={index} className="aspect-square rounded-[12px] border-2 border-dashed border-[#C3C8C2] flex items-center justify-center opacity-50">
+      <ImagePlaceholderIcon />
+    </div>
+  )
+}
+
+// ─── Desktop layout ───────────────────────────────────────────────────────────
+
+function DesktopZoneSubmission() {
+  const state = useZoneSubmissionState()
+  const { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevPhotoCount = useRef(0)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.dzs-header', { opacity: 0, y: 12, duration: 0.4 })
+      .from('.dzs-info',   { opacity: 0, y: 14, duration: 0.4 }, '-=0.2')
+      .from('.dzs-grid',   { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.dzs-note',   { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+      .from('.dzs-footer', { opacity: 0, y: 16, duration: 0.4 }, '-=0.1')
+  }, { scope: containerRef })
+
+  useEffect(() => {
+    const newCount = photos.length
+    if (newCount > prevPhotoCount.current) {
+      const newSlot = containerRef.current?.querySelector(`[data-slot="${newCount - 1}"]`)
+      if (newSlot) gsap.fromTo(newSlot, { scale: 0.75, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' })
+    }
+    prevPhotoCount.current = newCount
+  }, [photos])
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#FAFAF4]">
+      <DesktopSidebar active="jobs" />
+      <main className="flex-1 overflow-y-auto">
+        <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 pb-24 flex flex-col gap-8">
+
+          {/* Header */}
+          <div className="dzs-header flex items-center gap-4">
+            <button onClick={() => navigate(-1)} aria-label="Go back"
+              className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">
+              <BackIcon />
+            </button>
+            <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.3px] text-[#1A1C19]">
+              {zoneName}
+            </h1>
+          </div>
+
+          {/* Instruction card */}
+          <div className="dzs-info bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex gap-4 items-start">
+            <div className="w-9 h-9 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0">
+              <InfoIcon />
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">
+                Take a photo after cleaning this zone.
+              </p>
+              <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">
+                Minimum 1 photo required. Ensure the entire area is visible and well-lit.
+              </p>
+            </div>
+          </div>
+
+          {/* Photo grid */}
+          <div className="dzs-grid grid grid-cols-3 gap-5">
+            {Array.from({ length: MAX_PHOTOS }).map((_, i) => (
+              <PhotoSlot key={i} index={i}
+                preview={photos[i] ?? null}
+                active={i === photos.length && photos.length < MAX_PHOTOS}
+                onAdd={handleAddPhoto}
+                onRemove={() => handleRemovePhoto(i)}
+              />
+            ))}
+          </div>
+
+          <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
+            multiple className="hidden" onChange={handleFileChange} />
+
+          {/* Note */}
+          <div className="dzs-note flex flex-col gap-2">
+            <label htmlFor="dZoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
+              Add a note (optional)
+            </label>
+            <textarea id="dZoneNote" value={note} onChange={(e) => setNote(e.target.value)}
+              rows={3} placeholder="Any notes about this zone..."
+              className="w-full border border-[#C3C8C2] rounded-[6px] px-4 py-3 font-['Lato',sans-serif] text-base text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] resize-none transition-colors"
+            />
+          </div>
+
+          {/* Footer actions */}
+          <div className="dzs-footer flex items-center justify-between gap-4">
+            <button onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
+              className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer">
+              I can't submit a photo
+            </button>
+            <button onClick={handleSubmit} disabled={!canSubmit || submitting}
+              className={[
+                'h-[56px] px-8 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center gap-2 shadow-lg transition-colors',
+                canSubmit && !submitting ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]' : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
+              ].join(' ')}>
+              {submitting ? 'Submitting…' : 'Submit Zone'}
+              {!submitting && <SendIcon />}
+            </button>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ─── Mobile layout ────────────────────────────────────────────────────────────
+
+function MobileZoneSubmission() {
+  const { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevPhotoCount = useRef(0)
+
+  useGSAP(() => {
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.zs-header',  { opacity: 0, y: 12, duration: 0.4 })
+      .from('.zs-info',    { opacity: 0, y: 14, duration: 0.4 }, '-=0.2')
+      .from('.zs-grid',    { opacity: 0, y: 12, duration: 0.35 }, '-=0.2')
+      .from('.zs-note',    { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+      .from('.zs-nophoto', { opacity: 0, duration: 0.3 }, '-=0.1')
+      .from('.zs-submit',  { opacity: 0, y: 20, duration: 0.4 }, '-=0.1')
+  }, { scope: containerRef })
+
+  useEffect(() => {
+    const newCount = photos.length
+    if (newCount > prevPhotoCount.current) {
+      const newSlot = containerRef.current?.querySelector(`[data-slot="${newCount - 1}"]`)
+      if (newSlot) gsap.fromTo(newSlot, { scale: 0.75, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.5)' })
+    }
+    prevPhotoCount.current = newCount
+  }, [photos])
+
   return (
     <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
       <div ref={containerRef} className="w-full max-w-[576px] mx-auto pt-8 px-4 pb-36 flex flex-col gap-8">
 
-        {/* Header */}
         <div className="zs-header flex items-center relative">
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-            className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0"
-          >
+          <button onClick={() => navigate(-1)} aria-label="Go back"
+            className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">
             <BackIcon />
           </button>
           <h2 className="absolute left-1/2 -translate-x-1/2 font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] whitespace-nowrap">
@@ -205,7 +290,6 @@ export function ZoneSubmission() {
           </h2>
         </div>
 
-        {/* Instruction card */}
         <div className="zs-info bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex gap-4 items-start">
           <div className="w-9 h-9 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0">
             <InfoIcon />
@@ -220,12 +304,9 @@ export function ZoneSubmission() {
           </div>
         </div>
 
-        {/* Photo upload grid */}
         <div className="zs-grid grid grid-cols-3 gap-4">
           {Array.from({ length: MAX_PHOTOS }).map((_, i) => (
-            <PhotoSlot
-              key={i}
-              index={i}
+            <PhotoSlot key={i} index={i}
               preview={photos[i] ?? null}
               active={i === photos.length && photos.length < MAX_PHOTOS}
               onAdd={handleAddPhoto}
@@ -234,60 +315,46 @@ export function ZoneSubmission() {
           ))}
         </div>
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
+          multiple className="hidden" onChange={handleFileChange} />
 
-        {/* Optional note */}
         <div className="zs-note flex flex-col gap-2">
           <label htmlFor="zoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
             Add a note (optional)
           </label>
-          <textarea
-            id="zoneNote"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            placeholder="Any notes about this zone..."
+          <textarea id="zoneNote" value={note} onChange={(e) => setNote(e.target.value)}
+            rows={3} placeholder="Any notes about this zone..."
             className="w-full border border-[#C3C8C2] rounded-[6px] px-4 py-3 font-['Lato',sans-serif] text-base text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] resize-none transition-colors"
           />
         </div>
 
-        {/* Can't submit photo link */}
         <div className="zs-nophoto flex justify-center">
-          <button
-            onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
-            className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer"
-          >
+          <button onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
+            className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer">
             I can't submit a photo
           </button>
         </div>
 
       </div>
 
-      {/* Fixed bottom submit bar */}
       <div className="zs-submit fixed bottom-0 left-0 right-0 max-w-[576px] mx-auto bg-gradient-to-t from-[#FAFAF4] via-[#FAFAF4] to-transparent pt-4 pb-8 px-4 z-50">
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit || submitting}
+        <button onClick={handleSubmit} disabled={!canSubmit || submitting}
           className={[
             'w-full py-4 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center justify-center gap-2 shadow-lg transition-colors',
-            canSubmit && !submitting
-              ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]'
-              : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
-          ].join(' ')}
-        >
+            canSubmit && !submitting ? 'bg-[#B8A77A] cursor-pointer hover:bg-[#a8976a]' : 'bg-[#B8A77A] opacity-50 cursor-not-allowed',
+          ].join(' ')}>
           {submitting ? 'Submitting…' : 'Submit Zone'}
           {!submitting && <SendIcon />}
         </button>
       </div>
     </div>
   )
+}
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
+
+/** Photo upload and submission screen for a single zone. */
+export function ZoneSubmission() {
+  const isDesktop = useIsDesktop()
+  return isDesktop ? <DesktopZoneSubmission /> : <MobileZoneSubmission />
 }
