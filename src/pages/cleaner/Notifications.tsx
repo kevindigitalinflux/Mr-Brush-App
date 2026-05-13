@@ -26,7 +26,7 @@ interface MockNotif {
 
 const MOCK_NOTIFS: MockNotif[] = [
   {
-    id: 'n1', variant: 'unread', avatarType: 'initials', initials: 'SJ', senderName: 'Sarah Jenkins',
+    id: 'n1', variant: 'read', avatarType: 'initials', initials: 'SJ', senderName: 'Sarah Jenkins',
     time: { en: '10m ago', es: 'hace 10 min', pt: 'há 10 min' },
     preview: {
       en: 'Great job on the 4th-floor lobby yesterday. Just a reminder to restock the cleaning cart before your next shift.',
@@ -123,7 +123,7 @@ function NotifCard({ notif, onPress, selected = false }: { notif: MockNotif; onP
       onClick={onPress}
       className={[
         'notif-card w-full rounded-[12px] p-4 flex flex-col gap-2 text-left cursor-pointer transition-shadow',
-        selected ? 'ring-2 ring-[#B8A77A] shadow-sm' : 'hover:shadow-sm',
+        selected ? 'shadow-[0_0_0_2px_#B8A77A]' : 'hover:shadow-sm',
         CARD_CLASS[notif.variant],
       ].join(' ')}
     >
@@ -183,10 +183,10 @@ function DesktopNotifications() {
   const listRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
-    gsap.timeline({ defaults: { ease: 'power2.out' } })
+    gsap.timeline({ defaults: { ease: 'power2.out', clearProps: 'all' } })
       .from('.dnotif-heading', { opacity: 0, y: 16, duration: 0.4 })
       .from('.notif-card', { opacity: 0, y: 16, duration: 0.4, stagger: 0.07 }, '-=0.2')
-  }, { scope: listRef })
+  }, { scope: listRef, dependencies: [] })
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
