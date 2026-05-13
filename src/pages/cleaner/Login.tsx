@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { getRoleFromId, getRouteForRole } from '../../lib/auth'
+import { parseDisplayId, getRouteForRole } from '../../lib/auth'
+import type { UserRole } from '../../lib/auth'
+import type { Language } from '../../lib/i18n'
+import { supabase } from '../../lib/supabase'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import logoSrc from '../../assets/logo/logo.png'
@@ -36,25 +39,10 @@ function ErrorIcon() {
   )
 }
 
-const MOCK_NAMES: Record<string, string> = {
-  C001: 'James Carter',
-  C002: 'Maria Santos',
-  C003: 'David Park',
-  C004: 'Lena Webb',
-  S001: 'Sarah Jenkins',
-  S002: 'Tom Bradley',
-  M001: 'Alistair Sterling',
-}
-
-/** Mock auth — replace with Supabase call once DB is ready. Any password accepted for now. */
-function mockAuth(displayId: string): boolean {
-  return getRoleFromId(displayId) !== null
-}
-
 // ─── Shared form logic (used by both mobile & desktop) ───────────────────────
 
 function useLoginForm() {
-  const { setUser, language } = useApp()
+  const { setUser, setLanguage, language } = useApp()
   const navigate = useNavigate()
   const [cleanerId, setCleanerId] = useState('')
   const [password, setPassword] = useState('')
@@ -66,13 +54,35 @@ function useLoginForm() {
     e.preventDefault()
     setError(false)
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
-    const role = getRoleFromId(cleanerId.trim())
-    const valid = mockAuth(cleanerId.trim()) && password.length > 0
-    if (!valid || !role) { setError(true); setLoading(false); return }
-    const displayId = cleanerId.trim().toUpperCase()
-    setUser({ id: crypto.randomUUID(), display_id: displayId, role, name: MOCK_NAMES[displayId] ?? displayId, language })
-    navigate(getRouteForRole(role))
+
+    const parsed = parseDisplayId(cleanerId.trim())
+    if (!parsed || password.length === 0) { setError(true); setLoading(false); return }
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: parsed.email,
+      password,
+    })
+
+    if (authError || !data.user) { setError(true); setLoading(false); return }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('display_id, role, full_name, language_preference')
+      .eq('id', data.user.id)
+      .single()
+
+    if (profileError || !profile) { setError(true); setLoading(false); return }
+
+    const lang = (profile.language_preference as Language) ?? language
+    setLanguage(lang)
+    setUser({
+      id: data.user.id,
+      display_id: profile.display_id,
+      role: profile.role as UserRole,
+      name: profile.full_name ?? profile.display_id,
+      language: lang,
+    })
+    navigate(getRouteForRole(profile.role as UserRole))
   }
 
   return { cleanerId, setCleanerId, password, setPassword, showPassword, setShowPassword, error, setError, loading, handleSubmit }

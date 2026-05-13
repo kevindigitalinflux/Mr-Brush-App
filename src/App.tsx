@@ -35,9 +35,9 @@ export default function App() {
           <Route path="/cleaner/history/:shiftId" element={<ShiftDetail />} />
           <Route path="/cleaner/notifications" element={<Notifications />} />
           <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
-          {/* Supervisor + Manager — not yet built */}
-          <Route path="/supervisor/*" element={<Placeholder label="Supervisor — not built yet" />} />
-          <Route path="/manager/*" element={<Placeholder label="Manager — not built yet" />} />
+          {/* Supervisor + Client — not yet built */}
+          <Route path="/supervisor/*" element={<Placeholder label="Supervisor Portal" />} />
+          <Route path="/client/*" element={<Placeholder label="Client Portal" />} />
         </Routes>
       </BrowserRouter>
     </AppProvider>

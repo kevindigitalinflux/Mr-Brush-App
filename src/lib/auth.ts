@@ -1,22 +1,29 @@
-export type UserRole = 'cleaner' | 'supervisor' | 'manager'
+export type UserRole = 'cleaner' | 'supervisor' | 'client'
 
-const PREFIX_MAP: Record<string, UserRole> = {
-  C: 'cleaner',
-  S: 'supervisor',
-  M: 'manager',
+interface ParsedId {
+  role: UserRole
+  email: string
 }
 
-/** Derives user role from display_id prefix (C/S/M). Fixed — do not change. */
-export function getRoleFromId(displayId: string): UserRole | null {
-  const prefix = displayId.charAt(0).toUpperCase()
-  return PREFIX_MAP[prefix] ?? null
+/**
+ * Parses a display ID into role + internal Supabase email alias.
+ * Order matters: CL before C, R before nothing.
+ * Formats: C0001 (cleaner), S0001 (supervisor), CL0001 (client), R001 (replacement cleaner)
+ */
+export function parseDisplayId(id: string): ParsedId | null {
+  const upper = id.trim().toUpperCase()
+  if (/^CL\d{4}$/.test(upper)) return { role: 'client',     email: `${upper.toLowerCase()}@internal.mrbrush.app` }
+  if (/^C\d{4}$/.test(upper))  return { role: 'cleaner',    email: `${upper.toLowerCase()}@internal.mrbrush.app` }
+  if (/^S\d{4}$/.test(upper))  return { role: 'supervisor', email: `${upper.toLowerCase()}@internal.mrbrush.app` }
+  if (/^R\d{3}$/.test(upper))  return { role: 'cleaner',    email: `${upper.toLowerCase()}@internal.mrbrush.app` }
+  return null
 }
 
 export function getRouteForRole(role: UserRole): string {
   const routes: Record<UserRole, string> = {
-    cleaner: '/cleaner/home',
-    supervisor: '/supervisor',
-    manager: '/manager',
+    cleaner:    '/cleaner/home',
+    supervisor: '/supervisor/home',
+    client:     '/client/home',
   }
   return routes[role]
 }
