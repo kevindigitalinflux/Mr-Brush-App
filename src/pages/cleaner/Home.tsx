@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
-import { MOCK_JOBS } from '../../lib/mockJobs'
+
 import { useTranslation } from '../../lib/useTranslation'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
@@ -180,16 +180,10 @@ function DesktopJobCard({ job, onPress }: { job: DisplayJob; onPress: () => void
 // ─── Shared job data hook ─────────────────────────────────────────────────────
 
 function useJobData() {
-  const { completedZones } = useApp()
-  const jobs: DisplayJob[] = MOCK_JOBS.map((job) => {
-    const zonesDone = job.zones.filter((z) => completedZones.has(z.id)).length
-    const zonesTotal = job.zones.length
-    const status: JobStatus = zonesDone === 0 ? 'not_started' : zonesDone === zonesTotal ? 'completed' : 'in_progress'
-    return { id: job.id, siteName: job.siteName, clientName: job.clientName, timeStart: job.timeStart, timeEnd: job.timeEnd, zonesTotal, zonesDone, status }
-  })
-  const totalZones = jobs.reduce((s, j) => s + j.zonesTotal, 0)
-  const doneZones = jobs.reduce((s, j) => s + j.zonesDone, 0)
-  const allDone = jobs.every((j) => j.status === 'completed')
+  const jobs: DisplayJob[] = []
+  const totalZones = 0
+  const doneZones = 0
+  const allDone = false
   return { jobs, totalZones, doneZones, allDone }
 }
 
@@ -243,11 +237,18 @@ function DesktopHome() {
             <div className="dh-section flex items-center justify-between mb-5">
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">Active Assignments</h2>
             </div>
-            <div className="grid grid-cols-2 gap-5">
-              {jobs.map((job) => (
-                <DesktopJobCard key={job.id} job={job} onPress={() => navigate(`/cleaner/job/${job.id}`)} />
-              ))}
-            </div>
+            {jobs.length === 0 ? (
+              <div className="bg-white border border-[#E3E3DD] rounded-[12px] p-12 flex flex-col items-center gap-2 shadow-sm">
+                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No Jobs Today</p>
+                <p className="font-['Lato',sans-serif] text-base text-[#737874]">You have no jobs assigned for today. Check back later or contact your supervisor.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-5">
+                {jobs.map((job) => (
+                  <DesktopJobCard key={job.id} job={job} onPress={() => navigate(`/cleaner/job/${job.id}`)} />
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
@@ -303,7 +304,16 @@ function MobileHome() {
           <div className="home-heading w-full px-6 pt-4">
             <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">{t('your_jobs_today')}</h3>
           </div>
-          {allDone ? (
+          {jobs.length === 0 ? (
+            <div className="w-full px-6">
+              <div className="bg-white border border-[#C3C8C2] rounded-[12px] flex flex-col items-center p-[33px]">
+                <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">No Jobs Today</h3>
+                <p className="font-['Lato',sans-serif] text-base text-[#6B5D36] text-center leading-[1.6]">
+                  You have no jobs assigned for today. Check back later or contact your supervisor.
+                </p>
+              </div>
+            </div>
+          ) : allDone ? (
             <div className="w-full px-6">
               <div className="bg-white border border-[#C3C8C2] rounded-[12px] flex flex-col items-center p-[33px]">
                 <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">All Jobs Completed</h3>

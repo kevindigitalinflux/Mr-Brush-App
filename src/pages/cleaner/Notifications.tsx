@@ -24,44 +24,7 @@ interface MockNotif {
   preview: Record<Language, string>
 }
 
-const MOCK_NOTIFS: MockNotif[] = [
-  {
-    id: 'n1', variant: 'read', avatarType: 'initials', initials: 'SJ', senderName: 'Sarah Jenkins',
-    time: { en: '10m ago', es: 'hace 10 min', pt: 'há 10 min' },
-    preview: {
-      en: 'Great job on the 4th-floor lobby yesterday. Just a reminder to restock the cleaning cart before your next shift.',
-      es: 'Excelente trabajo en el vestíbulo del 4.º piso ayer. Recuerda reponer el carrito de limpieza antes de tu próximo turno.',
-      pt: 'Ótimo trabalho no lobby do 4.º andar ontem. Lembre-se de reabastecer o carrinho de limpeza antes do próximo turno.',
-    },
-  },
-  {
-    id: 'n2', variant: 'read', avatarType: 'building', initials: 'BM', senderName: 'Building Manager',
-    time: { en: '2h ago', es: 'hace 2 h', pt: 'há 2 h' },
-    preview: {
-      en: 'Weekly maintenance schedule for the East Wing has been updated. Please review the new checklist in your dashboard.',
-      es: 'El horario de mantenimiento semanal para el Ala Este ha sido actualizado. Por favor revise la nueva lista en su panel.',
-      pt: 'O cronograma de manutenção semanal para a Ala Leste foi atualizado. Por favor revise a nova lista no seu painel.',
-    },
-  },
-  {
-    id: 'n3', variant: 'read', avatarType: 'initials', initials: 'MT', senderName: 'Mark Thompson',
-    time: { en: 'Yesterday', es: 'Ayer', pt: 'Ontem' },
-    preview: {
-      en: 'The delivery of the specialised stone polish has been delayed. Use the heritage wood wax on the library floor instead.',
-      es: 'La entrega del lustrador de piedra especializado ha sido retrasada. Use la cera de madera heritage en el suelo de la biblioteca.',
-      pt: 'A entrega do polidor de pedra especializado foi atrasada. Use a cera de madeira heritage no piso da biblioteca.',
-    },
-  },
-  {
-    id: 'n4', variant: 'urgent', avatarType: 'alert', initials: '!', senderName: 'System Alert',
-    time: { en: 'Just now', es: 'Ahora mismo', pt: 'Agora mesmo' },
-    preview: {
-      en: 'Water leak reported in Utility Room 3B. Please proceed to the location immediately to assist with containment.',
-      es: 'Fuga de agua en la Sala de Servicios 3B. Diríjase inmediatamente al lugar para ayudar con la contención.',
-      pt: 'Vazamento de água na Sala de Utilidades 3B. Dirija-se imediatamente ao local para ajudar na contenção.',
-    },
-  },
-]
+const MOCK_NOTIFS: MockNotif[] = []
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
@@ -178,8 +141,8 @@ function EndOfFeed() {
 function DesktopNotifications() {
   const t = useTranslation()
   const { language } = useApp()
-  const [selectedId, setSelectedId] = useState<string>('n1')
-  const selectedDetail = DETAIL_MAP[selectedId]
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selectedDetail = selectedId ? DETAIL_MAP[selectedId] : undefined
   const listRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -203,17 +166,26 @@ function DesktopNotifications() {
           </p>
         </div>
         <div className="overflow-y-auto flex-1 flex flex-col">
-          <div className="flex flex-col gap-2 p-4">
-            {MOCK_NOTIFS.map((n) => (
-              <NotifCard
-                key={n.id}
-                notif={n}
-                onPress={() => setSelectedId(n.id)}
-                selected={selectedId === n.id}
-              />
-            ))}
-          </div>
-          <EndOfFeed />
+          {MOCK_NOTIFS.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 p-8 text-center">
+              <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No notifications yet</p>
+              <p className="font-['Lato',sans-serif] text-sm text-[#737874]">Messages from your supervisor will appear here.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2 p-4">
+                {MOCK_NOTIFS.map((n) => (
+                  <NotifCard
+                    key={n.id}
+                    notif={n}
+                    onPress={() => setSelectedId(n.id)}
+                    selected={selectedId === n.id}
+                  />
+                ))}
+              </div>
+              <EndOfFeed />
+            </>
+          )}
         </div>
       </div>
 
@@ -265,11 +237,18 @@ function MobileNotifications() {
           </p>
         </div>
         <div className="px-6 flex flex-col gap-3">
-          {MOCK_NOTIFS.map((n) => (
-            <NotifCard key={n.id} notif={n} onPress={() => navigate(`/cleaner/notifications/${n.id}`)} />
-          ))}
+          {MOCK_NOTIFS.length === 0 ? (
+            <div className="notif-card bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-2">
+              <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No notifications yet</p>
+              <p className="font-['Lato',sans-serif] text-sm text-[#737874] text-center">Messages from your supervisor will appear here.</p>
+            </div>
+          ) : (
+            MOCK_NOTIFS.map((n) => (
+              <NotifCard key={n.id} notif={n} onPress={() => navigate(`/cleaner/notifications/${n.id}`)} />
+            ))
+          )}
         </div>
-        <div className="notif-eof"><EndOfFeed /></div>
+        {MOCK_NOTIFS.length > 0 && <div className="notif-eof"><EndOfFeed /></div>}
       </div>
       <BottomNav active="notifications" />
     </div>

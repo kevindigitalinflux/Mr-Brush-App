@@ -27,12 +27,6 @@ interface MockShift {
   timeEnd: string
 }
 
-const MOCK_SHIFTS: MockShift[] = [
-  { id: 'shift-001', date: '12 May', dayLabel: 'Monday',    siteName: 'Acme Corp HQ',       clientName: 'Acme Corp',            status: 'completed',  zonesTotal: 6, zonesDone: 6, timeStart: '08:00 AM', timeEnd: '11:30 AM' },
-  { id: 'shift-002', date: '08 May', dayLabel: 'Thursday',  siteName: 'Starlight Offices',  clientName: 'Starlight Ltd',        status: 'completed',  zonesTotal: 4, zonesDone: 4, timeStart: '02:00 PM', timeEnd: '04:30 PM' },
-  { id: 'shift-003', date: '05 May', dayLabel: 'Monday',    siteName: 'Riverside Complex',  clientName: 'Riverside Properties', status: 'incomplete', zonesTotal: 8, zonesDone: 5, timeStart: '09:00 AM', timeEnd: '01:00 PM' },
-  { id: 'shift-004', date: '01 May', dayLabel: 'Thursday',  siteName: 'Downtown Centre',    clientName: 'Downtown Co.',         status: 'completed',  zonesTotal: 5, zonesDone: 5, timeStart: '07:30 AM', timeEnd: '10:00 AM' },
-]
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -72,7 +66,7 @@ function useShiftHistoryData() {
     timeStart: j.timeStart, timeEnd: j.timeEnd,
   }))
 
-  const allShifts: MockShift[] = [...contextShifts, ...MOCK_SHIFTS]
+  const allShifts: MockShift[] = [...contextShifts]
 
   return { navigate, allShifts, initials, monthLabel, t }
 }
