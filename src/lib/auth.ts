@@ -22,7 +22,7 @@ export function parseDisplayId(id: string): ParsedId | null {
 export function getRouteForRole(role: UserRole): string {
   const routes: Record<UserRole, string> = {
     cleaner:    '/cleaner/home',
-    supervisor: '/supervisor/home',
+    supervisor: '/supervisor/dashboard',
     client:     '/client/home',
   }
   return routes[role]

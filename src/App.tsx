@@ -15,6 +15,11 @@ import { ShiftHistory } from './pages/cleaner/ShiftHistory'
 import { ShiftDetail } from './pages/cleaner/ShiftDetail'
 import { Notifications } from './pages/cleaner/Notifications'
 import { NotificationDetail } from './pages/cleaner/NotificationDetail'
+import { Dashboard } from './pages/supervisor/Dashboard'
+import { Jobs } from './pages/supervisor/Jobs'
+import { Workers } from './pages/supervisor/Workers'
+import { History } from './pages/supervisor/History'
+import { Evidence } from './pages/supervisor/Evidence'
 
 export default function App() {
   return (
@@ -35,8 +40,14 @@ export default function App() {
           <Route path="/cleaner/history/:shiftId" element={<ShiftDetail />} />
           <Route path="/cleaner/notifications" element={<Notifications />} />
           <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
-          {/* Supervisor + Client — not yet built */}
-          <Route path="/supervisor/*" element={<Placeholder label="Supervisor Portal" />} />
+          {/* Supervisor */}
+          <Route path="/supervisor/dashboard" element={<Dashboard />} />
+          <Route path="/supervisor/jobs" element={<Jobs />} />
+          <Route path="/supervisor/workers" element={<Workers />} />
+          <Route path="/supervisor/history" element={<History />} />
+          <Route path="/supervisor/evidence" element={<Evidence />} />
+          <Route path="/supervisor/evidence/:jobId" element={<Evidence />} />
+          {/* Client — not yet built */}
           <Route path="/client/*" element={<Placeholder label="Client Portal" />} />
         </Routes>
       </BrowserRouter>

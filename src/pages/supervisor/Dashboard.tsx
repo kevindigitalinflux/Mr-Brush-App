@@ -1,0 +1,287 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useApp } from '../../context/AppContext'
+import { supabase } from '../../lib/supabase'
+import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { gsap, useGSAP } from '../../lib/gsap'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ZoneSummary {
+  id: string
+  status: string
+  cleaner_id: string | null
+}
+
+interface SiteJob {
+  id: string
+  status: string
+  facility_name: string
+  zones: ZoneSummary[]
+  pending_evidence: number
+}
+
+// ─── Icons ───────────────────────────────────────────────────────────────────
+
+function CheckCircleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="#2F4A3D" strokeWidth="2" />
+      <path d="M8 12l3 3 5-5" stroke="#2F4A3D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AlertIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#BA1A1A" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M12 9v4M12 17h.01" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 18l6-6-6-6" stroke="#B8A77A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// ─── Site card ────────────────────────────────────────────────────────────────
+
+function SiteCard({ job }: { job: SiteJob }) {
+  const navigate = useNavigate()
+  const total = job.zones.length
+  const done = job.zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length
+  const assignedCleaners = new Set(job.zones.map((z) => z.cleaner_id).filter(Boolean)).size
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+
+  return (
+    <div className="site-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
+      <div className="bg-[#1A1C19] px-5 py-3 flex items-center justify-between">
+        <h3 className="font-['Poppins',sans-serif] font-semibold text-base text-white truncate pr-3">
+          {job.facility_name}
+        </h3>
+        <span className="shrink-0 bg-[#B8A77A] text-[#1A1C19] font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-2.5 py-0.5 rounded-full uppercase">
+          Active
+        </span>
+      </div>
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-['Lato',sans-serif] text-[#737874]">
+            {assignedCleaners} cleaner{assignedCleaners !== 1 ? 's' : ''} · {total} zone{total !== 1 ? 's' : ''}
+          </span>
+          <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>
+        </div>
+        <div className="w-full h-2 bg-[#E3E3DD] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[#B8A77A] rounded-full transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <button
+          onClick={() => navigate(`/supervisor/jobs?id=${job.id}`)}
+          className="mt-1 w-full h-10 border border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors"
+        >
+          Open Site
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Quick stat card ──────────────────────────────────────────────────────────
+
+function StatCard({ label, value, icon, onClick, accent }: {
+  label: string
+  value: number
+  icon: React.ReactNode
+  onClick?: () => void
+  accent?: 'warning' | 'error'
+}) {
+  const borderColor = accent === 'error' ? 'border-[#BA1A1A]' : accent === 'warning' ? 'border-[#B8A77A]' : 'border-[#D0CFCA]'
+  return (
+    <button
+      onClick={onClick}
+      disabled={!onClick}
+      className={[
+        'flex-1 bg-white rounded-[12px] border p-4 flex flex-col gap-1.5 text-left',
+        borderColor,
+        onClick ? 'cursor-pointer hover:shadow-sm transition-shadow' : 'cursor-default',
+      ].join(' ')}
+    >
+      <div className="flex items-center justify-between">
+        {icon}
+        {onClick && <ChevronRightIcon />}
+      </div>
+      <span className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-none">{value}</span>
+      <span className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-snug">{label}</span>
+    </button>
+  )
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyDashboard() {
+  const navigate = useNavigate()
+  return (
+    <div className="flex flex-col gap-4 py-4">
+      <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
+        <div className="w-14 h-14 rounded-full bg-[#F4F4EE] border border-[#D0CFCA] flex items-center justify-center mb-1">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2" stroke="#B8A77A" strokeWidth="2" />
+            <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#B8A77A" strokeWidth="2" />
+          </svg>
+        </div>
+        <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No active shifts today</p>
+        <p className="font-['Lato',sans-serif] text-sm text-[#737874] max-w-[240px]">
+          Create today's job to assign cleaners and zones.
+        </p>
+        <button
+          onClick={() => navigate('/supervisor/jobs')}
+          className="mt-3 h-10 px-6 bg-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#a8976a] transition-colors"
+        >
+          Go to Jobs
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Dashboard page ───────────────────────────────────────────────────────────
+
+/** Supervisor dashboard — today's active sites, pending evidence, and issue count. */
+export function Dashboard() {
+  const { user } = useApp()
+  const navigate = useNavigate()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [jobs, setJobs] = useState<SiteJob[]>([])
+  const [pendingCount, setPendingCount] = useState(0)
+  const [issueCount, setIssueCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  const initials = user?.name
+    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    : 'SV'
+
+  useEffect(() => {
+    if (!user) return
+    const today = new Date().toISOString().slice(0, 10)
+
+    async function load() {
+      setLoading(true)
+      const { data: jobRows } = await supabase
+        .from('jobs')
+        .select(`
+          id, status,
+          facilities ( name ),
+          job_zones ( id, status, cleaner_id ),
+          cleaning_logs ( id, status )
+        `)
+        .eq('supervisor_id', user!.id)
+        .eq('scheduled_date', today)
+
+      if (jobRows) {
+        const mapped: SiteJob[] = (jobRows as unknown as {
+          id: string
+          status: string
+          facilities: { name: string } | null
+          job_zones: ZoneSummary[]
+          cleaning_logs: { id: string; status: string }[]
+        }[]).map((r) => ({
+          id: r.id,
+          status: r.status,
+          facility_name: r.facilities?.name ?? 'Unknown Site',
+          zones: r.job_zones ?? [],
+          pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending_review').length,
+        }))
+        setJobs(mapped.filter((j) => j.status !== 'completed'))
+        setPendingCount(mapped.reduce((sum, j) => sum + j.pending_evidence, 0))
+        setIssueCount(mapped.reduce((sum, j) =>
+          sum + j.zones.filter((z) => z.status === 'flagged_no_photo').length, 0))
+      }
+      setLoading(false)
+    }
+
+    load()
+  }, [user])
+
+  useGSAP(() => {
+    if (loading) return
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.dash-heading',  { opacity: 0, y: 16, duration: 0.4 })
+      .from('.stat-card',     { opacity: 0, y: 12, duration: 0.35, stagger: 0.08 }, '-=0.2')
+      .from('.site-card',     { opacity: 0, y: 16, duration: 0.4, stagger: 0.08 }, '-=0.15')
+  }, { scope: containerRef, dependencies: [loading] })
+
+  const greeting = (() => {
+    const h = new Date().getHours()
+    if (h < 12) return 'Good morning'
+    if (h < 17) return 'Good afternoon'
+    return 'Good evening'
+  })()
+
+  return (
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
+
+        {/* Header */}
+        <div className="dash-heading flex items-center justify-between mb-6">
+          <div>
+            <p className="font-['Lato',sans-serif] text-[14px] text-[#737874]">{greeting},</p>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
+              {user?.name?.split(' ')[0] ?? 'Supervisor'}
+            </h1>
+          </div>
+          <div className="w-11 h-11 rounded-full bg-[#1A1C19] flex items-center justify-center">
+            <span className="font-['Poppins',sans-serif] font-bold text-sm text-[#B8A77A]">{initials}</span>
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div className="flex gap-3 mb-6">
+          <StatCard
+            label="Pending approvals"
+            value={pendingCount}
+            icon={<CheckCircleIcon />}
+            accent="warning"
+            onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
+          />
+          <StatCard
+            label="Issues reported"
+            value={issueCount}
+            icon={<AlertIcon />}
+            accent={issueCount > 0 ? 'error' : undefined}
+          />
+        </div>
+
+        {/* Today's section label */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-['Poppins',sans-serif] font-semibold text-[18px] text-[#1A1C19]">
+            Today's Sites
+          </h2>
+          <span className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
+            {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col gap-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-[168px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+            ))}
+          </div>
+        ) : jobs.length === 0 ? (
+          <EmptyDashboard />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {jobs.map((job) => <SiteCard key={job.id} job={job} />)}
+          </div>
+        )}
+      </div>
+      <SupervisorNav active="dashboard" />
+    </div>
+  )
+}

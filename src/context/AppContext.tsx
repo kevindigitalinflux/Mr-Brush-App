@@ -8,6 +8,7 @@ interface User {
   role: UserRole
   name: string
   language: Language
+  company_id: string
 }
 
 export interface CompletedJob {

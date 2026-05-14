@@ -67,7 +67,7 @@ function useLoginForm() {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('display_id, role, full_name, language_preference')
+      .select('display_id, role, full_name, language_preference, company_id')
       .eq('id', data.user.id)
       .single()
 
@@ -81,6 +81,7 @@ function useLoginForm() {
       role: profile.role as UserRole,
       name: profile.full_name ?? profile.display_id,
       language: lang,
+      company_id: profile.company_id ?? '',
     })
     navigate(getRouteForRole(profile.role as UserRole))
   }
