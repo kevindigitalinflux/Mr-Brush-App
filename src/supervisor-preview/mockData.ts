@@ -33,9 +33,10 @@ const today = new Date().toISOString().slice(0, 10)
 export const MOCK_TODAY_JOBS = [
   {
     id: 'job-today-001',
+    facility_id: 'b1000000-0000-0000-0000-000000000001',
     status: 'in_progress',
     scheduled_date: today,
-    facilities: { name: 'Downtown Corporate Hub' },
+    facilities: { id: 'b1000000-0000-0000-0000-000000000001', name: 'Downtown Corporate Hub' },
     job_zones: [
       { id: 'zone-001', zone_name: 'Main Reception',       status: 'completed',        cleaner_id: 'c0004-uuid' },
       { id: 'zone-002', zone_name: 'Executive Kitchen',    status: 'completed',        cleaner_id: 'c0002-uuid' },

@@ -9,10 +9,12 @@ import {
   MOCK_ISSUES,
 } from './mockData'
 
-// ─── Mutation builder (insert / update chains) ────────────────────────────────
+// ─── Mutation builder (insert / update / delete chains) ───────────────────────
 
 class MockMutationBuilder {
   eq(_col: string, _val: unknown): this { return this }
+  select(_cols?: string): this { return this }
+  single(): this { return this }
 
   then<T>(
     onfulfilled: (val: { data: null; error: null }) => T,
@@ -27,6 +29,7 @@ class MockMutationBuilder {
 class MockQueryBuilder {
   private _table: string
   private _isHistorical = false
+  private _isSingle = false
 
   constructor(table: string) { this._table = table }
 
@@ -39,7 +42,11 @@ class MockQueryBuilder {
   lte(_col: string, _val: unknown): this { return this }
   order(_col: string, _opts?: Record<string, unknown>): this { return this }
   limit(_n: number): this { return this }
-  single(): this { return this }
+
+  single(): this {
+    this._isSingle = true
+    return this
+  }
 
   lt(_col: string, _val: unknown): this {
     this._isHistorical = true
@@ -48,6 +55,7 @@ class MockQueryBuilder {
 
   insert(_data: unknown): MockMutationBuilder { return new MockMutationBuilder() }
   update(_data: unknown): MockMutationBuilder { return new MockMutationBuilder() }
+  delete(): MockMutationBuilder { return new MockMutationBuilder() }
 
   then<T>(
     onfulfilled: (val: { data: unknown; error: null }) => T,
@@ -58,6 +66,14 @@ class MockQueryBuilder {
   }
 
   private _resolveData(): unknown {
+    const raw = this._getTableData()
+    if (this._isSingle) {
+      return Array.isArray(raw) ? (raw[0] ?? null) : raw
+    }
+    return raw
+  }
+
+  private _getTableData(): unknown {
     switch (this._table) {
       case 'jobs':                       return this._isHistorical ? MOCK_HISTORY_JOBS : MOCK_TODAY_JOBS
       case 'facilities':                 return MOCK_FACILITIES

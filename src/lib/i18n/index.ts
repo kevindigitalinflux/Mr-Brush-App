@@ -123,16 +123,23 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_no_active_shifts_body: "Create today's job to assign cleaners and zones.",
     sv_go_to_jobs: 'Go to Jobs',
     sv_active_pill: 'ACTIVE',
-    sv_open_site: 'Open Site',
+    sv_manage_facility: 'Manage Facility',
 
-    // Supervisor — Jobs
+    // Supervisor — Jobs (facilities list)
     sv_jobs_title: 'Jobs',
+    sv_your_facilities: 'Your Facilities',
+    sv_no_facilities: 'No facilities assigned',
+    sv_no_facilities_body: 'You have no client facilities assigned yet.',
+    sv_scheduled_pill: 'SCHEDULED',
+    sv_no_job_today: 'No shift today',
+
+    // Supervisor — Jobs (zone management)
     sv_no_zones_yet: 'No zones yet',
-    sv_no_zones_body: 'Tap "Add Zone" to assign areas to cleaners.',
+    sv_no_zones_body: 'Tap "+ Zone" to assign areas to cleaners.',
     sv_no_shift_yet: 'No shift started yet',
     sv_no_shift_body: "Create today's job to start assigning zones and cleaners.",
     sv_start_todays_shift: "Start Today's Shift",
-    sv_add_zone: '+ Add Zone',
+    sv_add_zone: 'Zone',
     sv_zone_name_label: 'Zone Name',
     sv_zone_name_placeholder: 'e.g. Kitchen, Desk Zone 01',
     sv_assign_cleaner_label: 'Assign Cleaner',
@@ -141,6 +148,16 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_zone_name_required: 'Zone name is required.',
     sv_failed_add_zone: 'Failed to add zone. Try again.',
     sv_could_not_create: 'Could not create job. Try again.',
+
+    // Supervisor — Zone editing
+    sv_edit_zone_title: 'Edit Zone',
+    sv_zone_notes_label: 'Notes for Cleaners',
+    sv_zone_notes_placeholder: 'Optional guidance for the cleaner assigned to this zone...',
+    sv_save_changes: 'Save Changes',
+    sv_duplicate_zone: 'Duplicate',
+    sv_delete_zone: 'Delete Zone',
+    sv_failed_save_zone: 'Failed to save. Try again.',
+    sv_failed_delete_zone: 'Failed to delete. Try again.',
 
     // Supervisor — Workers
     sv_workers_title: 'Workers',
@@ -322,16 +339,23 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_no_active_shifts_body: 'Crea el trabajo de hoy para asignar limpiadores y zonas.',
     sv_go_to_jobs: 'Ir a Trabajos',
     sv_active_pill: 'ACTIVO',
-    sv_open_site: 'Abrir sitio',
+    sv_manage_facility: 'Gestionar instalación',
 
-    // Supervisor — Jobs
+    // Supervisor — Jobs (facilities list)
     sv_jobs_title: 'Trabajos',
+    sv_your_facilities: 'Tus instalaciones',
+    sv_no_facilities: 'Sin instalaciones asignadas',
+    sv_no_facilities_body: 'Aún no tienes instalaciones de clientes asignadas.',
+    sv_scheduled_pill: 'PROGRAMADO',
+    sv_no_job_today: 'Sin turno hoy',
+
+    // Supervisor — Jobs (zone management)
     sv_no_zones_yet: 'Sin zonas aún',
-    sv_no_zones_body: 'Pulsa "+ Añadir zona" para asignar áreas a los limpiadores.',
+    sv_no_zones_body: 'Pulsa "+ Zona" para asignar áreas a los limpiadores.',
     sv_no_shift_yet: 'Sin turno iniciado',
     sv_no_shift_body: 'Crea el trabajo de hoy para empezar a asignar zonas y limpiadores.',
     sv_start_todays_shift: 'Iniciar turno de hoy',
-    sv_add_zone: '+ Añadir zona',
+    sv_add_zone: 'Zona',
     sv_zone_name_label: 'Nombre de la zona',
     sv_zone_name_placeholder: 'p. ej. Cocina, Zona de escritorios 01',
     sv_assign_cleaner_label: 'Asignar limpiador',
@@ -340,6 +364,16 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_zone_name_required: 'El nombre de la zona es obligatorio.',
     sv_failed_add_zone: 'Error al añadir zona. Inténtalo de nuevo.',
     sv_could_not_create: 'No se pudo crear el trabajo. Inténtalo de nuevo.',
+
+    // Supervisor — Zone editing
+    sv_edit_zone_title: 'Editar zona',
+    sv_zone_notes_label: 'Notas para limpiadores',
+    sv_zone_notes_placeholder: 'Instrucciones opcionales para el limpiador asignado a esta zona...',
+    sv_save_changes: 'Guardar cambios',
+    sv_duplicate_zone: 'Duplicar',
+    sv_delete_zone: 'Eliminar zona',
+    sv_failed_save_zone: 'Error al guardar. Inténtalo de nuevo.',
+    sv_failed_delete_zone: 'Error al eliminar. Inténtalo de nuevo.',
 
     // Supervisor — Workers
     sv_workers_title: 'Trabajadores',
@@ -521,16 +555,23 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_no_active_shifts_body: 'Crie o trabalho de hoje para atribuir limpadores e zonas.',
     sv_go_to_jobs: 'Ir para Trabalhos',
     sv_active_pill: 'ATIVO',
-    sv_open_site: 'Abrir site',
+    sv_manage_facility: 'Gerir instalação',
 
-    // Supervisor — Jobs
+    // Supervisor — Jobs (facilities list)
     sv_jobs_title: 'Trabalhos',
+    sv_your_facilities: 'Suas instalações',
+    sv_no_facilities: 'Sem instalações atribuídas',
+    sv_no_facilities_body: 'Você ainda não tem instalações de clientes atribuídas.',
+    sv_scheduled_pill: 'AGENDADO',
+    sv_no_job_today: 'Sem turno hoje',
+
+    // Supervisor — Jobs (zone management)
     sv_no_zones_yet: 'Sem zonas ainda',
-    sv_no_zones_body: 'Toque em "+ Adicionar zona" para atribuir áreas aos limpadores.',
+    sv_no_zones_body: 'Toque em "+ Zona" para atribuir áreas aos limpadores.',
     sv_no_shift_yet: 'Nenhum turno iniciado',
     sv_no_shift_body: 'Crie o trabalho de hoje para começar a atribuir zonas e limpadores.',
     sv_start_todays_shift: 'Iniciar turno de hoje',
-    sv_add_zone: '+ Adicionar zona',
+    sv_add_zone: 'Zona',
     sv_zone_name_label: 'Nome da zona',
     sv_zone_name_placeholder: 'ex. Cozinha, Zona de mesas 01',
     sv_assign_cleaner_label: 'Atribuir limpador',
@@ -539,6 +580,16 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_zone_name_required: 'O nome da zona é obrigatório.',
     sv_failed_add_zone: 'Falha ao adicionar zona. Tente novamente.',
     sv_could_not_create: 'Não foi possível criar o trabalho. Tente novamente.',
+
+    // Supervisor — Zone editing
+    sv_edit_zone_title: 'Editar zona',
+    sv_zone_notes_label: 'Notas para limpadores',
+    sv_zone_notes_placeholder: 'Orientações opcionais para o limpador atribuído a esta zona...',
+    sv_save_changes: 'Salvar alterações',
+    sv_duplicate_zone: 'Duplicar',
+    sv_delete_zone: 'Excluir zona',
+    sv_failed_save_zone: 'Falha ao salvar. Tente novamente.',
+    sv_failed_delete_zone: 'Falha ao excluir. Tente novamente.',
 
     // Supervisor — Workers
     sv_workers_title: 'Trabalhadores',

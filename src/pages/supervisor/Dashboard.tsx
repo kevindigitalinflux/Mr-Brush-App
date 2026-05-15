@@ -17,6 +17,7 @@ interface ZoneSummary {
 
 interface SiteJob {
   id: string
+  facility_id: string
   status: string
   facility_name: string
   zones: ZoneSummary[]
@@ -103,10 +104,10 @@ function SiteCard({ job }: { job: SiteJob }) {
           />
         </div>
         <button
-          onClick={() => navigate(`/supervisor/jobs?id=${job.id}`)}
+          onClick={() => navigate(`/supervisor/jobs?facility=${job.facility_id}`)}
           className="mt-1 w-full h-10 border border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors"
         >
-          {t('sv_open_site')}
+          {t('sv_manage_facility')}
         </button>
       </div>
     </div>
@@ -195,7 +196,7 @@ export function Dashboard() {
       const { data: jobRows } = await supabase
         .from('jobs')
         .select(`
-          id, status,
+          id, status, facility_id,
           facilities ( name ),
           job_zones ( id, status, cleaner_id ),
           cleaning_logs ( id, status )
@@ -206,12 +207,14 @@ export function Dashboard() {
       if (jobRows) {
         const mapped: SiteJob[] = (jobRows as unknown as {
           id: string
+          facility_id: string
           status: string
           facilities: { name: string } | null
           job_zones: ZoneSummary[]
           cleaning_logs: { id: string; status: string }[]
         }[]).map((r) => ({
           id: r.id,
+          facility_id: r.facility_id,
           status: r.status,
           facility_name: r.facilities?.name ?? 'Unknown Site',
           zones: r.job_zones ?? [],
