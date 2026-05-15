@@ -9,6 +9,13 @@ import {
   MOCK_ISSUES,
 } from './mockData'
 
+// ─── Mock realtime channel ────────────────────────────────────────────────────
+
+class MockChannel {
+  on(_event: string, _filter: unknown, _cb: unknown): this { return this }
+  subscribe(_cb?: unknown): this { return this }
+}
+
 // ─── Mutation builder (insert / update / delete chains) ───────────────────────
 
 class MockMutationBuilder {
@@ -91,6 +98,8 @@ class MockQueryBuilder {
 
 export const supabase = {
   from: (table: string) => new MockQueryBuilder(table),
+  channel: (_name: string) => new MockChannel(),
+  removeChannel: (_channel: unknown) => Promise.resolve('ok' as const),
   auth: {
     getSession: () => Promise.resolve({ data: { session: null }, error: null }),
     onAuthStateChange: (_event: unknown, _cb: unknown) => ({

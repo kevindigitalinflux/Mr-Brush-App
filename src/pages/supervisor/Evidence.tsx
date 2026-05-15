@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
@@ -183,64 +183,71 @@ export function Evidence() {
   const [logs, setLogs] = useState<EvidenceLog[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(async (silent = false) => {
     if (!user) return
+    if (!silent) setLoading(true)
 
-    async function load() {
-      setLoading(true)
-      let query = supabase
-        .from('cleaning_logs')
-        .select(`
-          id, job_id, created_at, note, note_translated, no_photo_reason, status,
-          profiles!cleaning_logs_cleaner_id_fkey ( full_name, display_id ),
-          job_zones ( zone_name ),
-          evidence_files ( public_url ),
-          feedback_comments ( status, comment )
-        `)
-        .order('created_at', { ascending: false })
+    let query = supabase
+      .from('cleaning_logs')
+      .select(`
+        id, job_id, created_at, note, note_translated, no_photo_reason, status,
+        profiles!cleaning_logs_cleaner_id_fkey ( full_name, display_id ),
+        job_zones ( zone_name ),
+        evidence_files ( public_url ),
+        feedback_comments ( status, comment )
+      `)
+      .order('created_at', { ascending: false })
 
-      if (jobId) {
-        query = query.eq('job_id', jobId)
-      } else {
-        query = query.eq('status', 'pending_review')
-      }
-
-      const { data } = await query
-
-      if (data) {
-        const mapped: EvidenceLog[] = (data as unknown as {
-          id: string
-          job_id: string
-          created_at: string
-          note: string | null
-          note_translated: string | null
-          no_photo_reason: boolean
-          status: string
-          profiles: { full_name: string; display_id: string } | null
-          job_zones: { zone_name: string } | null
-          evidence_files: { public_url: string }[]
-          feedback_comments: { status: string; comment: string }[]
-        }[]).map((r) => ({
-          id: r.id,
-          job_id: r.job_id,
-          created_at: r.created_at,
-          note: r.note,
-          note_translated: r.note_translated,
-          no_photo_reason: r.no_photo_reason,
-          status: r.status,
-          cleaner_name: r.profiles?.full_name ?? 'Unknown',
-          cleaner_display_id: r.profiles?.display_id ?? '',
-          zone_name: r.job_zones?.zone_name ?? 'Unknown Zone',
-          photo_urls: (r.evidence_files ?? []).map((f) => f.public_url),
-          existing_feedback: r.feedback_comments?.[0] ?? null,
-        }))
-        setLogs(mapped)
-      }
-      setLoading(false)
+    if (jobId) {
+      query = query.eq('job_id', jobId)
+    } else {
+      query = query.eq('status', 'pending_review')
     }
 
-    load()
+    const { data } = await query
+
+    if (data) {
+      const mapped: EvidenceLog[] = (data as unknown as {
+        id: string
+        job_id: string
+        created_at: string
+        note: string | null
+        note_translated: string | null
+        no_photo_reason: boolean
+        status: string
+        profiles: { full_name: string; display_id: string } | null
+        job_zones: { zone_name: string } | null
+        evidence_files: { public_url: string }[]
+        feedback_comments: { status: string; comment: string }[]
+      }[]).map((r) => ({
+        id: r.id,
+        job_id: r.job_id,
+        created_at: r.created_at,
+        note: r.note,
+        note_translated: r.note_translated,
+        no_photo_reason: r.no_photo_reason,
+        status: r.status,
+        cleaner_name: r.profiles?.full_name ?? 'Unknown',
+        cleaner_display_id: r.profiles?.display_id ?? '',
+        zone_name: r.job_zones?.zone_name ?? 'Unknown Zone',
+        photo_urls: (r.evidence_files ?? []).map((f) => f.public_url),
+        existing_feedback: r.feedback_comments?.[0] ?? null,
+      }))
+      setLogs(mapped)
+    }
+    setLoading(false)
   }, [user, jobId])
+
+  useEffect(() => { if (user) load() }, [load, user])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel('supervisor-evidence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_logs' }, () => load(true))
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [user, load])
 
   useGSAP(() => {
     if (loading) return

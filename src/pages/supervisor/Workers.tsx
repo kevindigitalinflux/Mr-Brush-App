@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
@@ -68,53 +68,55 @@ export function Workers() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(async (silent = false) => {
     if (!user) return
+    const today = new Date().toISOString().slice(0, 10)
+    if (!silent) setLoading(true)
 
-    async function load() {
-      setLoading(true)
-      const today = new Date().toISOString().slice(0, 10)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_id, full_name, role')
+      .eq('company_id', user.company_id)
+      .in('role', ['cleaner', 'replacement_cleaner'])
+      .order('full_name')
 
-      // Fetch all company cleaners
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, display_id, full_name, role')
-        .eq('company_id', user!.company_id)
-        .in('role', ['cleaner', 'replacement_cleaner'])
-        .order('full_name')
+    if (!profiles) { setLoading(false); return }
 
-      if (!profiles) { setLoading(false); return }
+    const { data: zones } = await supabase
+      .from('job_zones')
+      .select(`id, cleaner_id, zone_name, status, jobs!inner( scheduled_date )`)
+      .eq('jobs.scheduled_date', today)
 
-      // Fetch today's zone assignments to determine active/idle
-      const { data: zones } = await supabase
-        .from('job_zones')
-        .select(`id, cleaner_id, zone_name, status, jobs!inner( scheduled_date )`)
-        .eq('jobs.scheduled_date', today)
-
-      const activeZoneMap = new Map<string, string>()
-      for (const z of zones ?? []) {
-        if (z.cleaner_id && (z.status === 'in_progress' || z.status === 'not_started')) {
-          activeZoneMap.set(z.cleaner_id, z.zone_name)
-        }
+    const activeZoneMap = new Map<string, string>()
+    for (const z of zones ?? []) {
+      if (z.cleaner_id && (z.status === 'in_progress' || z.status === 'not_started')) {
+        activeZoneMap.set(z.cleaner_id, z.zone_name)
       }
-
-      const mapped: Worker[] = profiles.map((p) => ({
-        id: p.id,
-        display_id: p.display_id,
-        full_name: p.full_name ?? p.display_id,
-        current_zone: activeZoneMap.get(p.id) ?? null,
-        status: p.role === 'replacement_cleaner'
-          ? 'replacement'
-          : activeZoneMap.has(p.id) ? 'active' : 'idle',
-        role: p.role,
-      }))
-
-      setWorkers(mapped)
-      setLoading(false)
     }
 
-    load()
+    setWorkers(profiles.map((p) => ({
+      id: p.id,
+      display_id: p.display_id,
+      full_name: p.full_name ?? p.display_id,
+      current_zone: activeZoneMap.get(p.id) ?? null,
+      status: p.role === 'replacement_cleaner'
+        ? 'replacement'
+        : activeZoneMap.has(p.id) ? 'active' : 'idle',
+      role: p.role,
+    })))
+    setLoading(false)
   }, [user])
+
+  useEffect(() => { if (user) load() }, [load, user])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel('supervisor-workers')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' }, () => load(true))
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [user, load])
 
   useGSAP(() => {
     if (loading) return

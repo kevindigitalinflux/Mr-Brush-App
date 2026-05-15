@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
@@ -187,49 +187,57 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [showLangSheet, setShowLangSheet] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async (silent = false) => {
     if (!user) return
     const today = new Date().toISOString().slice(0, 10)
+    if (!silent) setLoading(true)
 
-    async function load() {
-      setLoading(true)
-      const { data: jobRows } = await supabase
-        .from('jobs')
-        .select(`
-          id, status, facility_id,
-          facilities ( name ),
-          job_zones ( id, status, cleaner_id ),
-          cleaning_logs ( id, status )
-        `)
-        .eq('supervisor_id', user!.id)
-        .eq('scheduled_date', today)
+    const { data: jobRows } = await supabase
+      .from('jobs')
+      .select(`
+        id, status, facility_id,
+        facilities ( name ),
+        job_zones ( id, status, cleaner_id ),
+        cleaning_logs ( id, status )
+      `)
+      .eq('supervisor_id', user.id)
+      .eq('scheduled_date', today)
 
-      if (jobRows) {
-        const mapped: SiteJob[] = (jobRows as unknown as {
-          id: string
-          facility_id: string
-          status: string
-          facilities: { name: string } | null
-          job_zones: ZoneSummary[]
-          cleaning_logs: { id: string; status: string }[]
-        }[]).map((r) => ({
-          id: r.id,
-          facility_id: r.facility_id,
-          status: r.status,
-          facility_name: r.facilities?.name ?? 'Unknown Site',
-          zones: r.job_zones ?? [],
-          pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending_review').length,
-        }))
-        setJobs(mapped.filter((j) => j.status !== 'completed'))
-        setPendingCount(mapped.reduce((sum, j) => sum + j.pending_evidence, 0))
-        setIssueCount(mapped.reduce((sum, j) =>
-          sum + j.zones.filter((z) => z.status === 'flagged_no_photo').length, 0))
-      }
-      setLoading(false)
+    if (jobRows) {
+      const mapped: SiteJob[] = (jobRows as unknown as {
+        id: string
+        facility_id: string
+        status: string
+        facilities: { name: string } | null
+        job_zones: ZoneSummary[]
+        cleaning_logs: { id: string; status: string }[]
+      }[]).map((r) => ({
+        id: r.id,
+        facility_id: r.facility_id,
+        status: r.status,
+        facility_name: r.facilities?.name ?? 'Unknown Site',
+        zones: r.job_zones ?? [],
+        pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending_review').length,
+      }))
+      setJobs(mapped.filter((j) => j.status !== 'completed'))
+      setPendingCount(mapped.reduce((sum, j) => sum + j.pending_evidence, 0))
+      setIssueCount(mapped.reduce((sum, j) =>
+        sum + j.zones.filter((z) => z.status === 'flagged_no_photo').length, 0))
     }
-
-    load()
+    setLoading(false)
   }, [user])
+
+  useEffect(() => { if (user) load() }, [load, user])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel('supervisor-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' }, () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_logs' }, () => load(true))
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [user, load])
 
   useGSAP(() => {
     if (loading) return

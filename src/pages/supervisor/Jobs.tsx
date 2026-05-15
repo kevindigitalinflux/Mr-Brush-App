@@ -353,10 +353,10 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
   const [zones, setZones] = useState<Zone[]>([])
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!user) return
-    setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
+    if (!silent) setLoading(true)
 
     const [facilityRes, jobsRes, cleanersRes] = await Promise.all([
       supabase.from('facilities').select('id, name').eq('id', facilityId).single(),
@@ -398,7 +398,16 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
     setLoading(false)
   }, [user, facilityId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { if (user) load() }, [load, user])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel(`facility-zones-${facilityId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' }, () => load(true))
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [user, facilityId, load])
 
   useGSAP(() => {
     if (loading) return
