@@ -112,6 +112,76 @@ export const MOCK_CLEANING_LOGS = [
   },
 ]
 
+// ─── Mock supervisor notifications ───────────────────────────────────────────
+
+export const MOCK_SUPERVISOR_NOTIFICATIONS = [
+  {
+    id: 'sv-notif-001',
+    created_at: `${today}T08:15:00Z`,
+    client_name: 'Victoria Chan',
+    client_company: 'Downtown Corporate Hub',
+    message: 'Could you please confirm the executive bathroom is included in this week\'s deep clean? We have board members visiting Friday.',
+    is_urgent: true,
+    read: false,
+  },
+  {
+    id: 'sv-notif-002',
+    created_at: `${today}T07:02:00Z`,
+    client_name: 'James Okafor',
+    client_company: 'Downtown Corporate Hub',
+    message: 'Great service yesterday — the lobby looked spotless. Please pass on our thanks to the team.',
+    is_urgent: false,
+    read: false,
+  },
+  {
+    id: 'sv-notif-003',
+    created_at: new Date(Date.now() - 86400000).toISOString().slice(0, 10) + 'T16:44:00Z',
+    client_name: 'Dr. Sara Patel',
+    client_company: 'Westside Medical Centre',
+    message: 'Reminder: clinical zones require hospital-grade disinfectant only. Please ensure your team is briefed before next week\'s shift.',
+    is_urgent: true,
+    read: true,
+  },
+]
+
+// ─── Mock client issues ───────────────────────────────────────────────────────
+
+export const MOCK_ISSUES = [
+  {
+    id: 'issue-001',
+    created_at: `${today}T07:30:00Z`,
+    client_name: 'Victoria Chan',
+    facility_name: 'Downtown Corporate Hub',
+    title: 'Missed area in Meeting Room B',
+    note: 'The whiteboard and conference table were not wiped down. Please ensure this is included going forward.',
+    status: 'open' as const,
+    photo_urls: ['https://picsum.photos/seed/issue-conf/400/300'],
+  },
+  {
+    id: 'issue-002',
+    created_at: new Date(Date.now() - 86400000).toISOString().slice(0, 10) + 'T14:20:00Z',
+    client_name: 'James Okafor',
+    facility_name: 'Downtown Corporate Hub',
+    title: 'Residue left on kitchen countertops',
+    note: 'There was visible residue on the kitchen surfaces after cleaning yesterday morning.',
+    status: 'acknowledged' as const,
+    photo_urls: [
+      'https://picsum.photos/seed/issue-kitchen1/400/300',
+      'https://picsum.photos/seed/issue-kitchen2/400/300',
+    ],
+  },
+  {
+    id: 'issue-003',
+    created_at: new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10) + 'T09:10:00Z',
+    client_name: 'Dr. Sara Patel',
+    facility_name: 'Westside Medical Centre',
+    title: 'Cleaning protocol not followed in Ward 3',
+    note: 'Please confirm hospital-grade disinfectant was used in Ward 3. We noticed the wrong product in the cleaning log.',
+    status: 'resolved' as const,
+    photo_urls: [],
+  },
+]
+
 // ─── Mock history jobs ────────────────────────────────────────────────────────
 
 function daysAgo(n: number) {

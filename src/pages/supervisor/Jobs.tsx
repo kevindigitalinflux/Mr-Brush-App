@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { gsap, useGSAP } from '../../lib/gsap'
@@ -46,6 +47,7 @@ function StatusPill({ status }: { status: string }) {
 // ─── Zone row ─────────────────────────────────────────────────────────────────
 
 function ZoneRow({ zone }: { zone: Zone }) {
+  const t = useTranslation()
   return (
     <div className="zone-row flex items-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-4 py-3">
       <div className="flex-1 min-w-0">
@@ -53,7 +55,7 @@ function ZoneRow({ zone }: { zone: Zone }) {
           {zone.zone_name}
         </p>
         <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">
-          {zone.cleaner_name ?? 'Unassigned'}
+          {zone.cleaner_name ?? t('sv_unassigned')}
         </p>
       </div>
       <StatusPill status={zone.status} />
@@ -69,13 +71,14 @@ function AddZoneSheet({ jobId, cleaners, onClose, onAdded }: {
   onClose: () => void
   onAdded: () => void
 }) {
+  const t = useTranslation()
   const [zoneName, setZoneName] = useState('')
   const [cleanerId, setCleanerId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   async function handleAdd() {
-    if (!zoneName.trim()) { setError('Zone name is required.'); return }
+    if (!zoneName.trim()) { setError(t('sv_zone_name_required')); return }
     setSaving(true)
     const { error: err } = await supabase.from('job_zones').insert({
       job_id: jobId,
@@ -84,7 +87,7 @@ function AddZoneSheet({ jobId, cleaners, onClose, onAdded }: {
       status: 'not_started',
     })
     setSaving(false)
-    if (err) { setError('Failed to add zone. Try again.'); return }
+    if (err) { setError(t('sv_failed_add_zone')); return }
     onAdded()
     onClose()
   }
@@ -96,31 +99,31 @@ function AddZoneSheet({ jobId, cleaners, onClose, onAdded }: {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-[#D0CFCA] rounded-full mx-auto" />
-        <h2 className="font-['Poppins',sans-serif] font-semibold text-[20px] text-[#1A1C19]">Add Zone</h2>
+        <h2 className="font-['Poppins',sans-serif] font-semibold text-[20px] text-[#1A1C19]">{t('sv_add_zone')}</h2>
 
         <div className="flex flex-col gap-2">
           <label className="font-['Lato',sans-serif] font-bold text-[13px] tracking-[0.6px] text-[#434844] uppercase">
-            Zone Name
+            {t('sv_zone_name_label')}
           </label>
           <input
             type="text"
             value={zoneName}
             onChange={(e) => { setZoneName(e.target.value); setError('') }}
-            placeholder="e.g. Kitchen, Desk Zone 01"
+            placeholder={t('sv_zone_name_placeholder')}
             className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors"
           />
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="font-['Lato',sans-serif] font-bold text-[13px] tracking-[0.6px] text-[#434844] uppercase">
-            Assign Cleaner
+            {t('sv_assign_cleaner_label')}
           </label>
           <select
             value={cleanerId}
             onChange={(e) => setCleanerId(e.target.value)}
             className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] outline-none focus:border-[#B8A77A] transition-colors bg-white appearance-none cursor-pointer"
           >
-            <option value="">Unassigned</option>
+            <option value="">{t('sv_unassigned')}</option>
             {cleaners.map((c) => (
               <option key={c.id} value={c.id}>{c.full_name} ({c.display_id})</option>
             ))}
@@ -136,7 +139,7 @@ function AddZoneSheet({ jobId, cleaners, onClose, onAdded }: {
           disabled={saving}
           className="w-full h-[56px] bg-[#B8A77A] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60"
         >
-          {saving ? 'Adding…' : 'Add Zone'}
+          {saving ? t('submitting') : t('sv_add_zone')}
         </button>
       </div>
     </div>
@@ -146,6 +149,7 @@ function AddZoneSheet({ jobId, cleaners, onClose, onAdded }: {
 // ─── Job section ──────────────────────────────────────────────────────────────
 
 function JobSection({ job, cleaners, onZoneAdded }: { job: JobData; cleaners: Cleaner[]; onZoneAdded: () => void }) {
+  const t = useTranslation()
   const [showSheet, setShowSheet] = useState(false)
 
   return (
@@ -161,14 +165,14 @@ function JobSection({ job, cleaners, onZoneAdded }: { job: JobData; cleaners: Cl
           onClick={() => setShowSheet(true)}
           className="h-9 px-4 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
         >
-          + Add Zone
+          {t('sv_add_zone')}
         </button>
       </div>
 
       {job.zones.length === 0 ? (
         <div className="bg-white border border-dashed border-[#C3C8C2] rounded-[12px] p-6 flex flex-col items-center gap-1 text-center">
-          <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#737874]">No zones yet</p>
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#9E9E9E]">Tap "Add Zone" to assign areas to cleaners.</p>
+          <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#737874]">{t('sv_no_zones_yet')}</p>
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#9E9E9E]">{t('sv_no_zones_body')}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -196,12 +200,13 @@ function CreateJobView({ facilities, onCreated, userId, companyId }: {
   userId: string
   companyId: string
 }) {
+  const t = useTranslation()
   const [facilityId, setFacilityId] = useState(facilities[0]?.id ?? '')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
 
   async function handleCreate() {
-    if (!facilityId) { setError('Select a facility.'); return }
+    if (!facilityId) return
     setCreating(true)
     const { error: err } = await supabase.from('jobs').insert({
       supervisor_id: userId,
@@ -211,7 +216,7 @@ function CreateJobView({ facilities, onCreated, userId, companyId }: {
       company_id: companyId,
     })
     setCreating(false)
-    if (err) { setError('Could not create job. Try again.'); return }
+    if (err) { setError(t('sv_could_not_create')); return }
     onCreated()
   }
 
@@ -225,16 +230,16 @@ function CreateJobView({ facilities, onCreated, userId, companyId }: {
             <path d="M12 10v4M10 12h4" stroke="#B8A77A" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </div>
-        <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No shift started yet</p>
+        <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_shift_yet')}</p>
         <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] max-w-[220px]">
-          Create today's job to start assigning zones and cleaners.
+          {t('sv_no_shift_body')}
         </p>
       </div>
 
       {facilities.length > 1 && (
         <div className="flex flex-col gap-2">
           <label className="font-['Lato',sans-serif] font-bold text-[13px] tracking-[0.6px] text-[#434844] uppercase">
-            Facility
+            {t('sv_facility_label')}
           </label>
           <select
             value={facilityId}
@@ -255,7 +260,7 @@ function CreateJobView({ facilities, onCreated, userId, companyId }: {
         disabled={creating || !facilityId}
         className="w-full h-[56px] bg-[#B8A77A] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60"
       >
-        {creating ? 'Starting…' : 'Start Today\'s Shift'}
+        {creating ? t('submitting') : t('sv_start_todays_shift')}
       </button>
     </div>
   )
@@ -266,6 +271,7 @@ function CreateJobView({ facilities, onCreated, userId, companyId }: {
 /** Today's job management — create the shift, add zones, assign cleaners. */
 export function Jobs() {
   const { user } = useApp()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [jobs, setJobs] = useState<JobData[]>([])
   const [facilities, setFacilities] = useState<Facility[]>([])
@@ -340,7 +346,7 @@ export function Jobs() {
 
         <div className="jobs-heading mb-6">
           <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
-            Jobs
+            {t('sv_jobs_title')}
           </h1>
           <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-0.5">{today}</p>
         </div>

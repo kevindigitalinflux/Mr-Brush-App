@@ -114,6 +114,91 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_en: 'English',
     lang_es: 'Español',
     lang_pt: 'Português',
+
+    // Supervisor — Dashboard
+    sv_todays_sites: "Today's Sites",
+    sv_pending_approvals: 'Pending approvals',
+    sv_issues_reported: 'Issues reported',
+    sv_no_active_shifts: 'No active shifts today',
+    sv_no_active_shifts_body: "Create today's job to assign cleaners and zones.",
+    sv_go_to_jobs: 'Go to Jobs',
+    sv_active_pill: 'ACTIVE',
+    sv_open_site: 'Open Site',
+
+    // Supervisor — Jobs
+    sv_jobs_title: 'Jobs',
+    sv_no_zones_yet: 'No zones yet',
+    sv_no_zones_body: 'Tap "Add Zone" to assign areas to cleaners.',
+    sv_no_shift_yet: 'No shift started yet',
+    sv_no_shift_body: "Create today's job to start assigning zones and cleaners.",
+    sv_start_todays_shift: "Start Today's Shift",
+    sv_add_zone: '+ Add Zone',
+    sv_zone_name_label: 'Zone Name',
+    sv_zone_name_placeholder: 'e.g. Kitchen, Desk Zone 01',
+    sv_assign_cleaner_label: 'Assign Cleaner',
+    sv_unassigned: 'Unassigned',
+    sv_facility_label: 'Facility',
+    sv_zone_name_required: 'Zone name is required.',
+    sv_failed_add_zone: 'Failed to add zone. Try again.',
+    sv_could_not_create: 'Could not create job. Try again.',
+
+    // Supervisor — Workers
+    sv_workers_title: 'Workers',
+    sv_search_workers: 'Search by name or ID…',
+    sv_on_shift_section: 'On Shift',
+    sv_idle_section: 'Idle',
+    sv_replacement_section: 'Replacement Pool',
+    sv_no_workers_yet: 'No workers yet',
+    sv_no_workers_body: 'Workers will appear here once they are added to your company.',
+    sv_no_results: 'No results',
+    sv_no_results_body: 'Try a different name or ID.',
+    sv_active_worker: 'Active',
+    sv_idle_worker: 'Idle',
+    sv_replacement_worker: 'Replacement',
+
+    // Supervisor — History
+    sv_history_title: 'History',
+    sv_my_shifts: 'My Shifts',
+    sv_all_workers: 'All Workers',
+    sv_no_past_shifts: 'No past shifts yet',
+    sv_no_past_shifts_body: 'Completed shifts will appear here.',
+    sv_done_pill: 'Done',
+    sv_part_pill: 'Part',
+
+    // Supervisor — Evidence
+    sv_job_evidence: 'Job Evidence',
+    sv_pending_approvals_title: 'Pending Approvals',
+    sv_no_submissions: 'No submissions yet',
+    sv_no_submissions_body: 'Evidence uploaded by cleaners will appear here for review.',
+    sv_cleaner_note_label: 'Cleaner Note',
+    sv_no_photo_msg: 'No photo submitted — cleaner provided a reason.',
+    sv_feedback_placeholder: 'Add feedback (optional)…',
+    sv_approve: 'Approve',
+    sv_not_accepted: 'Not Accepted',
+    sv_submit_feedback: 'Submit Feedback',
+    sv_approved_pill: 'Approved',
+
+    // Supervisor — Notifications
+    sv_notifications_subtitle_sup: 'Messages and updates from your clients.',
+    sv_no_notifications: 'No notifications yet',
+    sv_no_notifications_body: 'Client messages will appear here.',
+    sv_select_message: 'Select a message to read',
+
+    // Supervisor — Issues
+    sv_issues_title: 'Client Issues',
+    sv_issues_subtitle: 'Reports and complaints submitted by clients.',
+    sv_no_issues: 'No issues reported',
+    sv_no_issues_body: 'Client-reported issues will appear here.',
+    sv_client_note_label: 'Client Note',
+    sv_reported_by: 'Reported by',
+    sv_acknowledge: 'Acknowledge',
+    sv_mark_resolved: 'Mark Resolved',
+    sv_status_open: 'Open',
+    sv_status_acknowledged: 'Acknowledged',
+    sv_status_resolved: 'Resolved',
+
+    // Language picker
+    sv_language_label: 'Language',
   },
   es: {
     // Auth
@@ -228,6 +313,91 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_en: 'English',
     lang_es: 'Español',
     lang_pt: 'Português',
+
+    // Supervisor — Dashboard
+    sv_todays_sites: 'Sitios de hoy',
+    sv_pending_approvals: 'Aprobaciones pendientes',
+    sv_issues_reported: 'Problemas reportados',
+    sv_no_active_shifts: 'Sin turnos activos hoy',
+    sv_no_active_shifts_body: 'Crea el trabajo de hoy para asignar limpiadores y zonas.',
+    sv_go_to_jobs: 'Ir a Trabajos',
+    sv_active_pill: 'ACTIVO',
+    sv_open_site: 'Abrir sitio',
+
+    // Supervisor — Jobs
+    sv_jobs_title: 'Trabajos',
+    sv_no_zones_yet: 'Sin zonas aún',
+    sv_no_zones_body: 'Pulsa "+ Añadir zona" para asignar áreas a los limpiadores.',
+    sv_no_shift_yet: 'Sin turno iniciado',
+    sv_no_shift_body: 'Crea el trabajo de hoy para empezar a asignar zonas y limpiadores.',
+    sv_start_todays_shift: 'Iniciar turno de hoy',
+    sv_add_zone: '+ Añadir zona',
+    sv_zone_name_label: 'Nombre de la zona',
+    sv_zone_name_placeholder: 'p. ej. Cocina, Zona de escritorios 01',
+    sv_assign_cleaner_label: 'Asignar limpiador',
+    sv_unassigned: 'Sin asignar',
+    sv_facility_label: 'Instalación',
+    sv_zone_name_required: 'El nombre de la zona es obligatorio.',
+    sv_failed_add_zone: 'Error al añadir zona. Inténtalo de nuevo.',
+    sv_could_not_create: 'No se pudo crear el trabajo. Inténtalo de nuevo.',
+
+    // Supervisor — Workers
+    sv_workers_title: 'Trabajadores',
+    sv_search_workers: 'Buscar por nombre o ID…',
+    sv_on_shift_section: 'En turno',
+    sv_idle_section: 'Disponible',
+    sv_replacement_section: 'Bolsa de sustitutos',
+    sv_no_workers_yet: 'Sin trabajadores aún',
+    sv_no_workers_body: 'Los trabajadores aparecerán aquí una vez añadidos a tu empresa.',
+    sv_no_results: 'Sin resultados',
+    sv_no_results_body: 'Prueba con otro nombre o ID.',
+    sv_active_worker: 'Activo',
+    sv_idle_worker: 'Disponible',
+    sv_replacement_worker: 'Sustituto',
+
+    // Supervisor — History
+    sv_history_title: 'Historial',
+    sv_my_shifts: 'Mis turnos',
+    sv_all_workers: 'Todos los trabajadores',
+    sv_no_past_shifts: 'Sin turnos anteriores',
+    sv_no_past_shifts_body: 'Los turnos completados aparecerán aquí.',
+    sv_done_pill: 'Hecho',
+    sv_part_pill: 'Parcial',
+
+    // Supervisor — Evidence
+    sv_job_evidence: 'Evidencias del trabajo',
+    sv_pending_approvals_title: 'Aprobaciones pendientes',
+    sv_no_submissions: 'Sin envíos aún',
+    sv_no_submissions_body: 'Las evidencias subidas por los limpiadores aparecerán aquí.',
+    sv_cleaner_note_label: 'Nota del limpiador',
+    sv_no_photo_msg: 'Sin foto — el limpiador proporcionó una razón.',
+    sv_feedback_placeholder: 'Añadir comentario (opcional)…',
+    sv_approve: 'Aprobar',
+    sv_not_accepted: 'No aceptado',
+    sv_submit_feedback: 'Enviar comentario',
+    sv_approved_pill: 'Aprobado',
+
+    // Supervisor — Notifications
+    sv_notifications_subtitle_sup: 'Mensajes y actualizaciones de tus clientes.',
+    sv_no_notifications: 'Sin notificaciones aún',
+    sv_no_notifications_body: 'Los mensajes de clientes aparecerán aquí.',
+    sv_select_message: 'Selecciona un mensaje para leer',
+
+    // Supervisor — Issues
+    sv_issues_title: 'Problemas de clientes',
+    sv_issues_subtitle: 'Informes y quejas presentados por los clientes.',
+    sv_no_issues: 'Sin problemas reportados',
+    sv_no_issues_body: 'Los problemas reportados por clientes aparecerán aquí.',
+    sv_client_note_label: 'Nota del cliente',
+    sv_reported_by: 'Reportado por',
+    sv_acknowledge: 'Confirmar',
+    sv_mark_resolved: 'Marcar resuelto',
+    sv_status_open: 'Abierto',
+    sv_status_acknowledged: 'Confirmado',
+    sv_status_resolved: 'Resuelto',
+
+    // Language picker
+    sv_language_label: 'Idioma',
   },
   pt: {
     // Auth
@@ -342,5 +512,90 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_en: 'English',
     lang_es: 'Español',
     lang_pt: 'Português',
+
+    // Supervisor — Dashboard
+    sv_todays_sites: 'Sites de hoje',
+    sv_pending_approvals: 'Aprovações pendentes',
+    sv_issues_reported: 'Problemas relatados',
+    sv_no_active_shifts: 'Sem turnos ativos hoje',
+    sv_no_active_shifts_body: 'Crie o trabalho de hoje para atribuir limpadores e zonas.',
+    sv_go_to_jobs: 'Ir para Trabalhos',
+    sv_active_pill: 'ATIVO',
+    sv_open_site: 'Abrir site',
+
+    // Supervisor — Jobs
+    sv_jobs_title: 'Trabalhos',
+    sv_no_zones_yet: 'Sem zonas ainda',
+    sv_no_zones_body: 'Toque em "+ Adicionar zona" para atribuir áreas aos limpadores.',
+    sv_no_shift_yet: 'Nenhum turno iniciado',
+    sv_no_shift_body: 'Crie o trabalho de hoje para começar a atribuir zonas e limpadores.',
+    sv_start_todays_shift: 'Iniciar turno de hoje',
+    sv_add_zone: '+ Adicionar zona',
+    sv_zone_name_label: 'Nome da zona',
+    sv_zone_name_placeholder: 'ex. Cozinha, Zona de mesas 01',
+    sv_assign_cleaner_label: 'Atribuir limpador',
+    sv_unassigned: 'Não atribuído',
+    sv_facility_label: 'Instalação',
+    sv_zone_name_required: 'O nome da zona é obrigatório.',
+    sv_failed_add_zone: 'Falha ao adicionar zona. Tente novamente.',
+    sv_could_not_create: 'Não foi possível criar o trabalho. Tente novamente.',
+
+    // Supervisor — Workers
+    sv_workers_title: 'Trabalhadores',
+    sv_search_workers: 'Pesquisar por nome ou ID…',
+    sv_on_shift_section: 'Em turno',
+    sv_idle_section: 'Disponível',
+    sv_replacement_section: 'Reserva de substitutos',
+    sv_no_workers_yet: 'Sem trabalhadores ainda',
+    sv_no_workers_body: 'Os trabalhadores aparecerão aqui após serem adicionados à sua empresa.',
+    sv_no_results: 'Sem resultados',
+    sv_no_results_body: 'Tente outro nome ou ID.',
+    sv_active_worker: 'Ativo',
+    sv_idle_worker: 'Disponível',
+    sv_replacement_worker: 'Substituto',
+
+    // Supervisor — History
+    sv_history_title: 'Histórico',
+    sv_my_shifts: 'Meus turnos',
+    sv_all_workers: 'Todos os trabalhadores',
+    sv_no_past_shifts: 'Sem turnos anteriores',
+    sv_no_past_shifts_body: 'Os turnos concluídos aparecerão aqui.',
+    sv_done_pill: 'Concluído',
+    sv_part_pill: 'Parcial',
+
+    // Supervisor — Evidence
+    sv_job_evidence: 'Evidências do trabalho',
+    sv_pending_approvals_title: 'Aprovações pendentes',
+    sv_no_submissions: 'Sem envios ainda',
+    sv_no_submissions_body: 'As evidências enviadas pelos limpadores aparecerão aqui.',
+    sv_cleaner_note_label: 'Nota do limpador',
+    sv_no_photo_msg: 'Sem foto — o limpador forneceu uma razão.',
+    sv_feedback_placeholder: 'Adicionar comentário (opcional)…',
+    sv_approve: 'Aprovar',
+    sv_not_accepted: 'Não aceito',
+    sv_submit_feedback: 'Enviar comentário',
+    sv_approved_pill: 'Aprovado',
+
+    // Supervisor — Notifications
+    sv_notifications_subtitle_sup: 'Mensagens e atualizações dos seus clientes.',
+    sv_no_notifications: 'Sem notificações ainda',
+    sv_no_notifications_body: 'Mensagens de clientes aparecerão aqui.',
+    sv_select_message: 'Selecione uma mensagem para ler',
+
+    // Supervisor — Issues
+    sv_issues_title: 'Problemas de clientes',
+    sv_issues_subtitle: 'Relatórios e reclamações enviados por clientes.',
+    sv_no_issues: 'Sem problemas relatados',
+    sv_no_issues_body: 'Problemas relatados por clientes aparecerão aqui.',
+    sv_client_note_label: 'Nota do cliente',
+    sv_reported_by: 'Relatado por',
+    sv_acknowledge: 'Confirmar',
+    sv_mark_resolved: 'Marcar resolvido',
+    sv_status_open: 'Aberto',
+    sv_status_acknowledged: 'Confirmado',
+    sv_status_resolved: 'Resolvido',
+
+    // Language picker
+    sv_language_label: 'Idioma',
   },
 }

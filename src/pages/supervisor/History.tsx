@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { gsap, useGSAP } from '../../lib/gsap'
@@ -33,6 +34,7 @@ function ChevronRightIcon() {
 
 function HistoryRow({ job }: { job: HistoryJob }) {
   const navigate = useNavigate()
+  const t = useTranslation()
   const isComplete = job.status === 'completed'
   const date = new Date(job.scheduled_date)
   const dayNum = date.toLocaleDateString('en-GB', { day: 'numeric' })
@@ -52,7 +54,7 @@ function HistoryRow({ job }: { job: HistoryJob }) {
           {job.facility_name}
         </p>
         <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
-          {job.zone_done} of {job.zone_total} zones
+          {job.zone_done} {t('of_count')} {job.zone_total} {t('zones')}
           {job.supervisor_name ? ` · ${job.supervisor_name}` : ''}
         </p>
       </div>
@@ -61,7 +63,7 @@ function HistoryRow({ job }: { job: HistoryJob }) {
           "font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.5px] px-2.5 py-1 rounded-full",
           isComplete ? 'bg-[#D7E6DB] text-[#2F4A3D]' : 'bg-[#E3E3DD] text-[#737874]',
         ].join(' ')}>
-          {isComplete ? 'Done' : 'Part'}
+          {isComplete ? t('sv_done_pill') : t('sv_part_pill')}
         </span>
         <ChevronRightIcon />
       </div>
@@ -74,6 +76,7 @@ function HistoryRow({ job }: { job: HistoryJob }) {
 /** Past job history for the supervisor — their own shifts and worker shifts. */
 export function History() {
   const { user } = useApp()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [tab, setTab] = useState<HistoryTab>('mine')
   const [jobs, setJobs] = useState<HistoryJob[]>([])
@@ -137,21 +140,21 @@ export function History() {
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
 
         <h1 className="history-heading font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5">
-          History
+          {t('sv_history_title')}
         </h1>
 
         {/* Tab toggle */}
         <div className="flex bg-[#E3E3DD] rounded-[8px] p-1 mb-6">
-          {(['mine', 'workers'] as HistoryTab[]).map((t) => (
+          {(['mine', 'workers'] as HistoryTab[]).map((key) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={key}
+              onClick={() => setTab(key)}
               className={[
                 "flex-1 h-9 rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[13px] transition-colors",
-                tab === t ? 'bg-white text-[#1A1C19] shadow-sm' : 'text-[#737874]',
+                tab === key ? 'bg-white text-[#1A1C19] shadow-sm' : 'text-[#737874]',
               ].join(' ')}
             >
-              {t === 'mine' ? 'My Shifts' : 'All Workers'}
+              {key === 'mine' ? t('sv_my_shifts') : t('sv_all_workers')}
             </button>
           ))}
         </div>
@@ -164,9 +167,9 @@ export function History() {
           </div>
         ) : jobs.length === 0 ? (
           <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
-            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No past shifts yet</p>
+            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_past_shifts')}</p>
             <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
-              Completed shifts will appear here.
+              {t('sv_no_past_shifts_body')}
             </p>
           </div>
         ) : (

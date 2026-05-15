@@ -20,6 +20,8 @@ import { Jobs } from './pages/supervisor/Jobs'
 import { Workers } from './pages/supervisor/Workers'
 import { History } from './pages/supervisor/History'
 import { Evidence } from './pages/supervisor/Evidence'
+import { SupervisorNotifications } from './pages/supervisor/SupervisorNotifications'
+import { Issues } from './pages/supervisor/Issues'
 
 export default function App() {
   return (
@@ -47,6 +49,8 @@ export default function App() {
           <Route path="/supervisor/history" element={<History />} />
           <Route path="/supervisor/evidence" element={<Evidence />} />
           <Route path="/supervisor/evidence/:jobId" element={<Evidence />} />
+          <Route path="/supervisor/notifications" element={<SupervisorNotifications />} />
+          <Route path="/supervisor/issues" element={<Issues />} />
           {/* Client — not yet built */}
           <Route path="/client/*" element={<Placeholder label="Client Portal" />} />
         </Routes>

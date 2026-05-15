@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { ImageViewer } from '../../components/ImageViewer'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -27,6 +29,7 @@ interface EvidenceLog {
 type Decision = 'approved' | 'rejected' | null
 
 function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId: string }) {
+  const t = useTranslation()
   const [decision, setDecision] = useState<Decision>(
     log.existing_feedback?.status === 'approved' ? 'approved'
     : log.existing_feedback?.status === 'rejected' ? 'rejected'
@@ -35,6 +38,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
   const [comment, setComment] = useState(log.existing_feedback?.comment ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(!!log.existing_feedback)
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
   async function handleSubmit() {
     if (!decision) return
@@ -66,7 +70,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
               "font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.5px] px-2.5 py-1 rounded-full",
               decision === 'approved' ? 'bg-[#D7E6DB] text-[#2F4A3D]' : 'bg-[#FDECEA] text-[#BA1A1A]',
             ].join(' ')}>
-              {decision === 'approved' ? 'Approved' : 'Not Accepted'}
+              {decision === 'approved' ? t('sv_approved_pill') : t('sv_not_accepted')}
             </span>
           )}
         </div>
@@ -79,18 +83,23 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
       {log.no_photo_reason ? (
         <div className="px-5 py-4 bg-[#FFF8EC]">
           <p className="font-['Lato',sans-serif] text-[13px] text-[#6F613A] italic">
-            No photo submitted — cleaner provided a reason.
+            {t('sv_no_photo_msg')}
           </p>
         </div>
       ) : log.photo_urls.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto px-5 py-4">
           {log.photo_urls.map((url, i) => (
-            <img
+            <button
               key={i}
-              src={url}
-              alt={`Zone photo ${i + 1}`}
-              className="w-[120px] h-[90px] object-cover rounded-[8px] shrink-0 bg-[#E3E3DD]"
-            />
+              onClick={() => setLightbox(url)}
+              className="shrink-0 w-[120px] h-[90px] rounded-[8px] overflow-hidden bg-[#E3E3DD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]"
+            >
+              <img
+                src={url}
+                alt={`Zone photo ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </button>
           ))}
         </div>
       ) : (
@@ -105,7 +114,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
       {(log.note_translated || log.note) && (
         <div className="px-5 pb-4">
           <p className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase mb-1">
-            Cleaner Note
+            {t('sv_cleaner_note_label')}
           </p>
           <p className="font-['Lato',sans-serif] text-[14px] text-[#434844] leading-relaxed">
             {log.note_translated ?? log.note}
@@ -119,7 +128,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Add feedback (optional)…"
+            placeholder={t('sv_feedback_placeholder')}
             rows={3}
             className="w-full border border-[#C3C8C2] rounded-[8px] px-4 py-3 font-['Lato',sans-serif] text-sm text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors resize-none"
           />
@@ -133,7 +142,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
                   : 'border-[#C3C8C2] text-[#434844] hover:border-[#2F4A3D] hover:text-[#2F4A3D]',
               ].join(' ')}
             >
-              Approve
+              {t('sv_approve')}
             </button>
             <button
               onClick={() => setDecision('rejected')}
@@ -144,7 +153,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
                   : 'border-[#C3C8C2] text-[#434844] hover:border-[#BA1A1A] hover:text-[#BA1A1A]',
               ].join(' ')}
             >
-              Not Accepted
+              {t('sv_not_accepted')}
             </button>
           </div>
           <button
@@ -152,10 +161,12 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
             disabled={!decision || submitting}
             className="w-full h-[52px] bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2e3130] transition-colors"
           >
-            {submitting ? 'Submitting…' : 'Submit Feedback'}
+            {submitting ? t('submitting') : t('sv_submit_feedback')}
           </button>
         </div>
       )}
+
+      {lightbox && <ImageViewer src={lightbox} onClose={() => setLightbox(null)} />}
     </div>
   )
 }
@@ -167,6 +178,7 @@ export function Evidence() {
   const { jobId } = useParams<{ jobId?: string }>()
   const { user } = useApp()
   const navigate = useNavigate()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [logs, setLogs] = useState<EvidenceLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -247,7 +259,7 @@ export function Evidence() {
             </svg>
           </button>
           <h1 className="font-['Poppins',sans-serif] font-bold text-[24px] text-[#1A1C19] leading-[1.1] tracking-[-0.3px]">
-            {jobId ? 'Job Evidence' : 'Pending Approvals'}
+            {jobId ? t('sv_job_evidence') : t('sv_pending_approvals_title')}
           </h1>
         </div>
 
@@ -259,9 +271,9 @@ export function Evidence() {
           </div>
         ) : logs.length === 0 ? (
           <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 flex flex-col items-center gap-2 text-center">
-            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No submissions yet</p>
+            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_submissions')}</p>
             <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
-              Evidence uploaded by cleaners will appear here for review.
+              {t('sv_no_submissions_body')}
             </p>
           </div>
         ) : (

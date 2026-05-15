@@ -5,6 +5,8 @@ import {
   MOCK_PROFILES,
   MOCK_JOB_ZONES,
   MOCK_CLEANING_LOGS,
+  MOCK_SUPERVISOR_NOTIFICATIONS,
+  MOCK_ISSUES,
 } from './mockData'
 
 // ─── Mutation builder (insert / update chains) ────────────────────────────────
@@ -57,12 +59,14 @@ class MockQueryBuilder {
 
   private _resolveData(): unknown {
     switch (this._table) {
-      case 'jobs':          return this._isHistorical ? MOCK_HISTORY_JOBS : MOCK_TODAY_JOBS
-      case 'facilities':    return MOCK_FACILITIES
-      case 'profiles':      return MOCK_PROFILES
-      case 'job_zones':     return MOCK_JOB_ZONES
-      case 'cleaning_logs': return MOCK_CLEANING_LOGS
-      default:              return []
+      case 'jobs':                       return this._isHistorical ? MOCK_HISTORY_JOBS : MOCK_TODAY_JOBS
+      case 'facilities':                 return MOCK_FACILITIES
+      case 'profiles':                   return MOCK_PROFILES
+      case 'job_zones':                  return MOCK_JOB_ZONES
+      case 'cleaning_logs':              return MOCK_CLEANING_LOGS
+      case 'supervisor_notifications':   return MOCK_SUPERVISOR_NOTIFICATIONS
+      case 'issues':                     return MOCK_ISSUES
+      default:                           return []
     }
   }
 }

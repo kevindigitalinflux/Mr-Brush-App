@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { gsap, useGSAP } from '../../lib/gsap'
@@ -17,16 +18,23 @@ interface Worker {
 
 // ─── Worker card ──────────────────────────────────────────────────────────────
 
-const STATUS_STYLES: Record<Worker['status'], { pill: string; label: string }> = {
-  active:      { pill: 'bg-[#D7E6DB] text-[#2F4A3D]',   label: 'Active'      },
-  idle:        { pill: 'bg-[#E3E3DD] text-[#737874]',    label: 'Idle'        },
-  replacement: { pill: 'bg-[#FFF3D1] text-[#6F613A]',   label: 'Replacement' },
+const STATUS_PILL: Record<Worker['status'], string> = {
+  active:      'bg-[#D7E6DB] text-[#2F4A3D]',
+  idle:        'bg-[#E3E3DD] text-[#737874]',
+  replacement: 'bg-[#FFF3D1] text-[#6F613A]',
 }
 
 function WorkerCard({ worker }: { worker: Worker }) {
+  const t = useTranslation()
   const initials = worker.full_name
     .split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-  const { pill, label } = STATUS_STYLES[worker.status]
+  const pill = STATUS_PILL[worker.status]
+  const statusLabels: Record<Worker['status'], string> = {
+    active:      t('sv_active_worker'),
+    idle:        t('sv_idle_worker'),
+    replacement: t('sv_replacement_worker'),
+  }
+  const label = statusLabels[worker.status]
 
   return (
     <div className="worker-card bg-white border border-[#D0CFCA] rounded-[12px] p-4 flex items-center gap-4">
@@ -54,6 +62,7 @@ function WorkerCard({ worker }: { worker: Worker }) {
 /** Lists all cleaners in the supervisor's company with their current status. */
 export function Workers() {
   const { user } = useApp()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [workers, setWorkers] = useState<Worker[]>([])
   const [search, setSearch] = useState('')
@@ -126,7 +135,7 @@ export function Workers() {
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
 
         <h1 className="workers-heading font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5">
-          Workers
+          {t('sv_workers_title')}
         </h1>
 
         {/* Search */}
@@ -139,7 +148,7 @@ export function Workers() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or ID…"
+            placeholder={t('sv_search_workers')}
             className="w-full h-[48px] bg-white border border-[#C3C8C2] rounded-[8px] pl-10 pr-4 font-['Lato',sans-serif] text-sm text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors"
           />
         </div>
@@ -153,10 +162,10 @@ export function Workers() {
         ) : filtered.length === 0 ? (
           <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
             <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">
-              {search ? 'No results' : 'No workers yet'}
+              {search ? t('sv_no_results') : t('sv_no_workers_yet')}
             </p>
             <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
-              {search ? 'Try a different name or ID.' : 'Workers will appear here once they are added to your company.'}
+              {search ? t('sv_no_results_body') : t('sv_no_workers_body')}
             </p>
           </div>
         ) : (
@@ -164,7 +173,7 @@ export function Workers() {
             {active.length > 0 && (
               <section>
                 <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-2">
-                  On Shift ({active.length})
+                  {t('sv_on_shift_section')} ({active.length})
                 </h2>
                 <div className="flex flex-col gap-2">
                   {active.map((w) => <WorkerCard key={w.id} worker={w} />)}
@@ -174,7 +183,7 @@ export function Workers() {
             {idle.length > 0 && (
               <section>
                 <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-2">
-                  Idle ({idle.length})
+                  {t('sv_idle_section')} ({idle.length})
                 </h2>
                 <div className="flex flex-col gap-2">
                   {idle.map((w) => <WorkerCard key={w.id} worker={w} />)}
@@ -184,7 +193,7 @@ export function Workers() {
             {replacement.length > 0 && (
               <section>
                 <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-2">
-                  Replacement Pool ({replacement.length})
+                  {t('sv_replacement_section')} ({replacement.length})
                 </h2>
                 <div className="flex flex-col gap-2">
                   {replacement.map((w) => <WorkerCard key={w.id} worker={w} />)}

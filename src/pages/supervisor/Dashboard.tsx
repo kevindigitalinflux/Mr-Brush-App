@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { LanguageSheet } from '../../components/supervisor/LanguageSheet'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,10 +51,29 @@ function ChevronRightIcon() {
   )
 }
 
+function BellIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="#1A1C19" strokeWidth="2" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 // ─── Site card ────────────────────────────────────────────────────────────────
 
 function SiteCard({ job }: { job: SiteJob }) {
   const navigate = useNavigate()
+  const t = useTranslation()
   const total = job.zones.length
   const done = job.zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length
   const assignedCleaners = new Set(job.zones.map((z) => z.cleaner_id).filter(Boolean)).size
@@ -65,7 +86,7 @@ function SiteCard({ job }: { job: SiteJob }) {
           {job.facility_name}
         </h3>
         <span className="shrink-0 bg-[#B8A77A] text-[#1A1C19] font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-2.5 py-0.5 rounded-full uppercase">
-          Active
+          {t('sv_active_pill')}
         </span>
       </div>
       <div className="px-5 py-4 flex flex-col gap-3">
@@ -85,7 +106,7 @@ function SiteCard({ job }: { job: SiteJob }) {
           onClick={() => navigate(`/supervisor/jobs?id=${job.id}`)}
           className="mt-1 w-full h-10 border border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors"
         >
-          Open Site
+          {t('sv_open_site')}
         </button>
       </div>
     </div>
@@ -126,6 +147,7 @@ function StatCard({ label, value, icon, onClick, accent }: {
 
 function EmptyDashboard() {
   const navigate = useNavigate()
+  const t = useTranslation()
   return (
     <div className="flex flex-col gap-4 py-4">
       <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
@@ -135,15 +157,15 @@ function EmptyDashboard() {
             <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#B8A77A" strokeWidth="2" />
           </svg>
         </div>
-        <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No active shifts today</p>
+        <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_active_shifts')}</p>
         <p className="font-['Lato',sans-serif] text-sm text-[#737874] max-w-[240px]">
-          Create today's job to assign cleaners and zones.
+          {t('sv_no_active_shifts_body')}
         </p>
         <button
           onClick={() => navigate('/supervisor/jobs')}
           className="mt-3 h-10 px-6 bg-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#a8976a] transition-colors"
         >
-          Go to Jobs
+          {t('sv_go_to_jobs')}
         </button>
       </div>
     </div>
@@ -156,15 +178,13 @@ function EmptyDashboard() {
 export function Dashboard() {
   const { user } = useApp()
   const navigate = useNavigate()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [jobs, setJobs] = useState<SiteJob[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [issueCount, setIssueCount] = useState(0)
   const [loading, setLoading] = useState(true)
-
-  const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'SV'
+  const [showLangSheet, setShowLangSheet] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -218,9 +238,9 @@ export function Dashboard() {
 
   const greeting = (() => {
     const h = new Date().getHours()
-    if (h < 12) return 'Good morning'
-    if (h < 17) return 'Good afternoon'
-    return 'Good evening'
+    if (h < 12) return t('good_morning')
+    if (h < 17) return t('good_afternoon')
+    return t('good_evening')
   })()
 
   return (
@@ -235,32 +255,46 @@ export function Dashboard() {
               {user?.name?.split(' ')[0] ?? 'Supervisor'}
             </h1>
           </div>
-          <div className="w-11 h-11 rounded-full bg-[#1A1C19] flex items-center justify-center">
-            <span className="font-['Poppins',sans-serif] font-bold text-sm text-[#B8A77A]">{initials}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowLangSheet(true)}
+              aria-label="Change language"
+              className="w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
+            >
+              <GlobeIcon />
+            </button>
+            <button
+              onClick={() => navigate('/supervisor/notifications')}
+              aria-label="Notifications"
+              className="w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
+            >
+              <BellIcon />
+            </button>
           </div>
         </div>
 
         {/* Quick stats */}
         <div className="flex gap-3 mb-6">
           <StatCard
-            label="Pending approvals"
+            label={t('sv_pending_approvals')}
             value={pendingCount}
             icon={<CheckCircleIcon />}
             accent="warning"
             onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
           />
           <StatCard
-            label="Issues reported"
+            label={t('sv_issues_reported')}
             value={issueCount}
             icon={<AlertIcon />}
             accent={issueCount > 0 ? 'error' : undefined}
+            onClick={() => navigate('/supervisor/issues')}
           />
         </div>
 
         {/* Today's section label */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-['Poppins',sans-serif] font-semibold text-[18px] text-[#1A1C19]">
-            Today's Sites
+            {t('sv_todays_sites')}
           </h2>
           <span className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
             {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -281,6 +315,8 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      {showLangSheet && <LanguageSheet onClose={() => setShowLangSheet(false)} />}
       <SupervisorNav active="dashboard" />
     </div>
   )
