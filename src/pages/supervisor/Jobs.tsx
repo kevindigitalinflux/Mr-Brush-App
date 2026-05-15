@@ -383,7 +383,7 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
 
     if (jobs.length > 0) {
       setJobId(jobs[0].id)
-      setZones((jobs[0].job_zones ?? []).map((z) => ({
+      setZones((jobs[0].job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
         id: z.id,
         zone_name: z.zone_name,
         status: z.status,

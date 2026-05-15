@@ -1,9 +1,10 @@
 import {
-  MOCK_TODAY_JOBS,
+  MOCK_ZONE_STORE,
+  getMockTodayJobs,
+  getMockJobZones,
   MOCK_HISTORY_JOBS,
   MOCK_FACILITIES,
   MOCK_PROFILES,
-  MOCK_JOB_ZONES,
   MOCK_CLEANING_LOGS,
   MOCK_SUPERVISOR_NOTIFICATIONS,
   MOCK_ISSUES,
@@ -16,10 +17,24 @@ class MockChannel {
   subscribe(_cb?: unknown): this { return this }
 }
 
-// ─── Mutation builder (insert / update / delete chains) ───────────────────────
+// ─── Mutation builder — applies changes to MOCK_ZONE_STORE ────────────────────
 
 class MockMutationBuilder {
-  eq(_col: string, _val: unknown): this { return this }
+  private _table: string
+  private _op: 'insert' | 'update' | 'delete'
+  private _data: Record<string, unknown>
+  private _eqId: string | null = null
+
+  constructor(table: string, op: 'insert' | 'update' | 'delete', data?: Record<string, unknown>) {
+    this._table = table
+    this._op    = op
+    this._data  = data ?? {}
+  }
+
+  eq(col: string, val: unknown): this {
+    if (col === 'id') this._eqId = String(val)
+    return this
+  }
   select(_cols?: string): this { return this }
   single(): this { return this }
 
@@ -27,7 +42,32 @@ class MockMutationBuilder {
     onfulfilled: (val: { data: null; error: null }) => T,
     _onrejected?: ((reason: unknown) => T) | null,
   ): Promise<T> {
+    this._apply()
     return Promise.resolve({ data: null, error: null }).then(onfulfilled)
+  }
+
+  private _apply() {
+    if (this._table !== 'job_zones') return
+
+    if (this._op === 'update' && this._eqId) {
+      const zone = MOCK_ZONE_STORE.find(z => z.id === this._eqId)
+      if (zone) Object.assign(zone, this._data)
+    }
+
+    if (this._op === 'insert') {
+      MOCK_ZONE_STORE.push({
+        id:         `zone-new-${Date.now()}`,
+        zone_name:  String(this._data.zone_name  ?? 'New Zone'),
+        status:     String(this._data.status     ?? 'not_started'),
+        cleaner_id: (this._data.cleaner_id as string | null) ?? null,
+        notes:      (this._data.notes      as string | null) ?? null,
+      })
+    }
+
+    if (this._op === 'delete' && this._eqId) {
+      const idx = MOCK_ZONE_STORE.findIndex(z => z.id === this._eqId)
+      if (idx >= 0) MOCK_ZONE_STORE.splice(idx, 1)
+    }
   }
 }
 
@@ -36,7 +76,7 @@ class MockMutationBuilder {
 class MockQueryBuilder {
   private _table: string
   private _isHistorical = false
-  private _isSingle = false
+  private _isSingle     = false
 
   constructor(table: string) { this._table = table }
 
@@ -60,32 +100,33 @@ class MockQueryBuilder {
     return this
   }
 
-  insert(_data: unknown): MockMutationBuilder { return new MockMutationBuilder() }
-  update(_data: unknown): MockMutationBuilder { return new MockMutationBuilder() }
-  delete(): MockMutationBuilder { return new MockMutationBuilder() }
+  insert(data: unknown): MockMutationBuilder {
+    return new MockMutationBuilder(this._table, 'insert', data as Record<string, unknown>)
+  }
+  update(data: unknown): MockMutationBuilder {
+    return new MockMutationBuilder(this._table, 'update', data as Record<string, unknown>)
+  }
+  delete(): MockMutationBuilder {
+    return new MockMutationBuilder(this._table, 'delete')
+  }
 
   then<T>(
     onfulfilled: (val: { data: unknown; error: null }) => T,
     _onrejected?: ((reason: unknown) => T) | null,
   ): Promise<T> {
-    const data = this._resolveData()
+    const raw  = this._resolve()
+    const data = this._isSingle
+      ? (Array.isArray(raw) ? (raw[0] ?? null) : raw)
+      : raw
     return Promise.resolve({ data, error: null }).then(onfulfilled)
   }
 
-  private _resolveData(): unknown {
-    const raw = this._getTableData()
-    if (this._isSingle) {
-      return Array.isArray(raw) ? (raw[0] ?? null) : raw
-    }
-    return raw
-  }
-
-  private _getTableData(): unknown {
+  private _resolve(): unknown {
     switch (this._table) {
-      case 'jobs':                       return this._isHistorical ? MOCK_HISTORY_JOBS : MOCK_TODAY_JOBS
+      case 'jobs':                       return this._isHistorical ? MOCK_HISTORY_JOBS : getMockTodayJobs()
+      case 'job_zones':                  return getMockJobZones()
       case 'facilities':                 return MOCK_FACILITIES
       case 'profiles':                   return MOCK_PROFILES
-      case 'job_zones':                  return MOCK_JOB_ZONES
       case 'cleaning_logs':              return MOCK_CLEANING_LOGS
       case 'supervisor_notifications':   return MOCK_SUPERVISOR_NOTIFICATIONS
       case 'issues':                     return MOCK_ISSUES

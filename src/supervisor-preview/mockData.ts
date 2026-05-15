@@ -26,43 +26,58 @@ export const MOCK_PROFILES = [
   { id: 'r001-uuid',  display_id: 'R001',  full_name: 'Ze Roberto Mejia',    role: 'replacement_cleaner' },
 ]
 
-// ─── Mock today's job ─────────────────────────────────────────────────────────
+// ─── Mutable zone store (single source of truth for preview mutations) ────────
 
-const today = new Date().toISOString().slice(0, 10)
-
-export const MOCK_TODAY_JOBS = [
-  {
-    id: 'job-today-001',
-    facility_id: 'b1000000-0000-0000-0000-000000000001',
-    status: 'in_progress',
-    scheduled_date: today,
-    facilities: { id: 'b1000000-0000-0000-0000-000000000001', name: 'Downtown Corporate Hub' },
-    job_zones: [
-      { id: 'zone-001', zone_name: 'Main Reception',       status: 'completed',        cleaner_id: 'c0004-uuid' },
-      { id: 'zone-002', zone_name: 'Executive Kitchen',    status: 'completed',        cleaner_id: 'c0002-uuid' },
-      { id: 'zone-003', zone_name: 'Meeting Room A',       status: 'in_progress',      cleaner_id: 'c0003-uuid' },
-      { id: 'zone-004', zone_name: 'Server Room B2',       status: 'not_started',      cleaner_id: null         },
-      { id: 'zone-005', zone_name: 'Ground Floor Toilets', status: 'flagged_no_photo', cleaner_id: 'c0004-uuid' },
-    ],
-    cleaning_logs: [
-      { id: 'log-001', status: 'pending_review' },
-      { id: 'log-002', status: 'pending_review' },
-      { id: 'log-003', status: 'pending_review' },
-    ],
-    profiles: null,
-  },
+export const MOCK_ZONE_STORE: {
+  id: string
+  zone_name: string
+  status: string
+  cleaner_id: string | null
+  notes: string | null
+}[] = [
+  { id: 'zone-001', zone_name: 'Main Reception',       status: 'completed',        cleaner_id: 'c0004-uuid', notes: null },
+  { id: 'zone-002', zone_name: 'Executive Kitchen',    status: 'completed',        cleaner_id: 'c0002-uuid', notes: null },
+  { id: 'zone-003', zone_name: 'Meeting Room A',       status: 'in_progress',      cleaner_id: 'c0003-uuid', notes: null },
+  { id: 'zone-004', zone_name: 'Server Room B2',       status: 'not_started',      cleaner_id: null,         notes: null },
+  { id: 'zone-005', zone_name: 'Ground Floor Toilets', status: 'flagged_no_photo', cleaner_id: 'c0004-uuid', notes: null },
 ]
 
-// ─── Mock job zones for Workers page (today's assignments) ────────────────────
+// Returns today's jobs with the current zone store — called fresh on every query
+export function getMockTodayJobs() {
+  const today = new Date().toISOString().slice(0, 10)
+  return [
+    {
+      id: 'job-today-001',
+      facility_id: 'b1000000-0000-0000-0000-000000000001',
+      status: 'in_progress',
+      scheduled_date: today,
+      facilities: { id: 'b1000000-0000-0000-0000-000000000001', name: 'Downtown Corporate Hub' },
+      job_zones: MOCK_ZONE_STORE,
+      cleaning_logs: [
+        { id: 'log-001', status: 'pending_review' },
+        { id: 'log-002', status: 'pending_review' },
+        { id: 'log-003', status: 'pending_review' },
+      ],
+      profiles: null,
+    },
+  ]
+}
 
-export const MOCK_JOB_ZONES = [
-  { id: 'zone-001', cleaner_id: 'c0004-uuid', zone_name: 'Main Reception',       status: 'completed',        jobs: { scheduled_date: today } },
-  { id: 'zone-002', cleaner_id: 'c0002-uuid', zone_name: 'Executive Kitchen',    status: 'completed',        jobs: { scheduled_date: today } },
-  { id: 'zone-003', cleaner_id: 'c0003-uuid', zone_name: 'Meeting Room A',       status: 'in_progress',      jobs: { scheduled_date: today } },
-  { id: 'zone-005', cleaner_id: 'c0004-uuid', zone_name: 'Ground Floor Toilets', status: 'flagged_no_photo', jobs: { scheduled_date: today } },
-]
+// Returns zone list with the jobs join shape (for Workers page)
+export function getMockJobZones() {
+  const today = new Date().toISOString().slice(0, 10)
+  return MOCK_ZONE_STORE
+    .filter(z => z.cleaner_id !== null)
+    .map(z => ({ ...z, jobs: { scheduled_date: today } }))
+}
+
+// Static snapshots kept for any direct imports that still exist
+export const MOCK_TODAY_JOBS = getMockTodayJobs()
+export const MOCK_JOB_ZONES  = getMockJobZones()
 
 // ─── Mock cleaning logs for Evidence ─────────────────────────────────────────
+
+const today = new Date().toISOString().slice(0, 10)
 
 export const MOCK_CLEANING_LOGS = [
   {
