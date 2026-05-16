@@ -8,6 +8,7 @@ import {
   MOCK_CLEANING_LOGS,
   MOCK_SUPERVISOR_NOTIFICATIONS,
   MOCK_ISSUES,
+  MOCK_CLEANER_RATINGS,
 } from './mockData'
 
 // ─── Mock realtime channel ────────────────────────────────────────────────────
@@ -47,26 +48,38 @@ class MockMutationBuilder {
   }
 
   private _apply() {
-    if (this._table !== 'job_zones') return
-
-    if (this._op === 'update' && this._eqId) {
-      const zone = MOCK_ZONE_STORE.find(z => z.id === this._eqId)
-      if (zone) Object.assign(zone, this._data)
+    if (this._table === 'job_zones') {
+      if (this._op === 'update' && this._eqId) {
+        const zone = MOCK_ZONE_STORE.find(z => z.id === this._eqId)
+        if (zone) Object.assign(zone, this._data)
+      }
+      if (this._op === 'insert') {
+        MOCK_ZONE_STORE.push({
+          id:         `zone-new-${Date.now()}`,
+          zone_name:  String(this._data.zone_name  ?? 'New Zone'),
+          status:     String(this._data.status     ?? 'not_started'),
+          cleaner_id: (this._data.cleaner_id as string | null) ?? null,
+          notes:      (this._data.notes      as string | null) ?? null,
+        })
+      }
+      if (this._op === 'delete' && this._eqId) {
+        const idx = MOCK_ZONE_STORE.findIndex(z => z.id === this._eqId)
+        if (idx >= 0) MOCK_ZONE_STORE.splice(idx, 1)
+      }
     }
 
-    if (this._op === 'insert') {
-      MOCK_ZONE_STORE.push({
-        id:         `zone-new-${Date.now()}`,
-        zone_name:  String(this._data.zone_name  ?? 'New Zone'),
-        status:     String(this._data.status     ?? 'not_started'),
-        cleaner_id: (this._data.cleaner_id as string | null) ?? null,
-        notes:      (this._data.notes      as string | null) ?? null,
+    if (this._table === 'cleaner_ratings' && this._op === 'insert') {
+      MOCK_CLEANER_RATINGS.unshift({
+        id:             `rating-new-${Date.now()}`,
+        cleaner_id:     String(this._data.cleaner_id     ?? ''),
+        rated_by_id:    String(this._data.rated_by_id    ?? ''),
+        rated_by_name:  String(this._data.rated_by_name  ?? ''),
+        rated_by_role:  (this._data.rated_by_role as 'supervisor' | 'client') ?? 'supervisor',
+        rating:         Number(this._data.rating         ?? 0),
+        notes:          String(this._data.notes          ?? ''),
+        evidence_urls:  (this._data.evidence_urls as string[]) ?? [],
+        created_at:     String(this._data.created_at     ?? new Date().toISOString()),
       })
-    }
-
-    if (this._op === 'delete' && this._eqId) {
-      const idx = MOCK_ZONE_STORE.findIndex(z => z.id === this._eqId)
-      if (idx >= 0) MOCK_ZONE_STORE.splice(idx, 1)
     }
   }
 }
@@ -130,6 +143,7 @@ class MockQueryBuilder {
       case 'cleaning_logs':              return MOCK_CLEANING_LOGS
       case 'supervisor_notifications':   return MOCK_SUPERVISOR_NOTIFICATIONS
       case 'issues':                     return MOCK_ISSUES
+      case 'cleaner_ratings':            return MOCK_CLEANER_RATINGS
       default:                           return []
     }
   }

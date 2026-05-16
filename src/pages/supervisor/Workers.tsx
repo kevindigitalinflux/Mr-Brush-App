@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { StarDisplay } from '../../components/supervisor/StarDisplay'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,6 +16,7 @@ interface Worker {
   current_zone: string | null
   status: 'active' | 'idle' | 'replacement'
   role: string
+  avg_rating: number | null
 }
 
 // ─── Worker card ──────────────────────────────────────────────────────────────
@@ -24,7 +27,7 @@ const STATUS_PILL: Record<Worker['status'], string> = {
   replacement: 'bg-[#FFF3D1] text-[#6F613A]',
 }
 
-function WorkerCard({ worker }: { worker: Worker }) {
+function WorkerCard({ worker, onClick }: { worker: Worker; onClick: () => void }) {
   const t = useTranslation()
   const initials = worker.full_name
     .split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -37,7 +40,10 @@ function WorkerCard({ worker }: { worker: Worker }) {
   const label = statusLabels[worker.status]
 
   return (
-    <div className="worker-card bg-white border border-[#D0CFCA] rounded-[12px] p-4 flex items-center gap-4">
+    <button
+      onClick={onClick}
+      className="worker-card w-full bg-white border border-[#D0CFCA] rounded-[12px] p-4 flex items-center gap-4 text-left hover:border-[#B8A77A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]"
+    >
       <div className="w-11 h-11 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">
         <span className="font-['Poppins',sans-serif] font-bold text-sm text-[#B8A77A]">{initials}</span>
       </div>
@@ -49,11 +55,16 @@ function WorkerCard({ worker }: { worker: Worker }) {
           {worker.display_id}
           {worker.current_zone ? ` · ${worker.current_zone}` : ''}
         </p>
+        {worker.avg_rating !== null && (
+          <div className="mt-1">
+            <StarDisplay value={worker.avg_rating} size="sm" />
+          </div>
+        )}
       </div>
       <span className={`shrink-0 font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.5px] px-2.5 py-1 rounded-full ${pill}`}>
         {label}
       </span>
-    </div>
+    </button>
   )
 }
 
@@ -63,6 +74,7 @@ function WorkerCard({ worker }: { worker: Worker }) {
 export function Workers() {
   const { user } = useApp()
   const t = useTranslation()
+  const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const [workers, setWorkers] = useState<Worker[]>([])
   const [search, setSearch] = useState('')
@@ -87,6 +99,17 @@ export function Workers() {
       .select(`id, cleaner_id, zone_name, status, jobs!inner( scheduled_date )`)
       .eq('jobs.scheduled_date', today)
 
+    const { data: ratingRows } = await supabase
+      .from('cleaner_ratings')
+      .select('cleaner_id, rating')
+
+    const ratingsByCleanerId = new Map<string, number[]>()
+    for (const r of (ratingRows as { cleaner_id: string; rating: number }[] ?? [])) {
+      const list = ratingsByCleanerId.get(r.cleaner_id) ?? []
+      list.push(r.rating)
+      ratingsByCleanerId.set(r.cleaner_id, list)
+    }
+
     const activeZoneMap = new Map<string, string>()
     for (const z of zones ?? []) {
       if (z.cleaner_id && (z.status === 'in_progress' || z.status === 'not_started')) {
@@ -94,16 +117,23 @@ export function Workers() {
       }
     }
 
-    setWorkers(profiles.map((p) => ({
-      id: p.id,
-      display_id: p.display_id,
-      full_name: p.full_name ?? p.display_id,
-      current_zone: activeZoneMap.get(p.id) ?? null,
-      status: p.role === 'replacement_cleaner'
-        ? 'replacement'
-        : activeZoneMap.has(p.id) ? 'active' : 'idle',
-      role: p.role,
-    })))
+    setWorkers(profiles.map((p) => {
+      const ratingList = ratingsByCleanerId.get(p.id) ?? []
+      const avg = ratingList.length > 0
+        ? ratingList.reduce((s, v) => s + v, 0) / ratingList.length
+        : null
+      return {
+        id: p.id,
+        display_id: p.display_id,
+        full_name: p.full_name ?? p.display_id,
+        current_zone: activeZoneMap.get(p.id) ?? null,
+        status: p.role === 'replacement_cleaner'
+          ? 'replacement'
+          : activeZoneMap.has(p.id) ? 'active' : 'idle',
+        role: p.role,
+        avg_rating: avg,
+      }
+    }))
     setLoading(false)
   }, [user])
 
@@ -178,7 +208,7 @@ export function Workers() {
                   {t('sv_on_shift_section')} ({active.length})
                 </h2>
                 <div className="flex flex-col gap-2">
-                  {active.map((w) => <WorkerCard key={w.id} worker={w} />)}
+                  {active.map((w) => <WorkerCard key={w.id} worker={w} onClick={() => navigate(`/supervisor/workers/${w.id}`)} />)}
                 </div>
               </section>
             )}
@@ -188,7 +218,7 @@ export function Workers() {
                   {t('sv_idle_section')} ({idle.length})
                 </h2>
                 <div className="flex flex-col gap-2">
-                  {idle.map((w) => <WorkerCard key={w.id} worker={w} />)}
+                  {idle.map((w) => <WorkerCard key={w.id} worker={w} onClick={() => navigate(`/supervisor/workers/${w.id}`)} />)}
                 </div>
               </section>
             )}
@@ -198,7 +228,7 @@ export function Workers() {
                   {t('sv_replacement_section')} ({replacement.length})
                 </h2>
                 <div className="flex flex-col gap-2">
-                  {replacement.map((w) => <WorkerCard key={w.id} worker={w} />)}
+                  {replacement.map((w) => <WorkerCard key={w.id} worker={w} onClick={() => navigate(`/supervisor/workers/${w.id}`)} />)}
                 </div>
               </section>
             )}

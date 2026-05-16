@@ -216,6 +216,32 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Language picker
     sv_language_label: 'Language',
+
+    // Supervisor — Cleaner Profile & Ratings
+    sv_cleaner_profile: 'Cleaner Profile',
+    sv_overall_rating: 'Overall Rating',
+    sv_no_ratings_yet: 'No ratings yet',
+    sv_ratings_count: 'ratings',
+    sv_rate_this_cleaner: 'Rate This Cleaner',
+    sv_star_1: 'Poor',
+    sv_star_2: 'Fair',
+    sv_star_3: 'Good',
+    sv_star_4: 'Very Good',
+    sv_star_5: 'Excellent',
+    sv_rating_notes_label: 'Rating Notes',
+    sv_rating_notes_placeholder: 'Explain your rating in detail…',
+    sv_evidence_photos_label: 'Supporting Evidence',
+    sv_evidence_hint: 'At least 1 photo required to submit a rating.',
+    sv_add_photos: 'Add Photos',
+    sv_submit_rating: 'Submit Rating',
+    sv_rating_submitted: 'Rating Submitted',
+    sv_rating_submitted_body: 'Your rating has been recorded. The cleaner will be notified.',
+    sv_rating_error_star: 'Please select a star rating.',
+    sv_rating_error_notes: 'Please add notes to support your rating.',
+    sv_rating_error_photo: 'At least one supporting photo is required.',
+    sv_rating_history: 'Rating History',
+    sv_by_supervisor_badge: 'Supervisor',
+    sv_by_client_badge: 'Client',
   },
   es: {
     // Auth
@@ -432,6 +458,32 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Language picker
     sv_language_label: 'Idioma',
+
+    // Supervisor — Perfil de limpiador y valoraciones
+    sv_cleaner_profile: 'Perfil del limpiador',
+    sv_overall_rating: 'Valoración general',
+    sv_no_ratings_yet: 'Sin valoraciones aún',
+    sv_ratings_count: 'valoraciones',
+    sv_rate_this_cleaner: 'Valorar a este limpiador',
+    sv_star_1: 'Malo',
+    sv_star_2: 'Regular',
+    sv_star_3: 'Bueno',
+    sv_star_4: 'Muy bueno',
+    sv_star_5: 'Excelente',
+    sv_rating_notes_label: 'Notas de valoración',
+    sv_rating_notes_placeholder: 'Explica tu valoración en detalle…',
+    sv_evidence_photos_label: 'Evidencia de apoyo',
+    sv_evidence_hint: 'Se requiere al menos 1 foto para enviar una valoración.',
+    sv_add_photos: 'Añadir fotos',
+    sv_submit_rating: 'Enviar valoración',
+    sv_rating_submitted: 'Valoración enviada',
+    sv_rating_submitted_body: 'Tu valoración ha sido registrada. El limpiador será notificado.',
+    sv_rating_error_star: 'Por favor, selecciona una valoración de estrellas.',
+    sv_rating_error_notes: 'Por favor, añade notas para justificar tu valoración.',
+    sv_rating_error_photo: 'Se requiere al menos una foto de apoyo.',
+    sv_rating_history: 'Historial de valoraciones',
+    sv_by_supervisor_badge: 'Supervisor',
+    sv_by_client_badge: 'Cliente',
   },
   pt: {
     // Auth
@@ -648,5 +700,31 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Language picker
     sv_language_label: 'Idioma',
+
+    // Supervisor — Perfil do limpador e avaliações
+    sv_cleaner_profile: 'Perfil do limpador',
+    sv_overall_rating: 'Avaliação geral',
+    sv_no_ratings_yet: 'Sem avaliações ainda',
+    sv_ratings_count: 'avaliações',
+    sv_rate_this_cleaner: 'Avaliar este limpador',
+    sv_star_1: 'Ruim',
+    sv_star_2: 'Regular',
+    sv_star_3: 'Bom',
+    sv_star_4: 'Muito bom',
+    sv_star_5: 'Excelente',
+    sv_rating_notes_label: 'Notas de avaliação',
+    sv_rating_notes_placeholder: 'Explique sua avaliação em detalhes…',
+    sv_evidence_photos_label: 'Evidências de apoio',
+    sv_evidence_hint: 'Pelo menos 1 foto é obrigatória para enviar uma avaliação.',
+    sv_add_photos: 'Adicionar fotos',
+    sv_submit_rating: 'Enviar avaliação',
+    sv_rating_submitted: 'Avaliação enviada',
+    sv_rating_submitted_body: 'Sua avaliação foi registrada. O limpador será notificado.',
+    sv_rating_error_star: 'Por favor, selecione uma avaliação de estrelas.',
+    sv_rating_error_notes: 'Por favor, adicione notas para justificar sua avaliação.',
+    sv_rating_error_photo: 'Pelo menos uma foto de apoio é obrigatória.',
+    sv_rating_history: 'Histórico de avaliações',
+    sv_by_supervisor_badge: 'Supervisor',
+    sv_by_client_badge: 'Cliente',
   },
 }

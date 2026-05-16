@@ -198,6 +198,65 @@ export const MOCK_ISSUES = [
   },
 ]
 
+// ─── Mock cleaner ratings ────────────────────────────────────────────────────
+
+export const MOCK_CLEANER_RATINGS: {
+  id: string
+  cleaner_id: string
+  rated_by_id: string
+  rated_by_name: string
+  rated_by_role: 'supervisor' | 'client'
+  rating: number
+  notes: string
+  evidence_urls: string[]
+  created_at: string
+}[] = [
+  {
+    id: 'rating-001',
+    cleaner_id: 'c0004-uuid',
+    rated_by_id: 'mock-supervisor-s0001',
+    rated_by_name: 'Orfa Martinez',
+    rated_by_role: 'supervisor',
+    rating: 4,
+    notes: 'Kevin did excellent work in the main reception — left it spotless. Docked one star as zone notes were not fully followed.',
+    evidence_urls: ['https://picsum.photos/seed/ev-001/400/300'],
+    created_at: `${today}T09:00:00Z`,
+  },
+  {
+    id: 'rating-002',
+    cleaner_id: 'c0004-uuid',
+    rated_by_id: 'client-001',
+    rated_by_name: 'Victoria Chan',
+    rated_by_role: 'client',
+    rating: 5,
+    notes: 'The reception area was immaculate when we arrived. Kevin went above and beyond — even polished the door handles.',
+    evidence_urls: [],
+    created_at: `${today}T10:30:00Z`,
+  },
+  {
+    id: 'rating-003',
+    cleaner_id: 'c0002-uuid',
+    rated_by_id: 'mock-supervisor-s0001',
+    rated_by_name: 'Orfa Martinez',
+    rated_by_role: 'supervisor',
+    rating: 3,
+    notes: 'Kitchen was cleaned but grease marks left on the extractor fan. Needs more attention to detail.',
+    evidence_urls: ['https://picsum.photos/seed/ev-003/400/300', 'https://picsum.photos/seed/ev-003b/400/300'],
+    created_at: new Date(Date.now() - 86400000).toISOString().slice(0, 10) + 'T14:00:00Z',
+  },
+  {
+    id: 'rating-004',
+    cleaner_id: 'c0003-uuid',
+    rated_by_id: 'mock-supervisor-s0001',
+    rated_by_name: 'Orfa Martinez',
+    rated_by_role: 'supervisor',
+    rating: 4,
+    notes: 'Meeting Room A cleaned efficiently and on time. Glass partition could use more polish next time.',
+    evidence_urls: ['https://picsum.photos/seed/ev-004/400/300'],
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10) + 'T11:30:00Z',
+  },
+]
+
 // ─── Mock history jobs ────────────────────────────────────────────────────────
 
 function daysAgo(n: number) {
