@@ -162,113 +162,123 @@ function AbsenceSheet({ cleaner, supervisorId, companyId, onClose }: AbsenceShee
       shift_date: new Date().toISOString().slice(0, 10),
     })
     setSubmitting(false)
-    if (err) { setError(t('sv_absence_error')); return }
+    if (err) { setError(err.message); return }
     setSuccess(true)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-[200] flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-[20px] w-full max-w-[480px] mx-auto max-h-[82vh] flex flex-col overflow-hidden">
 
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 bg-[#D0CFCA] rounded-full" />
-        </div>
+      {/* Sheet — relative container so absolute children anchor to it */}
+      <div className="relative bg-white rounded-t-[20px] w-full max-w-[480px] mx-auto overflow-hidden" style={{ height: '88vh' }}>
 
-        <div className="px-6 pb-3 shrink-0">
-          <h2 className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#1A1C19]">
-            {t('sv_absence_sheet_title')}
-          </h2>
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
-            {t('sv_absence_sheet_body')}
-          </p>
-        </div>
+        {/* Scrollable content — pb-[88px] reserves space for the pinned button */}
+        <div className={`absolute inset-0 overflow-y-auto${success ? '' : ' pb-[88px]'}`}>
 
-        {success ? (
-          <div className="px-6 pb-10 flex flex-col items-center gap-2 text-center">
-            <div className="w-14 h-14 rounded-full bg-[#D7E6DB] flex items-center justify-center mb-2">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <p className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19]">{t('sv_absence_success')}</p>
-            <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">{t('sv_absence_success_body')}</p>
-            <button
-              onClick={onClose}
-              className="mt-4 h-10 px-6 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors"
-            >
-              Done
-            </button>
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 bg-[#D0CFCA] rounded-full" />
           </div>
-        ) : (
-          <>
-            <div className="px-6 pb-3 shrink-0">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8" stroke="#737874" strokeWidth="2" />
-                  <path d="M21 21l-4.35-4.35" stroke="#737874" strokeWidth="2" strokeLinecap="round" />
+
+          <div className="px-6 pb-3">
+            <h2 className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#1A1C19]">
+              {t('sv_absence_sheet_title')}
+            </h2>
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
+              {t('sv_absence_sheet_body')}
+            </p>
+          </div>
+
+          {success ? (
+            <div className="px-6 pb-10 flex flex-col items-center gap-2 text-center">
+              <div className="w-14 h-14 rounded-full bg-[#D7E6DB] flex items-center justify-center mb-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t('sv_absence_search')}
-                  className="w-full h-[44px] border border-[#C3C8C2] rounded-[8px] pl-10 pr-4 font-['Lato',sans-serif] text-[14px] outline-none focus:border-[#B8A77A] transition-colors"
-                />
               </div>
-            </div>
-
-            <div className="overflow-y-auto flex-1 px-6 pb-2 flex flex-col gap-1">
-              {filtered.map((p) => {
-                const isSelf = p.id === supervisorId
-                const initials = p.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-                const isSelected = selected === p.id
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelected(p.id)}
-                    className={`flex items-center gap-3 p-3 rounded-[10px] text-left transition-colors w-full ${isSelected ? 'bg-[#F4F4EE] border border-[#B8A77A]' : 'hover:bg-[#F9F9F5] border border-transparent'}`}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">
-                      <span className="font-['Poppins',sans-serif] font-bold text-xs text-[#B8A77A]">{initials}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-['Lato',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">
-                        {p.full_name}{isSelf ? ' (me)' : ''}
-                      </p>
-                      <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
-                        {p.display_id} · {p.role.replace('_', ' ')}
-                      </p>
-                    </div>
-                    {isSelected && (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" fill="#B8A77A" />
-                        <path d="M8 12l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                )
-              })}
-              {filtered.length === 0 && (
-                <p className="text-center font-['Lato',sans-serif] text-[14px] text-[#9E9E9E] py-6">{t('sv_absence_no_match')}</p>
-              )}
-            </div>
-
-            {error && (
-              <p className="px-6 font-['Lato',sans-serif] text-[13px] text-[#BA1A1A] shrink-0">{error}</p>
-            )}
-
-            <div className="px-6 py-4 shrink-0 border-t border-[#E3E3DD]">
+              <p className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19]">{t('sv_absence_success')}</p>
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">{t('sv_absence_success_body')}</p>
               <button
-                onClick={handleConfirm}
-                disabled={!selected || submitting}
-                className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-base text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2e3130] transition-colors"
+                onClick={onClose}
+                className="mt-4 h-10 px-6 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors"
               >
-                {submitting ? t('submitting') : t('sv_absence_confirm_btn')}
+                Done
               </button>
             </div>
-          </>
+          ) : (
+            <>
+              {/* Search */}
+              <div className="px-6 pb-3">
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" stroke="#737874" strokeWidth="2" />
+                    <path d="M21 21l-4.35-4.35" stroke="#737874" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t('sv_absence_search')}
+                    className="w-full h-[44px] border border-[#C3C8C2] rounded-[8px] pl-10 pr-4 font-['Lato',sans-serif] text-[14px] outline-none focus:border-[#B8A77A] transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Cleaner list */}
+              <div className="px-6 pb-4 flex flex-col gap-1">
+                {filtered.map((p) => {
+                  const isSelf = p.id === supervisorId
+                  const initials = p.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                  const isSelected = selected === p.id
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setSelected(p.id)}
+                      className={`flex items-center gap-3 p-3 rounded-[10px] text-left transition-colors w-full ${isSelected ? 'bg-[#F4F4EE] border border-[#B8A77A]' : 'hover:bg-[#F9F9F5] border border-transparent'}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">
+                        <span className="font-['Poppins',sans-serif] font-bold text-xs text-[#B8A77A]">{initials}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-['Lato',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">
+                          {p.full_name}{isSelf ? ' (me)' : ''}
+                        </p>
+                        <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
+                          {p.display_id} · {p.role.replace('_', ' ')}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" fill="#B8A77A" />
+                          <path d="M8 12l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                  )
+                })}
+                {filtered.length === 0 && (
+                  <p className="text-center font-['Lato',sans-serif] text-[14px] text-[#9E9E9E] py-6">{t('sv_absence_no_match')}</p>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Confirm button — absolutely pinned to sheet bottom, always visible */}
+        {!success && (
+          <div className="absolute bottom-0 left-0 right-0 z-10 bg-white border-t border-[#E3E3DD] px-6 py-4">
+            {error && (
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A] mb-3">{error}</p>
+            )}
+            <button
+              onClick={handleConfirm}
+              disabled={!selected || submitting}
+              className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-base text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2e3130] transition-colors"
+            >
+              {submitting ? t('submitting') : t('sv_absence_confirm_btn')}
+            </button>
+          </div>
         )}
       </div>
     </div>
