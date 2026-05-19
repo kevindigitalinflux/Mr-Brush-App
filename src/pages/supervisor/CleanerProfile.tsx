@@ -162,7 +162,7 @@ function AbsenceSheet({ cleaner, supervisorId, companyId, onClose }: AbsenceShee
       shift_date: new Date().toISOString().slice(0, 10),
     })
     setSubmitting(false)
-    if (err) { setError(err.message); return }
+    if (err) { setError(t('sv_absence_error')); return }
     setSuccess(true)
   }
 
