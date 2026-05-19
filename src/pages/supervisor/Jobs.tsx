@@ -126,16 +126,12 @@ function AddZoneScreen({ facilityId }: { facilityId: string }) {
             <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
               {t('sv_assign_cleaner_label')}
             </label>
-            <select
+            <CleanerPicker
+              cleaners={cleaners}
               value={cleanerId}
-              onChange={(e) => setCleanerId(e.target.value)}
-              className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] outline-none focus:border-[#B8A77A] transition-colors bg-white appearance-none cursor-pointer"
-            >
-              <option value="">{t('sv_unassigned')}</option>
-              {cleaners.map((c) => (
-                <option key={c.id} value={c.id}>{c.full_name} ({c.display_id})</option>
-              ))}
-            </select>
+              onChange={setCleanerId}
+              unassignedLabel={t('sv_unassigned')}
+            />
           </div>
 
           {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
@@ -146,6 +142,166 @@ function AddZoneScreen({ facilityId }: { facilityId: string }) {
             className="w-full h-[56px] bg-[#B8A77A] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60 mt-2"
           >
             {saving ? t('submitting') : `${t('sv_add_zone')} +`}
+          </button>
+        </div>
+      </div>
+      <SupervisorNav active="jobs" />
+    </div>
+  )
+}
+
+// ─── Shift builder screen ────────────────────────────────────────────────────
+
+function ShiftBuilderScreen({ facilityId }: { facilityId: string }) {
+  const { user } = useApp()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const t = useTranslation()
+  const jobId = (location.state as { jobId?: string } | null)?.jobId ?? null
+
+  const [zoneName, setZoneName]         = useState('')
+  const [cleanerId, setCleanerId]       = useState('')
+  const [cleaners, setCleaners]         = useState<Cleaner[]>([])
+  const [zones, setZones]               = useState<Zone[]>([])
+  const [facilityName, setFacilityName] = useState('')
+  const [saving, setSaving]             = useState(false)
+  const [error, setError]               = useState('')
+
+  useEffect(() => {
+    if (!user) return
+    Promise.all([
+      supabase.from('facilities').select('id, name').eq('id', facilityId).single(),
+      supabase.from('profiles').select('id, full_name, display_id')
+        .eq('company_id', user.company_id).in('role', ['cleaner']),
+    ]).then(([facRes, cleanersRes]) => {
+      setFacilityName((facRes.data as unknown as { name: string } | null)?.name ?? '')
+      setCleaners((cleanersRes.data ?? []) as unknown as Cleaner[])
+    })
+  }, [user, facilityId])
+
+  async function addZone() {
+    if (!zoneName.trim()) { setError(t('sv_zone_name_required')); return }
+    if (!jobId) return
+    setSaving(true)
+    const { data, error: err } = await supabase.from('job_zones').insert({
+      job_id: jobId,
+      zone_name: zoneName.trim(),
+      cleaner_id: cleanerId || null,
+      status: 'not_started',
+    }).select('id').single()
+    setSaving(false)
+    if (err || !data) { setError(t('sv_failed_add_zone')); return }
+    const cleaner = cleaners.find((c) => c.id === cleanerId) ?? null
+    setZones((prev) => [...prev, {
+      id: (data as { id: string }).id,
+      zone_name: zoneName.trim(),
+      status: 'not_started',
+      cleaner_id: cleanerId || null,
+      cleaner_name: cleaner?.full_name ?? null,
+      notes: null,
+    }])
+    setZoneName('')
+    setCleanerId('')
+    setError('')
+  }
+
+  async function removeZone(id: string) {
+    await supabase.from('job_zones').update({ status: 'deleted' }).eq('id', id)
+    setZones((prev) => prev.filter((z) => z.id !== id))
+  }
+
+  function viewShift() { navigate(`/supervisor/jobs?facility=${facilityId}`) }
+
+  return (
+    <div className="fixed inset-0 bg-[#F4F4EE] flex flex-col">
+      <div className="w-full max-w-[480px] mx-auto px-6 flex flex-col flex-1 overflow-y-auto pb-[100px]">
+        <BackHeader title={t('sv_shift_builder_title')} onBack={viewShift} />
+
+        {facilityName && (
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] -mt-3 mb-5">{facilityName}</p>
+        )}
+
+        {/* Zone input card */}
+        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+              {t('sv_zone_name_label')}
+            </label>
+            <input
+              type="text"
+              value={zoneName}
+              onChange={(e) => { setZoneName(e.target.value); setError('') }}
+              placeholder={t('sv_zone_name_placeholder')}
+              className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors bg-[#FAFAF8]"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+              {t('sv_assign_cleaner_label')}
+            </label>
+            <CleanerPicker
+              cleaners={cleaners}
+              value={cleanerId}
+              onChange={setCleanerId}
+              unassignedLabel={t('sv_unassigned')}
+            />
+          </div>
+
+          {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
+
+          <button
+            onClick={addZone}
+            disabled={saving}
+            className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors disabled:opacity-60"
+          >
+            {saving ? t('submitting') : `${t('sv_add_zone_btn')} +`}
+          </button>
+        </div>
+
+        {/* Added zones list */}
+        {zones.length > 0 && (
+          <div className="flex flex-col gap-2 mt-6">
+            <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-1">
+              {t('sv_zones_added')} ({zones.length})
+            </h2>
+            {zones.map((z) => (
+              <div key={z.id} className="flex items-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">{z.zone_name}</p>
+                  <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">
+                    {z.cleaner_name ?? t('sv_unassigned')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => removeZone(z.id)}
+                  aria-label="Remove zone"
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#FDECEA] transition-colors shrink-0"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bottom CTAs */}
+        <div className="flex flex-col gap-2 mt-6">
+          {zones.length > 0 && (
+            <button
+              onClick={viewShift}
+              className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors"
+            >
+              {t('sv_shift_builder_done')} · {zones.length} zone{zones.length !== 1 ? 's' : ''}
+            </button>
+          )}
+          <button
+            onClick={viewShift}
+            className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors"
+          >
+            {t('sv_shift_builder_skip')}
           </button>
         </div>
       </div>
@@ -240,16 +396,12 @@ function ZoneEditScreen({ facilityId, zoneId }: { facilityId: string; zoneId: st
             <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
               {t('sv_assign_cleaner_label')}
             </label>
-            <select
+            <CleanerPicker
+              cleaners={cleaners}
               value={cleanerId}
-              onChange={(e) => setCleanerId(e.target.value)}
-              className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] outline-none focus:border-[#B8A77A] transition-colors bg-white appearance-none cursor-pointer"
-            >
-              <option value="">{t('sv_unassigned')}</option>
-              {cleaners.map((c) => (
-                <option key={c.id} value={c.id}>{c.full_name} ({c.display_id})</option>
-              ))}
-            </select>
+              onChange={setCleanerId}
+              unassignedLabel={t('sv_unassigned')}
+            />
           </div>
 
           {/* Notes */}
@@ -302,6 +454,88 @@ function ZoneEditScreen({ facilityId, zoneId }: { facilityId: string; zoneId: st
         </div>
       </div>
       <SupervisorNav active="jobs" />
+    </div>
+  )
+}
+
+// ─── Searchable cleaner picker ────────────────────────────────────────────────
+
+function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
+  cleaners: Cleaner[]
+  value: string
+  onChange: (id: string) => void
+  unassignedLabel: string
+}) {
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
+  const selected = cleaners.find((c) => c.id === value)
+
+  const filtered = search
+    ? cleaners.filter((c) =>
+        c.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        c.display_id.toLowerCase().includes(search.toLowerCase())
+      )
+    : cleaners
+
+  function pick(id: string) { onChange(id); setOpen(false); setSearch('') }
+
+  return (
+    <div className={`border rounded-[8px] overflow-hidden bg-white transition-colors ${open ? 'border-[#B8A77A]' : 'border-[#C3C8C2]'}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full h-[52px] px-4 flex items-center justify-between text-left"
+      >
+        <span className={`font-['Lato',sans-serif] text-[15px] ${selected ? 'text-[#1A1C19]' : 'text-[#9E9E9E]'}`}>
+          {selected ? `${selected.full_name} (${selected.display_id})` : unassignedLabel}
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={`transition-transform duration-200 shrink-0 ${open ? 'rotate-180' : ''}`} aria-hidden="true">
+          <path d="M6 9l6 6 6-6" stroke="#737874" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="border-t border-[#E3E3DD]">
+          <div className="p-2">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              autoFocus
+              className="w-full h-9 border border-[#C3C8C2] rounded-[6px] px-3 font-['Lato',sans-serif] text-[14px] outline-none focus:border-[#B8A77A] transition-colors"
+            />
+          </div>
+          <div className="max-h-[220px] overflow-y-auto divide-y divide-[#F0F0EB]">
+            <button
+              type="button"
+              onClick={() => pick('')}
+              className={`w-full px-4 py-3 text-left font-['Lato',sans-serif] text-[14px] hover:bg-[#F4F4EE] transition-colors ${!value ? 'text-[#B8A77A] font-semibold' : 'text-[#737874]'}`}
+            >
+              {unassignedLabel}
+            </button>
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pick(c.id)}
+                className={`w-full px-4 py-3 text-left font-['Lato',sans-serif] text-[14px] hover:bg-[#F4F4EE] transition-colors flex items-center justify-between ${c.id === value ? 'bg-[#F4F4EE]' : ''}`}
+              >
+                <span className={c.id === value ? 'text-[#1A1C19] font-semibold' : 'text-[#1A1C19]'}>
+                  {c.full_name} <span className="text-[#737874] font-normal">({c.display_id})</span>
+                </span>
+                {c.id === value && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="#B8A77A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="px-4 py-3 font-['Lato',sans-serif] text-[14px] text-[#9E9E9E]">No match</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -416,14 +650,18 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
 
   async function createJob() {
     if (!user) return
-    const { error } = await supabase.from('jobs').insert({
+    const { data, error } = await supabase.from('jobs').insert({
       supervisor_id: user.id,
       facility_id: facilityId,
       scheduled_date: new Date().toISOString().slice(0, 10),
       status: 'not_started',
       company_id: user.company_id,
-    })
-    if (!error) load()
+    }).select('id').single()
+    if (error || !data) return
+    navigate(
+      `/supervisor/jobs?facility=${facilityId}&action=build`,
+      { state: { jobId: (data as { id: string }).id } },
+    )
   }
 
   return (
@@ -664,6 +902,7 @@ export function Jobs() {
   const action     = searchParams.get('action')
   const zoneId     = searchParams.get('zone')
 
+  if (facilityId && action === 'build') return <ShiftBuilderScreen facilityId={facilityId} />
   if (facilityId && action === 'add') return <AddZoneScreen facilityId={facilityId} />
   if (facilityId && action === 'edit' && zoneId) return <ZoneEditScreen facilityId={facilityId} zoneId={zoneId} />
   if (facilityId) return <FacilityZonesView facilityId={facilityId} />

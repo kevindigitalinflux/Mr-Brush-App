@@ -30,6 +30,13 @@ interface CleanerRating {
   created_at: string
 }
 
+interface Profile {
+  id: string
+  full_name: string
+  display_id: string
+  role: string
+}
+
 // ─── Star picker ──────────────────────────────────────────────────────────────
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -105,6 +112,169 @@ function RatingCard({ rating }: { rating: CleanerRating }) {
   )
 }
 
+// ─── Absence sheet ────────────────────────────────────────────────────────────
+
+interface AbsenceSheetProps {
+  cleaner: CleanerDetail
+  supervisorId: string
+  companyId: string
+  onClose: () => void
+}
+
+function AbsenceSheet({ cleaner, supervisorId, companyId, onClose }: AbsenceSheetProps) {
+  const t = useTranslation()
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('id, full_name, display_id, role')
+      .eq('company_id', companyId)
+      .in('role', ['cleaner', 'replacement_cleaner', 'supervisor'])
+      .then(({ data }) => {
+        const all = (data ?? []) as Profile[]
+        const self = all.find((p) => p.id === supervisorId)
+        const others = all.filter((p) => p.id !== supervisorId && p.id !== cleaner.id)
+        setProfiles(self ? [self, ...others] : others)
+      })
+  }, [companyId, supervisorId, cleaner.id])
+
+  const filtered = search
+    ? profiles.filter((p) =>
+        p.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        p.display_id.toLowerCase().includes(search.toLowerCase())
+      )
+    : profiles
+
+  async function handleConfirm() {
+    if (!selected) return
+    setSubmitting(true)
+    const { error: err } = await supabase.from('absence_reports').insert({
+      absent_cleaner_id: cleaner.id,
+      replacement_id: selected,
+      reported_by_id: supervisorId,
+      company_id: companyId,
+      shift_date: new Date().toISOString().slice(0, 10),
+    })
+    setSubmitting(false)
+    if (err) { setError(t('sv_absence_error')); return }
+    setSuccess(true)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-t-[20px] w-full max-w-[480px] mx-auto max-h-[82vh] flex flex-col overflow-hidden">
+
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 bg-[#D0CFCA] rounded-full" />
+        </div>
+
+        <div className="px-6 pb-3 shrink-0">
+          <h2 className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#1A1C19]">
+            {t('sv_absence_sheet_title')}
+          </h2>
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
+            {t('sv_absence_sheet_body')}
+          </p>
+        </div>
+
+        {success ? (
+          <div className="px-6 pb-10 flex flex-col items-center gap-2 text-center">
+            <div className="w-14 h-14 rounded-full bg-[#D7E6DB] flex items-center justify-center mb-2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <p className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19]">{t('sv_absence_success')}</p>
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">{t('sv_absence_success_body')}</p>
+            <button
+              onClick={onClose}
+              className="mt-4 h-10 px-6 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="px-6 pb-3 shrink-0">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" stroke="#737874" strokeWidth="2" />
+                  <path d="M21 21l-4.35-4.35" stroke="#737874" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('sv_absence_search')}
+                  className="w-full h-[44px] border border-[#C3C8C2] rounded-[8px] pl-10 pr-4 font-['Lato',sans-serif] text-[14px] outline-none focus:border-[#B8A77A] transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 pb-2 flex flex-col gap-1">
+              {filtered.map((p) => {
+                const isSelf = p.id === supervisorId
+                const initials = p.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                const isSelected = selected === p.id
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelected(p.id)}
+                    className={`flex items-center gap-3 p-3 rounded-[10px] text-left transition-colors w-full ${isSelected ? 'bg-[#F4F4EE] border border-[#B8A77A]' : 'hover:bg-[#F9F9F5] border border-transparent'}`}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">
+                      <span className="font-['Poppins',sans-serif] font-bold text-xs text-[#B8A77A]">{initials}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-['Lato',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">
+                        {p.full_name}{isSelf ? ' (me)' : ''}
+                      </p>
+                      <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
+                        {p.display_id} · {p.role.replace('_', ' ')}
+                      </p>
+                    </div>
+                    {isSelected && (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" fill="#B8A77A" />
+                        <path d="M8 12l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+                )
+              })}
+              {filtered.length === 0 && (
+                <p className="text-center font-['Lato',sans-serif] text-[14px] text-[#9E9E9E] py-6">{t('sv_absence_no_match')}</p>
+              )}
+            </div>
+
+            {error && (
+              <p className="px-6 font-['Lato',sans-serif] text-[13px] text-[#BA1A1A] shrink-0">{error}</p>
+            )}
+
+            <div className="px-6 py-4 shrink-0 border-t border-[#E3E3DD]">
+              <button
+                onClick={handleConfirm}
+                disabled={!selected || submitting}
+                className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-base text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2e3130] transition-colors"
+              >
+                {submitting ? t('submitting') : t('sv_absence_confirm_btn')}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Rating form ──────────────────────────────────────────────────────────────
 
 interface RatingFormProps {
@@ -120,9 +290,12 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
   const [notes, setNotes] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const isLowRating = star > 0 && star <= 2
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(e.target.files ?? [])
@@ -133,7 +306,8 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
   async function handleSubmit() {
     if (!star) return setError(t('sv_rating_error_star'))
     if (!notes.trim()) return setError(t('sv_rating_error_notes'))
-    if (files.length === 0) return setError(t('sv_rating_error_photo'))
+    if (files.length < 3) return setError(t('sv_rating_error_photo'))
+    if (isLowRating && !confirmed) return setError(t('sv_rating_error_confirm'))
     setError(null)
     setSubmitting(true)
 
@@ -165,7 +339,35 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
       <h2 className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19]">
         {t('sv_rate_this_cleaner')}
       </h2>
-      <StarPicker value={star} onChange={setStar} />
+
+      <StarPicker value={star} onChange={(v) => { setStar(v); setConfirmed(false); setError(null) }} />
+
+      {/* Low-rating guardrail */}
+      {isLowRating && (
+        <div className="bg-[#FFF3D1] border border-[#D4B54A] rounded-[8px] p-4 flex flex-col gap-3">
+          <div className="flex gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="#D4B54A" />
+              <path d="M12 9v4M12 17h.01" stroke="#6F613A" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#6F613A] leading-relaxed">
+              {t('sv_low_rating_guardrail')}
+            </p>
+          </div>
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => { setConfirmed(e.target.checked); setError(null) }}
+              className="mt-0.5 shrink-0 accent-[#B8A77A]"
+            />
+            <span className="font-['Lato',sans-serif] text-[13px] text-[#6F613A]">
+              {t('sv_low_rating_confirm')}
+            </span>
+          </label>
+        </div>
+      )}
+
       <div>
         <p className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase mb-1">
           {t('sv_rating_notes_label')}
@@ -178,6 +380,7 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
           className="w-full border border-[#C3C8C2] rounded-[8px] px-4 py-3 font-['Lato',sans-serif] text-sm text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors resize-none"
         />
       </div>
+
       <div>
         <p className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase mb-1">
           {t('sv_evidence_photos_label')}
@@ -186,22 +389,29 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
         {previews.length > 0 && (
           <div className="flex gap-2 overflow-x-auto mb-2">
             {previews.map((url, i) => (
-              <div key={i} className="shrink-0 w-[80px] h-[60px] rounded-[8px] overflow-hidden bg-[#E3E3DD]">
+              <div key={i} className="shrink-0 w-[80px] h-[60px] rounded-[8px] overflow-hidden bg-[#E3E3DD] relative">
                 <img src={url} alt={`Preview ${i + 1}`} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
         )}
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="h-10 px-4 border-2 border-[#C3C8C2] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#434844] hover:border-[#B8A77A] hover:text-[#B8A77A] transition-colors"
-        >
-          {t('sv_add_photos')}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="h-10 px-4 border-2 border-[#C3C8C2] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#434844] hover:border-[#B8A77A] hover:text-[#B8A77A] transition-colors"
+          >
+            {t('sv_add_photos')}
+          </button>
+          <span className={`font-['Lato',sans-serif] text-[13px] ${files.length >= 3 ? 'text-[#2F4A3D]' : 'text-[#737874]'}`}>
+            {files.length}/3 {files.length >= 3 ? '✓' : 'required'}
+          </span>
+        </div>
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
       </div>
+
       {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
+
       <button
         onClick={handleSubmit}
         disabled={submitting}
@@ -215,7 +425,7 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
 
 // ─── Cleaner profile page ─────────────────────────────────────────────────────
 
-/** Shows a cleaner's profile, their average rating, and a form to submit a new rating. */
+/** Shows a cleaner's profile, rating form with guardrail, and absence reporting. */
 export function CleanerProfile() {
   const { cleanerId } = useParams<{ cleanerId: string }>()
   const { user } = useApp()
@@ -226,6 +436,7 @@ export function CleanerProfile() {
   const [ratings, setRatings] = useState<CleanerRating[]>([])
   const [loading, setLoading] = useState(true)
   const [submitted, setSubmitted] = useState(false)
+  const [showAbsenceSheet, setShowAbsenceSheet] = useState(false)
 
   const load = useCallback(async () => {
     if (!user || !cleanerId) return
@@ -320,6 +531,21 @@ export function CleanerProfile() {
               </div>
             </div>
 
+            {/* Absence report button */}
+            <div className="profile-section">
+              <button
+                onClick={() => setShowAbsenceSheet(true)}
+                className="w-full h-[52px] border-2 border-[#BA1A1A] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-[14px] text-[#BA1A1A] hover:bg-[#FDECEA] transition-colors flex items-center justify-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="9" cy="7" r="4" stroke="#BA1A1A" strokeWidth="2" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t('sv_report_absence')}
+              </button>
+            </div>
+
             {/* Rating form or success */}
             {submitted ? (
               <div className="profile-section bg-[#D7E6DB] border border-[#2F4A3D] rounded-[12px] p-5 text-center flex flex-col gap-1">
@@ -357,6 +583,16 @@ export function CleanerProfile() {
         )}
 
       </div>
+
+      {showAbsenceSheet && cleaner && user && (
+        <AbsenceSheet
+          cleaner={cleaner}
+          supervisorId={user.id}
+          companyId={user.company_id}
+          onClose={() => setShowAbsenceSheet(false)}
+        />
+      )}
+
       <SupervisorNav active="workers" />
     </div>
   )
