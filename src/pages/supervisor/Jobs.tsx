@@ -8,8 +8,9 @@ import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Facility { id: string; name: string }
-interface Cleaner  { id: string; full_name: string; display_id: string }
+interface Facility  { id: string; name: string }
+interface Cleaner   { id: string; full_name: string; display_id: string }
+interface LocalZone { tempId: string; zoneName: string; cleanerId: string; cleanerName: string | null }
 
 interface Zone {
   id: string
@@ -64,7 +65,7 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
   )
 }
 
-// ─── Start shift confirmation screen ─────────────────────────────────────────
+// ─── Start shift screen (zone builder + atomic submit) ───────────────────────
 
 function StartShiftScreen({ facilityId }: { facilityId: string }) {
   const { user } = useApp()
@@ -72,25 +73,78 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
   const location = useLocation()
   const t = useTranslation()
   const stateRef = location.state as { facilityName?: string } | null
+
   const [facilityName, setFacilityName] = useState(stateRef?.facilityName ?? '')
-  const [creating, setCreating] = useState(false)
+  const [cleaners, setCleaners]         = useState<Cleaner[]>([])
+  const [zones, setZones]               = useState<LocalZone[]>([])
+  const [zoneName, setZoneName]         = useState('')
+  const [cleanerId, setCleanerId]       = useState('')
+  const [submitting, setSubmitting]     = useState(false)
+  const [zoneError, setZoneError]       = useState('')
+  const [submitError, setSubmitError]   = useState('')
 
   useEffect(() => {
-    if (facilityName) return
-    supabase.from('facilities').select('name').eq('id', facilityId).single()
-      .then(({ data }) => setFacilityName((data as { name: string } | null)?.name ?? 'This Facility'))
-  }, [facilityId])
-
-  async function handleStart() {
     if (!user) return
-    setCreating(true)
-    await supabase.from('jobs').insert({
+    const fetches: Promise<unknown>[] = [
+      supabase.from('profiles').select('id, full_name, display_id')
+        .eq('company_id', user.company_id).in('role', ['cleaner'])
+        .then(({ data }) => setCleaners((data ?? []) as unknown as Cleaner[])),
+    ]
+    if (!facilityName) {
+      fetches.push(
+        supabase.from('facilities').select('name').eq('id', facilityId).single()
+          .then(({ data }) => setFacilityName((data as { name: string } | null)?.name ?? 'This Facility'))
+      )
+    }
+    void Promise.all(fetches)
+  }, [facilityId, user])
+
+  function addZone() {
+    if (!zoneName.trim()) { setZoneError(t('sv_zone_name_required')); return }
+    const cleaner = cleaners.find((c) => c.id === cleanerId) ?? null
+    setZones((prev) => [...prev, {
+      tempId: crypto.randomUUID(),
+      zoneName: zoneName.trim(),
+      cleanerId,
+      cleanerName: cleaner?.full_name ?? null,
+    }])
+    setZoneName('')
+    setCleanerId('')
+    setZoneError('')
+  }
+
+  async function handleSubmit() {
+    if (!user) return
+    setSubmitting(true)
+    setSubmitError('')
+
+    const { data: jobData, error: jobErr } = await supabase.from('jobs').insert({
       supervisor_id: user.id,
       facility_id: facilityId,
       scheduled_date: new Date().toISOString().slice(0, 10),
       status: 'not_started',
       company_id: user.company_id,
-    })
+    }).select('id').single()
+
+    if (jobErr || !jobData) {
+      setSubmitting(false)
+      setSubmitError(t('sv_failed_start_shift'))
+      return
+    }
+
+    const jobId = (jobData as { id: string }).id
+
+    if (zones.length > 0) {
+      await supabase.from('job_zones').insert(
+        zones.map((z) => ({
+          job_id: jobId,
+          zone_name: z.zoneName,
+          cleaner_id: z.cleanerId || null,
+          status: 'not_started',
+        }))
+      )
+    }
+
     navigate(`/supervisor/jobs?facility=${facilityId}`, { replace: true })
   }
 
@@ -100,58 +154,132 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] flex flex-col">
-      <div className="w-full max-w-[480px] mx-auto px-6 flex flex-col flex-1">
 
-        {/* Back button */}
-        <div className="pt-10 pb-4">
-          <button
-            onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
-            aria-label="Back"
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="w-full max-w-[480px] mx-auto px-6 pb-6">
 
-        {/* Main content — centred in remaining space */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 pb-12">
-
-          {/* Icon */}
-          <div className="w-20 h-20 rounded-full bg-[#1A1C19] flex items-center justify-center">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2" stroke="#B8A77A" strokeWidth="2" />
-              <path d="M16 2v4M8 2v4M3 10h18" stroke="#B8A77A" strokeWidth="2" strokeLinecap="round" />
-              <path d="M8 14h4M8 18h6" stroke="#B8A77A" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
+          {/* Back */}
+          <div className="pt-10 pb-4">
+            <button
+              onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
+              aria-label="Back"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
 
-          {/* Facility name + date */}
-          <div className="text-center">
-            <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-2">
-              {t('sv_start_todays_shift')}
-            </p>
-            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.15] tracking-[-0.4px] px-4">
-              {facilityName || '…'}
-            </h1>
-            <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-2">{dateLabel}</p>
+          {/* Header: icon + facility + date */}
+          <div className="flex items-center gap-4 pb-6">
+            <div className="w-14 h-14 rounded-full bg-[#F4F4EE] border border-[#D0CFCA] flex items-center justify-center shrink-0">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="#B8A77A" strokeWidth="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" stroke="#B8A77A" strokeWidth="2" strokeLinecap="round" />
+                <path d="M8 14h4M8 18h6" stroke="#B8A77A" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-0.5">
+                {t('sv_start_todays_shift')}
+              </p>
+              <h1 className="font-['Poppins',sans-serif] font-bold text-[22px] text-[#1A1C19] leading-[1.1] tracking-[-0.3px] truncate">
+                {facilityName || '…'}
+              </h1>
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">{dateLabel}</p>
+            </div>
           </div>
 
-          {/* Description */}
-          <p className="font-['Lato',sans-serif] text-[14px] text-[#434B4D] text-center leading-relaxed max-w-[280px]">
-            {t('sv_confirm_shift_body')}
-          </p>
-        </div>
+          {/* Zone builder card */}
+          <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-5 flex flex-col gap-4">
+            <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase">
+              {t('sv_build_zones_label')}
+            </h2>
 
-        {/* CTAs pinned to bottom */}
-        <div className="pb-10 flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                {t('sv_zone_name_label')}
+              </label>
+              <input
+                type="text"
+                value={zoneName}
+                onChange={(e) => { setZoneName(e.target.value); setZoneError('') }}
+                placeholder={t('sv_zone_name_placeholder')}
+                className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors bg-[#FAFAF8]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                {t('sv_assign_cleaner_label')}
+              </label>
+              <CleanerPicker
+                cleaners={cleaners}
+                value={cleanerId}
+                onChange={setCleanerId}
+                unassignedLabel={t('sv_unassigned')}
+              />
+            </div>
+
+            {zoneError && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{zoneError}</p>}
+
+            <button
+              onClick={addZone}
+              className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors"
+            >
+              {t('sv_add_zone_btn')} +
+            </button>
+          </div>
+
+          {/* Added zones list */}
+          {zones.length > 0 && (
+            <div className="flex flex-col gap-2 mt-5">
+              <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-1">
+                {t('sv_zones_added')} ({zones.length})
+              </h2>
+              {zones.map((z) => (
+                <div key={z.tempId} className="flex items-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">{z.zoneName}</p>
+                    <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">
+                      {z.cleanerName ?? t('sv_unassigned')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setZones((prev) => prev.filter((x) => x.tempId !== z.tempId))}
+                    aria-label="Remove zone"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#FDECEA] transition-colors shrink-0"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {submitError && (
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A] mt-4 text-center">{submitError}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Pinned Launch Shift CTA */}
+      <div className="w-full bg-[#F4F4EE] border-t border-[#E3E3DD]">
+        <div className="max-w-[480px] mx-auto px-6 py-4 flex flex-col gap-2">
           <button
-            onClick={handleStart}
-            disabled={creating}
+            onClick={handleSubmit}
+            disabled={submitting}
             className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60"
           >
-            {creating ? t('sv_confirm_shift_creating') : t('sv_confirm_shift_cta')}
+            {submitting
+              ? t('sv_confirm_shift_creating')
+              : zones.length > 0
+                ? `${t('sv_launch_shift_btn')} · ${zones.length} zone${zones.length !== 1 ? 's' : ''}`
+                : t('sv_launch_shift_btn')}
           </button>
           <button
             onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
@@ -161,6 +289,7 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
           </button>
         </div>
       </div>
+
       <SupervisorNav active="jobs" />
     </div>
   )
