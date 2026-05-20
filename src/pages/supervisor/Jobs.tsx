@@ -128,7 +128,7 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
 
     if (jobErr || !jobData) {
       setSubmitting(false)
-      setSubmitError(t('sv_failed_start_shift'))
+      setSubmitError(jobErr?.message ?? t('sv_failed_start_shift'))
       return
     }
 
@@ -267,8 +267,8 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
         </div>
       </div>
 
-      {/* Pinned Launch Shift CTA */}
-      <div className="w-full bg-[#F4F4EE] border-t border-[#E3E3DD]">
+      {/* Pinned Launch Shift CTA — pb-[72px] clears the fixed nav */}
+      <div className="w-full bg-[#F4F4EE] border-t border-[#E3E3DD] pb-[72px]">
         <div className="max-w-[480px] mx-auto px-6 py-4 flex flex-col gap-2">
           <button
             onClick={handleSubmit}
