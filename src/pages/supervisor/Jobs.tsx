@@ -64,6 +64,108 @@ function BackHeader({ title, onBack }: { title: string; onBack: () => void }) {
   )
 }
 
+// ─── Start shift confirmation screen ─────────────────────────────────────────
+
+function StartShiftScreen({ facilityId }: { facilityId: string }) {
+  const { user } = useApp()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const t = useTranslation()
+  const stateRef = location.state as { facilityName?: string } | null
+  const [facilityName, setFacilityName] = useState(stateRef?.facilityName ?? '')
+  const [creating, setCreating] = useState(false)
+
+  useEffect(() => {
+    if (facilityName) return
+    supabase.from('facilities').select('name').eq('id', facilityId).single()
+      .then(({ data }) => setFacilityName((data as { name: string } | null)?.name ?? 'This Facility'))
+  }, [facilityId])
+
+  async function handleStart() {
+    if (!user) return
+    setCreating(true)
+    await supabase.from('jobs').insert({
+      supervisor_id: user.id,
+      facility_id: facilityId,
+      scheduled_date: new Date().toISOString().slice(0, 10),
+      status: 'not_started',
+      company_id: user.company_id,
+    })
+    navigate(`/supervisor/jobs?facility=${facilityId}`, { replace: true })
+  }
+
+  const dateLabel = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  })
+
+  return (
+    <div className="fixed inset-0 bg-[#F4F4EE] flex flex-col">
+      <div className="w-full max-w-[480px] mx-auto px-6 flex flex-col flex-1">
+
+        {/* Back button */}
+        <div className="pt-10 pb-4">
+          <button
+            onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
+            aria-label="Back"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Main content — centred in remaining space */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 pb-12">
+
+          {/* Icon */}
+          <div className="w-20 h-20 rounded-full bg-[#1A1C19] flex items-center justify-center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="#B8A77A" strokeWidth="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" stroke="#B8A77A" strokeWidth="2" strokeLinecap="round" />
+              <path d="M8 14h4M8 18h6" stroke="#B8A77A" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* Facility name + date */}
+          <div className="text-center">
+            <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-2">
+              {t('sv_start_todays_shift')}
+            </p>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.15] tracking-[-0.4px] px-4">
+              {facilityName || '…'}
+            </h1>
+            <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-2">{dateLabel}</p>
+          </div>
+
+          {/* Description */}
+          <p className="font-['Lato',sans-serif] text-[14px] text-[#434B4D] text-center leading-relaxed max-w-[280px]">
+            {t('sv_confirm_shift_body')}
+          </p>
+        </div>
+
+        {/* CTAs pinned to bottom */}
+        <div className="pb-10 flex flex-col gap-3">
+          <button
+            onClick={handleStart}
+            disabled={creating}
+            className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60"
+          >
+            {creating ? t('sv_confirm_shift_creating') : t('sv_confirm_shift_cta')}
+          </button>
+          <button
+            onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
+            className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+      <SupervisorNav active="jobs" />
+    </div>
+  )
+}
+
 // ─── Add zone screen ──────────────────────────────────────────────────────────
 
 function AddZoneScreen({ facilityId }: { facilityId: string }) {
@@ -648,19 +750,10 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
     gsap.from('.zone-row', { opacity: 0, y: 10, duration: 0.3, stagger: 0.05, ease: 'power2.out' })
   }, { scope: containerRef, dependencies: [loading] })
 
-  async function createJob() {
-    if (!user) return
-    const { data, error } = await supabase.from('jobs').insert({
-      supervisor_id: user.id,
-      facility_id: facilityId,
-      scheduled_date: new Date().toISOString().slice(0, 10),
-      status: 'not_started',
-      company_id: user.company_id,
-    }).select('id').single()
-    if (error || !data) return
+  function goToStartConfirm() {
     navigate(
-      `/supervisor/jobs?facility=${facilityId}&action=build`,
-      { state: { jobId: (data as { id: string }).id } },
+      `/supervisor/jobs?facility=${facilityId}&action=start`,
+      { state: { facilityName } },
     )
   }
 
@@ -716,7 +809,7 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
             <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_shift_yet')}</p>
             <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] max-w-[220px]">{t('sv_no_shift_body')}</p>
             <button
-              onClick={createJob}
+              onClick={goToStartConfirm}
               className="mt-1 h-10 px-6 bg-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#a8976a] transition-colors"
             >
               {t('sv_start_todays_shift')}
@@ -902,6 +995,7 @@ export function Jobs() {
   const action     = searchParams.get('action')
   const zoneId     = searchParams.get('zone')
 
+  if (facilityId && action === 'start') return <StartShiftScreen facilityId={facilityId} />
   if (facilityId && action === 'build') return <ShiftBuilderScreen facilityId={facilityId} />
   if (facilityId && action === 'add') return <AddZoneScreen facilityId={facilityId} />
   if (facilityId && action === 'edit' && zoneId) return <ZoneEditScreen facilityId={facilityId} zoneId={zoneId} />
