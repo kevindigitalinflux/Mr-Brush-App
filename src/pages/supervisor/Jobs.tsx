@@ -812,13 +812,14 @@ function ZoneRow({ zone, facilityId, jobId, hideCleanerName = false }: {
 
 // ─── Cleaner group section ────────────────────────────────────────────────────
 
-function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId, onMarkComplete, marking }: {
+function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId, onMarkComplete, onMarkUndone, marking }: {
   cleanerName: string | null
   cleanerId: string | null
   zones: Zone[]
   jobId: string
   facilityId: string
   onMarkComplete: (id: string) => void
+  onMarkUndone: (id: string) => void
   marking: boolean
 }) {
   const t = useTranslation()
@@ -846,12 +847,21 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
 
         {cleanerId && (
           allDone ? (
-            <span className="shrink-0 flex items-center gap-1 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#2F4A3D] bg-[#D7E6DB] px-2.5 py-1 rounded-full">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              {t('sv_cleaner_shift_done')}
-            </span>
+            <div className="shrink-0 flex items-center gap-1.5">
+              <span className="flex items-center gap-1 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#2F4A3D] bg-[#D7E6DB] px-2.5 py-1 rounded-full">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {t('sv_cleaner_shift_done')}
+              </span>
+              <button
+                onClick={() => onMarkUndone(cleanerId)}
+                disabled={marking}
+                className="h-7 px-2.5 border border-[#D0CFCA] rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[11px] text-[#737874] hover:border-[#B8A77A] hover:text-[#1A1C19] transition-colors disabled:opacity-50"
+              >
+                {marking ? '…' : t('sv_undo_mark_complete')}
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => onMarkComplete(cleanerId)}
@@ -962,6 +972,19 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
     void load(true)
   }
 
+  async function handleMarkCleanerUndone(cleanerId: string) {
+    if (!jobId) return
+    setMarkingCleaners((prev) => new Set(prev).add(cleanerId))
+    const zoneIds = zones
+      .filter((z) => z.cleaner_id === cleanerId && z.status === 'completed')
+      .map((z) => z.id)
+    if (zoneIds.length > 0) {
+      await supabase.from('job_zones').update({ status: 'not_started' }).in('id', zoneIds)
+    }
+    setMarkingCleaners((prev) => { const s = new Set(prev); s.delete(cleanerId); return s })
+    void load(true)
+  }
+
   // Group zones by cleaner — named cleaners first, unassigned last
   const groupedZones = zones.reduce<Map<string | null, Zone[]>>((map, z) => {
     const key = z.cleaner_id ?? null
@@ -1050,6 +1073,7 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
                 jobId={jobId}
                 facilityId={facilityId}
                 onMarkComplete={handleMarkCleanerComplete}
+                onMarkUndone={handleMarkCleanerUndone}
                 marking={cleanerId !== null && markingCleaners.has(cleanerId)}
               />
             ))}
@@ -1150,7 +1174,7 @@ function FacilitiesListView() {
           job: job ? {
             id: job.id,
             status: job.status,
-            zones: (job.job_zones ?? []).map((z) => ({
+            zones: (job.job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
               id: z.id, zone_name: z.zone_name, status: z.status,
               cleaner_id: z.cleaner_id, cleaner_name: null, notes: z.notes,
             })),

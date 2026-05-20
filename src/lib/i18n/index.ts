@@ -150,6 +150,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_could_not_create: 'Could not create job. Try again.',
     sv_mark_cleaner_complete: 'Mark Complete',
     sv_cleaner_shift_done: 'Done',
+    sv_undo_mark_complete: 'Undo',
     sv_unassigned_zones: 'Unassigned',
     sv_failed_mark_complete: 'Failed to mark complete. Try again.',
 
