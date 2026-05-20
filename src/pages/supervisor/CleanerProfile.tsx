@@ -154,15 +154,36 @@ function AbsenceSheet({ cleaner, supervisorId, companyId, onClose }: AbsenceShee
   async function handleConfirm() {
     if (!selected) return
     setSubmitting(true)
+
+    const today = new Date().toISOString().slice(0, 10)
+
     const { error: err } = await supabase.from('absence_reports').insert({
       absent_cleaner_id: cleaner.id,
       replacement_id: selected,
       reported_by_id: supervisorId,
       company_id: companyId,
-      shift_date: new Date().toISOString().slice(0, 10),
+      shift_date: today,
     })
+    if (err) { setSubmitting(false); setError(t('sv_absence_error')); return }
+
+    // Reassign today's unstarted / in-progress zones to the replacement
+    const { data: todayJobs } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('scheduled_date', today)
+
+    if (todayJobs && todayJobs.length > 0) {
+      const jobIds = (todayJobs as { id: string }[]).map((j) => j.id)
+      await supabase
+        .from('job_zones')
+        .update({ cleaner_id: selected })
+        .in('job_id', jobIds)
+        .eq('cleaner_id', cleaner.id)
+        .in('status', ['not_started', 'in_progress'])
+    }
+
     setSubmitting(false)
-    if (err) { setError(t('sv_absence_error')); return }
     setSuccess(true)
   }
 

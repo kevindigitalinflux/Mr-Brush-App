@@ -268,7 +268,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_no_match: 'No match found',
     sv_absence_confirm_btn: 'Confirm Replacement',
     sv_absence_success: 'Absence Reported',
-    sv_absence_success_body: 'The replacement has been logged and payroll updated.',
+    sv_absence_success_body: "Today's zones have been reassigned to the replacement.",
     sv_absence_error: 'Could not submit. Try again.',
   },
   es: {
@@ -534,7 +534,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_no_match: 'Sin resultados',
     sv_absence_confirm_btn: 'Confirmar sustituto',
     sv_absence_success: 'Ausencia reportada',
-    sv_absence_success_body: 'El sustituto ha sido registrado y la nómina actualizada.',
+    sv_absence_success_body: 'Las zonas de hoy han sido reasignadas al sustituto.',
     sv_absence_error: 'No se pudo enviar. Inténtalo de nuevo.',
   },
   pt: {
@@ -800,7 +800,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_no_match: 'Nenhum resultado',
     sv_absence_confirm_btn: 'Confirmar substituto',
     sv_absence_success: 'Ausência relatada',
-    sv_absence_success_body: 'O substituto foi registrado e o pagamento atualizado.',
+    sv_absence_success_body: 'As zonas de hoje foram reatribuídas ao substituto.',
     sv_absence_error: 'Não foi possível enviar. Tente novamente.',
   },
 }
