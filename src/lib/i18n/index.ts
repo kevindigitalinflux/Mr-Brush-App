@@ -148,6 +148,10 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_zone_name_required: 'Zone name is required.',
     sv_failed_add_zone: 'Failed to add zone. Try again.',
     sv_could_not_create: 'Could not create job. Try again.',
+    sv_mark_cleaner_complete: 'Mark Complete',
+    sv_cleaner_shift_done: 'Done',
+    sv_unassigned_zones: 'Unassigned',
+    sv_failed_mark_complete: 'Failed to mark complete. Try again.',
 
     // Supervisor — Zone editing
     sv_edit_zone_title: 'Edit Zone',

@@ -773,7 +773,9 @@ function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
 
 // ─── Zone row ─────────────────────────────────────────────────────────────────
 
-function ZoneRow({ zone, facilityId, jobId }: { zone: Zone; facilityId: string; jobId: string }) {
+function ZoneRow({ zone, facilityId, jobId, hideCleanerName = false }: {
+  zone: Zone; facilityId: string; jobId: string; hideCleanerName?: boolean
+}) {
   const navigate = useNavigate()
   const t = useTranslation()
 
@@ -783,9 +785,11 @@ function ZoneRow({ zone, facilityId, jobId }: { zone: Zone; facilityId: string; 
         <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">
           {zone.zone_name}
         </p>
-        <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">
-          {zone.cleaner_name ?? t('sv_unassigned')}
-        </p>
+        {!hideCleanerName && (
+          <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">
+            {zone.cleaner_name ?? t('sv_unassigned')}
+          </p>
+        )}
       </div>
       <StatusPill status={zone.status} />
       <button
@@ -806,6 +810,68 @@ function ZoneRow({ zone, facilityId, jobId }: { zone: Zone; facilityId: string; 
   )
 }
 
+// ─── Cleaner group section ────────────────────────────────────────────────────
+
+function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId, onMarkComplete, marking }: {
+  cleanerName: string | null
+  cleanerId: string | null
+  zones: Zone[]
+  jobId: string
+  facilityId: string
+  onMarkComplete: (id: string) => void
+  marking: boolean
+}) {
+  const t = useTranslation()
+  const doneCount = zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length
+  const allDone   = doneCount === zones.length && zones.length > 0
+
+  return (
+    <div className="flex flex-col gap-2 mb-4">
+      {/* Cleaner header row */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-full bg-[#D0CFCA] flex items-center justify-center shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" stroke="#737874" strokeWidth="2"/>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#737874" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <span className="font-['Poppins',sans-serif] font-semibold text-[13px] text-[#1A1C19] truncate">
+            {cleanerName ?? t('sv_unassigned_zones')}
+          </span>
+          <span className="font-['Lato',sans-serif] text-[12px] text-[#9E9E9E] shrink-0">
+            {doneCount}/{zones.length}
+          </span>
+        </div>
+
+        {cleanerId && (
+          allDone ? (
+            <span className="shrink-0 flex items-center gap-1 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#2F4A3D] bg-[#D7E6DB] px-2.5 py-1 rounded-full">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {t('sv_cleaner_shift_done')}
+            </span>
+          ) : (
+            <button
+              onClick={() => onMarkComplete(cleanerId)}
+              disabled={marking}
+              className="shrink-0 h-7 px-3 bg-[#2F4A3D] rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[11px] text-white hover:bg-[#3d6152] transition-colors disabled:opacity-50"
+            >
+              {marking ? '…' : t('sv_mark_cleaner_complete')}
+            </button>
+          )
+        )}
+      </div>
+
+      {/* Zone rows — cleaner name hidden since it's the group header */}
+      {zones.map((z) => (
+        <ZoneRow key={z.id} zone={z} facilityId={facilityId} jobId={jobId} hideCleanerName />
+      ))}
+    </div>
+  )
+}
+
 // ─── Facility zone management view ────────────────────────────────────────────
 
 function FacilityZonesView({ facilityId }: { facilityId: string }) {
@@ -817,6 +883,7 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
   const [jobId, setJobId] = useState<string | null>(null)
   const [zones, setZones] = useState<Zone[]>([])
   const [loading, setLoading] = useState(true)
+  const [markingCleaners, setMarkingCleaners] = useState<Set<string>>(new Set())
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
@@ -886,6 +953,29 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
     )
   }
 
+  async function handleMarkCleanerComplete(cleanerId: string) {
+    if (!jobId) return
+    setMarkingCleaners((prev) => new Set(prev).add(cleanerId))
+    const zoneIds = zones.filter((z) => z.cleaner_id === cleanerId).map((z) => z.id)
+    await supabase.from('job_zones').update({ status: 'completed' }).in('id', zoneIds)
+    setMarkingCleaners((prev) => { const s = new Set(prev); s.delete(cleanerId); return s })
+    void load(true)
+  }
+
+  // Group zones by cleaner — named cleaners first, unassigned last
+  const groupedZones = zones.reduce<Map<string | null, Zone[]>>((map, z) => {
+    const key = z.cleaner_id ?? null
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(z)
+    return map
+  }, new Map())
+
+  const sortedGroups = [...groupedZones.entries()].sort(([a], [b]) => {
+    if (a === null) return 1
+    if (b === null) return -1
+    return 0
+  })
+
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
@@ -950,9 +1040,18 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
             <p className="font-['Lato',sans-serif] text-[13px] text-[#9E9E9E]">{t('sv_no_zones_body')}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {zones.map((z) => (
-              <ZoneRow key={z.id} zone={z} facilityId={facilityId} jobId={jobId} />
+          <div>
+            {sortedGroups.map(([cleanerId, groupZones]) => (
+              <CleanerGroupSection
+                key={cleanerId ?? '__unassigned__'}
+                cleanerId={cleanerId}
+                cleanerName={groupZones[0]?.cleaner_name ?? null}
+                zones={groupZones}
+                jobId={jobId}
+                facilityId={facilityId}
+                onMarkComplete={handleMarkCleanerComplete}
+                marking={cleanerId !== null && markingCleaners.has(cleanerId)}
+              />
             ))}
           </div>
         )}
