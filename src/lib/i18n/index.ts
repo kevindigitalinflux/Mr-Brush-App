@@ -115,6 +115,14 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_es: 'Español',
     lang_pt: 'Português',
 
+    // Supervisor — Desktop sidebar
+    sv_portal_label: 'Supervisor Portal',
+    sv_nav_dashboard: 'Dashboard',
+    sv_nav_jobs: 'Jobs',
+    sv_nav_workers: 'Workers',
+    sv_nav_history: 'History',
+    sv_sign_out: 'Sign Out',
+
     // Supervisor — Dashboard
     sv_todays_sites: "Today's Sites",
     sv_pending_approvals: 'Pending approvals',
@@ -124,6 +132,10 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_go_to_jobs: 'Go to Jobs',
     sv_active_pill: 'ACTIVE',
     sv_manage_facility: 'Manage Facility',
+    sv_workers_on_shift: 'Workers on shift',
+    sv_select_worker_prompt: 'Select a worker to view their profile',
+    sv_select_facility_prompt: 'Select a facility to view today\'s shift',
+    sv_view_all_jobs: 'View all jobs',
 
     // Supervisor — Jobs (facilities list)
     sv_jobs_title: 'Jobs',
@@ -386,6 +398,14 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_es: 'Español',
     lang_pt: 'Português',
 
+    // Supervisor — Desktop sidebar
+    sv_portal_label: 'Portal de Supervisor',
+    sv_nav_dashboard: 'Panel',
+    sv_nav_jobs: 'Trabajos',
+    sv_nav_workers: 'Trabajadores',
+    sv_nav_history: 'Historial',
+    sv_sign_out: 'Cerrar Sesión',
+
     // Supervisor — Dashboard
     sv_todays_sites: 'Sitios de hoy',
     sv_pending_approvals: 'Aprobaciones pendientes',
@@ -394,6 +414,10 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_no_active_shifts_body: 'Crea el trabajo de hoy para asignar limpiadores y zonas.',
     sv_go_to_jobs: 'Ir a Trabajos',
     sv_active_pill: 'ACTIVO',
+    sv_workers_on_shift: 'Trabajadores en turno',
+    sv_select_worker_prompt: 'Selecciona un trabajador para ver su perfil',
+    sv_select_facility_prompt: 'Selecciona una instalación para ver el turno de hoy',
+    sv_view_all_jobs: 'Ver todos los trabajos',
     sv_manage_facility: 'Gestionar instalación',
 
     // Supervisor — Jobs (facilities list)
@@ -652,6 +676,14 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_es: 'Español',
     lang_pt: 'Português',
 
+    // Supervisor — Desktop sidebar
+    sv_portal_label: 'Portal do Supervisor',
+    sv_nav_dashboard: 'Painel',
+    sv_nav_jobs: 'Trabalhos',
+    sv_nav_workers: 'Trabalhadores',
+    sv_nav_history: 'Histórico',
+    sv_sign_out: 'Sair',
+
     // Supervisor — Dashboard
     sv_todays_sites: 'Sites de hoje',
     sv_pending_approvals: 'Aprovações pendentes',
@@ -660,6 +692,10 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_no_active_shifts_body: 'Crie o trabalho de hoje para atribuir limpadores e zonas.',
     sv_go_to_jobs: 'Ir para Trabalhos',
     sv_active_pill: 'ATIVO',
+    sv_workers_on_shift: 'Trabalhadores em turno',
+    sv_select_worker_prompt: 'Selecione um trabalhador para ver o perfil',
+    sv_select_facility_prompt: 'Selecione uma instalação para ver o turno de hoje',
+    sv_view_all_jobs: 'Ver todos os trabalhos',
     sv_manage_facility: 'Gerir instalação',
 
     // Supervisor — Jobs (facilities list)

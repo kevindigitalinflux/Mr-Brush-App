@@ -4,6 +4,8 @@ import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -71,10 +73,9 @@ function HistoryRow({ job }: { job: HistoryJob }) {
   )
 }
 
-// ─── History page ─────────────────────────────────────────────────────────────
+// ─── Shared content (data + rendering, no outer wrapper) ─────────────────────
 
-/** Past job history for the supervisor — their own shifts and worker shifts. */
-export function History() {
+function HistoryContent({ compact = false }: { compact?: boolean }) {
   const { user } = useApp()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -131,54 +132,84 @@ export function History() {
   useGSAP(() => {
     if (loading) return
     gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.history-heading', { opacity: 0, y: 16, duration: 0.4 })
+      .from('.history-heading', { opacity: 0, y: 14, duration: 0.4 })
       .from('.history-row', { opacity: 0, y: 10, duration: 0.35, stagger: 0.05 }, '-=0.2')
   }, { scope: containerRef, dependencies: [loading, tab] })
 
   return (
-    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
+    <div ref={containerRef} className={compact ? 'px-6 pt-10 pb-8' : 'w-full max-w-[480px] mx-auto px-6 pt-10 pb-8'}>
+      <h1 className={`history-heading font-['Poppins',sans-serif] font-bold text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5 ${compact ? 'text-[28px]' : 'text-[32px]'}`}>
+        {t('sv_history_title')}
+      </h1>
 
-        <h1 className="history-heading font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5">
-          {t('sv_history_title')}
-        </h1>
+      {/* Tab toggle */}
+      <div className="flex bg-[#E3E3DD] rounded-[8px] p-1 mb-6">
+        {(['mine', 'workers'] as HistoryTab[]).map((key) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={[
+              "flex-1 h-9 rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[13px] transition-colors",
+              tab === key ? 'bg-white text-[#1A1C19] shadow-sm' : 'text-[#737874]',
+            ].join(' ')}
+          >
+            {key === 'mine' ? t('sv_my_shifts') : t('sv_all_workers')}
+          </button>
+        ))}
+      </div>
 
-        {/* Tab toggle */}
-        <div className="flex bg-[#E3E3DD] rounded-[8px] p-1 mb-6">
-          {(['mine', 'workers'] as HistoryTab[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={[
-                "flex-1 h-9 rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[13px] transition-colors",
-                tab === key ? 'bg-white text-[#1A1C19] shadow-sm' : 'text-[#737874]',
-              ].join(' ')}
-            >
-              {key === 'mine' ? t('sv_my_shifts') : t('sv_all_workers')}
-            </button>
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-[76px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
           ))}
         </div>
+      ) : jobs.length === 0 ? (
+        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
+          <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_past_shifts')}</p>
+          <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
+            {t('sv_no_past_shifts_body')}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {jobs.map((job) => <HistoryRow key={job.id} job={job} />)}
+        </div>
+      )}
+    </div>
+  )
+}
 
-        {loading ? (
-          <div className="flex flex-col gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-[76px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
-            ))}
-          </div>
-        ) : jobs.length === 0 ? (
-          <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
-            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_past_shifts')}</p>
-            <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
-              {t('sv_no_past_shifts_body')}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {jobs.map((job) => <HistoryRow key={job.id} job={job} />)}
-          </div>
-        )}
-      </div>
+// ─── Desktop History ──────────────────────────────────────────────────────────
+
+function DesktopHistory() {
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <SupervisorDesktopSidebar active="history" />
+      <main className="flex-1 overflow-y-auto ml-60">
+        <div className="max-w-2xl mx-auto">
+          <HistoryContent compact />
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ─── Mobile History ───────────────────────────────────────────────────────────
+
+function MobileHistory() {
+  return (
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <HistoryContent />
       <SupervisorNav active="history" />
     </div>
   )
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+/** Past job history for the supervisor — their own shifts and worker shifts. */
+export function History() {
+  const isDesktop = useIsDesktop()
+  return isDesktop ? <DesktopHistory /> : <MobileHistory />
 }

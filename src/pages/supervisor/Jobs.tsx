@@ -4,6 +4,8 @@ import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -884,7 +886,9 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
 
 // ─── Facility zone management view ────────────────────────────────────────────
 
-function FacilityZonesView({ facilityId }: { facilityId: string }) {
+function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
+  facilityId: string; panelMode?: boolean; onBack?: () => void
+}) {
   const { user } = useApp()
   const navigate = useNavigate()
   const t = useTranslation()
@@ -1000,13 +1004,13 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
   })
 
   return (
-    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
+    <div className={panelMode ? 'h-full overflow-y-auto bg-[#F4F4EE]' : 'fixed inset-0 bg-[#F4F4EE] overflow-y-auto'}>
+      <div ref={containerRef} className={`w-full max-w-[480px] mx-auto px-6 ${panelMode ? 'pb-8' : 'pb-[100px]'}`}>
 
         {/* Header */}
         <div className="flex items-center gap-3 pt-10 pb-5">
           <button
-            onClick={() => navigate('/supervisor/jobs')}
+            onClick={() => { if (onBack) onBack(); else navigate('/supervisor/jobs') }}
             aria-label="Back to facilities"
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0"
           >
@@ -1080,14 +1084,14 @@ function FacilityZonesView({ facilityId }: { facilityId: string }) {
           </div>
         )}
       </div>
-      <SupervisorNav active="jobs" />
+      {!panelMode && <SupervisorNav active="jobs" />}
     </div>
   )
 }
 
 // ─── Facility card ────────────────────────────────────────────────────────────
 
-function FacilityCard({ item, onManage }: { item: FacilityWithJob; onManage: () => void }) {
+function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onManage: () => void; selected?: boolean }) {
   const t = useTranslation()
   const { facility, job } = item
   const total    = job?.zones.length ?? 0
@@ -1097,7 +1101,7 @@ function FacilityCard({ item, onManage }: { item: FacilityWithJob; onManage: () 
   const isActive = !!job
 
   return (
-    <div className="facility-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
+    <div className={`facility-card bg-white border rounded-[12px] overflow-hidden transition-colors ${selected ? 'border-[#B8A77A]' : 'border-[#D0CFCA]'}`}>
       <div className="bg-[#1A1C19] px-5 py-3 flex items-center justify-between">
         <h3 className="font-['Poppins',sans-serif] font-semibold text-base text-white truncate pr-3">
           {facility.name}
@@ -1238,6 +1242,153 @@ function FacilitiesListView() {
   )
 }
 
+// ─── Desktop facilities panel ─────────────────────────────────────────────────
+
+function DesktopFacilitiesPanel({ selectedId, onSelect }: {
+  selectedId: string | null; onSelect: (id: string) => void
+}) {
+  const { user } = useApp()
+  const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [items, setItems] = useState<FacilityWithJob[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    const today = new Date().toISOString().slice(0, 10)
+
+    async function load() {
+      setLoading(true)
+      const [facilsRes, jobsRes] = await Promise.all([
+        supabase.from('facilities').select('id, name').eq('company_id', user!.company_id),
+        supabase.from('jobs')
+          .select('id, status, facility_id, job_zones ( id, zone_name, status, cleaner_id, notes )')
+          .eq('supervisor_id', user!.id)
+          .eq('scheduled_date', today),
+      ])
+
+      const facilities = (facilsRes.data ?? []) as unknown as Facility[]
+      const jobs = (jobsRes.data ?? []) as unknown as {
+        id: string; status: string; facility_id: string
+        job_zones: { id: string; zone_name: string; status: string; cleaner_id: string | null; notes: string | null }[]
+      }[]
+
+      const jobMap = new Map(jobs.map((j) => [j.facility_id, j]))
+
+      setItems(facilities.map((fac) => {
+        const job = jobMap.get(fac.id) ?? null
+        return {
+          facility: fac,
+          job: job ? {
+            id: job.id,
+            status: job.status,
+            zones: (job.job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
+              id: z.id, zone_name: z.zone_name, status: z.status,
+              cleaner_id: z.cleaner_id, cleaner_name: null, notes: z.notes,
+            })),
+          } : null,
+        }
+      }))
+      setLoading(false)
+    }
+
+    load()
+  }, [user])
+
+  useGSAP(() => {
+    if (loading) return
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.djobs-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.facility-card', { opacity: 0, y: 10, duration: 0.3, stagger: 0.06 }, '-=0.2')
+  }, { scope: containerRef, dependencies: [loading] })
+
+  return (
+    <div ref={containerRef} className="px-6 pt-10 pb-8">
+      <div className="djobs-heading mb-5">
+        <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
+          {t('sv_jobs_title')}
+        </h1>
+        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-0.5">
+          {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+      </div>
+
+      <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-3">
+        {t('sv_your_facilities')}
+      </h2>
+
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-[120px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
+          <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_facilities')}</p>
+          <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('sv_no_facilities_body')}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {items.map((item) => (
+            <FacilityCard
+              key={item.facility.id}
+              item={item}
+              selected={selectedId === item.facility.id}
+              onManage={() => onSelect(item.facility.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Desktop Jobs ─────────────────────────────────────────────────────────────
+
+function DesktopJobs() {
+  const t = useTranslation()
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null)
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <SupervisorDesktopSidebar active="jobs" />
+
+      {/* Left: facilities list */}
+      <div className="w-[380px] shrink-0 border-r border-[#D5D5CF] bg-[#F4F4EE] overflow-y-auto ml-60">
+        <DesktopFacilitiesPanel
+          selectedId={selectedFacilityId}
+          onSelect={setSelectedFacilityId}
+        />
+      </div>
+
+      {/* Right: zones panel */}
+      <main className="flex-1 overflow-y-auto bg-[#F4F4EE]">
+        {selectedFacilityId ? (
+          <FacilityZonesView
+            facilityId={selectedFacilityId}
+            onBack={() => setSelectedFacilityId(null)}
+            panelMode
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
+            <div className="w-16 h-16 rounded-full bg-[#E3E3DD] flex items-center justify-center mb-1">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" stroke="#9E9E9E" strokeWidth="2" />
+                <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#9E9E9E" strokeWidth="2" />
+                <path d="M8 12h8M8 16h5" stroke="#9E9E9E" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </div>
+            <p className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#737874]">
+              {t('sv_select_facility_prompt')}
+            </p>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
+
 // ─── Jobs page entry ──────────────────────────────────────────────────────────
 
 /** Facilities list and zone management for the supervisor. */
@@ -1246,11 +1397,15 @@ export function Jobs() {
   const facilityId = searchParams.get('facility')
   const action     = searchParams.get('action')
   const zoneId     = searchParams.get('zone')
+  const isDesktop  = useIsDesktop()
 
+  // Action screens are always full-screen (fixed inset-0) on both mobile and desktop
   if (facilityId && action === 'start') return <StartShiftScreen facilityId={facilityId} />
   if (facilityId && action === 'build') return <ShiftBuilderScreen facilityId={facilityId} />
   if (facilityId && action === 'add') return <AddZoneScreen facilityId={facilityId} />
   if (facilityId && action === 'edit' && zoneId) return <ZoneEditScreen facilityId={facilityId} zoneId={zoneId} />
+
+  if (isDesktop) return <DesktopJobs />
   if (facilityId) return <FacilityZonesView facilityId={facilityId} />
   return <FacilitiesListView />
 }

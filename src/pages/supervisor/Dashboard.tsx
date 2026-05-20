@@ -4,7 +4,9 @@ import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { LanguageSheet } from '../../components/supervisor/LanguageSheet'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,122 +72,14 @@ function GlobeIcon() {
   )
 }
 
-// ─── Site card ────────────────────────────────────────────────────────────────
+// ─── Shared data hook ─────────────────────────────────────────────────────────
 
-function SiteCard({ job }: { job: SiteJob }) {
-  const navigate = useNavigate()
-  const t = useTranslation()
-  const total = job.zones.length
-  const done = job.zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length
-  const assignedCleaners = new Set(job.zones.map((z) => z.cleaner_id).filter(Boolean)).size
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0
-
-  return (
-    <div className="site-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
-      <div className="bg-[#1A1C19] px-5 py-3 flex items-center justify-between">
-        <h3 className="font-['Poppins',sans-serif] font-semibold text-base text-white truncate pr-3">
-          {job.facility_name}
-        </h3>
-        <span className="shrink-0 bg-[#B8A77A] text-[#1A1C19] font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-2.5 py-0.5 rounded-full uppercase">
-          {t('sv_active_pill')}
-        </span>
-      </div>
-      <div className="px-5 py-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-['Lato',sans-serif] text-[#737874]">
-            {assignedCleaners} cleaner{assignedCleaners !== 1 ? 's' : ''} · {total} zone{total !== 1 ? 's' : ''}
-          </span>
-          <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>
-        </div>
-        <div className="w-full h-2 bg-[#E3E3DD] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#B8A77A] rounded-full transition-all"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <button
-          onClick={() => navigate(`/supervisor/jobs?facility=${job.facility_id}`)}
-          className="mt-1 w-full h-10 border border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors"
-        >
-          {t('sv_manage_facility')}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Quick stat card ──────────────────────────────────────────────────────────
-
-function StatCard({ label, value, icon, onClick, accent }: {
-  label: string
-  value: number
-  icon: React.ReactNode
-  onClick?: () => void
-  accent?: 'warning' | 'error'
-}) {
-  const borderColor = accent === 'error' ? 'border-[#BA1A1A]' : accent === 'warning' ? 'border-[#B8A77A]' : 'border-[#D0CFCA]'
-  return (
-    <button
-      onClick={onClick}
-      disabled={!onClick}
-      className={[
-        'flex-1 bg-white rounded-[12px] border p-4 flex flex-col gap-1.5 text-left',
-        borderColor,
-        onClick ? 'cursor-pointer hover:shadow-sm transition-shadow' : 'cursor-default',
-      ].join(' ')}
-    >
-      <div className="flex items-center justify-between">
-        {icon}
-        {onClick && <ChevronRightIcon />}
-      </div>
-      <span className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-none">{value}</span>
-      <span className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-snug">{label}</span>
-    </button>
-  )
-}
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-function EmptyDashboard() {
-  const navigate = useNavigate()
-  const t = useTranslation()
-  return (
-    <div className="flex flex-col gap-4 py-4">
-      <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
-        <div className="w-14 h-14 rounded-full bg-[#F4F4EE] border border-[#D0CFCA] flex items-center justify-center mb-1">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="16" rx="2" stroke="#B8A77A" strokeWidth="2" />
-            <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#B8A77A" strokeWidth="2" />
-          </svg>
-        </div>
-        <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_active_shifts')}</p>
-        <p className="font-['Lato',sans-serif] text-sm text-[#737874] max-w-[240px]">
-          {t('sv_no_active_shifts_body')}
-        </p>
-        <button
-          onClick={() => navigate('/supervisor/jobs')}
-          className="mt-3 h-10 px-6 bg-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#a8976a] transition-colors"
-        >
-          {t('sv_go_to_jobs')}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Dashboard page ───────────────────────────────────────────────────────────
-
-/** Supervisor dashboard — today's active sites, pending evidence, and issue count. */
-export function Dashboard() {
+function useDashboardData() {
   const { user } = useApp()
-  const navigate = useNavigate()
-  const t = useTranslation()
-  const containerRef = useRef<HTMLDivElement>(null)
   const [jobs, setJobs] = useState<SiteJob[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [issueCount, setIssueCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [showLangSheet, setShowLangSheet] = useState(false)
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
@@ -205,9 +99,7 @@ export function Dashboard() {
 
     if (jobRows) {
       const mapped: SiteJob[] = (jobRows as unknown as {
-        id: string
-        facility_id: string
-        status: string
+        id: string; facility_id: string; status: string
         facilities: { name: string } | null
         job_zones: ZoneSummary[]
         cleaning_logs: { id: string; status: string }[]
@@ -239,12 +131,247 @@ export function Dashboard() {
     return () => { void supabase.removeChannel(channel) }
   }, [user, load])
 
+  return { jobs, pendingCount, issueCount, loading }
+}
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
+
+function SiteCard({ job }: { job: SiteJob }) {
+  const navigate = useNavigate()
+  const t = useTranslation()
+  const total = job.zones.length
+  const done = job.zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length
+  const assignedCleaners = new Set(job.zones.map((z) => z.cleaner_id).filter(Boolean)).size
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+
+  return (
+    <div className="site-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
+      <div className="bg-[#1A1C19] px-5 py-3 flex items-center justify-between">
+        <h3 className="font-['Poppins',sans-serif] font-semibold text-base text-white truncate pr-3">
+          {job.facility_name}
+        </h3>
+        <span className="shrink-0 bg-[#B8A77A] text-[#1A1C19] font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-2.5 py-0.5 rounded-full uppercase">
+          {t('sv_active_pill')}
+        </span>
+      </div>
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-['Lato',sans-serif] text-[#737874]">
+            {assignedCleaners} cleaner{assignedCleaners !== 1 ? 's' : ''} · {total} zone{total !== 1 ? 's' : ''}
+          </span>
+          <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>
+        </div>
+        <div className="w-full h-2 bg-[#E3E3DD] rounded-full overflow-hidden">
+          <div className="h-full bg-[#B8A77A] rounded-full transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <button
+          onClick={() => navigate(`/supervisor/jobs?facility=${job.facility_id}`)}
+          className="mt-1 w-full h-10 border border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors"
+        >
+          {t('sv_manage_facility')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, icon, onClick, accent }: {
+  label: string; value: number; icon: React.ReactNode
+  onClick?: () => void; accent?: 'warning' | 'error'
+}) {
+  const borderColor = accent === 'error' ? 'border-[#BA1A1A]' : accent === 'warning' ? 'border-[#B8A77A]' : 'border-[#D0CFCA]'
+  return (
+    <button
+      onClick={onClick}
+      disabled={!onClick}
+      className={[
+        'flex-1 bg-white rounded-[12px] border p-4 flex flex-col gap-1.5 text-left',
+        borderColor,
+        onClick ? 'cursor-pointer hover:shadow-sm transition-shadow' : 'cursor-default',
+      ].join(' ')}
+    >
+      <div className="flex items-center justify-between">
+        {icon}
+        {onClick && <ChevronRightIcon />}
+      </div>
+      <span className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-none">{value}</span>
+      <span className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-snug">{label}</span>
+    </button>
+  )
+}
+
+function EmptyState() {
+  const navigate = useNavigate()
+  const t = useTranslation()
+  return (
+    <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-8 flex flex-col items-center gap-2 text-center">
+      <div className="w-14 h-14 rounded-full bg-[#F4F4EE] border border-[#D0CFCA] flex items-center justify-center mb-1">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2" stroke="#B8A77A" strokeWidth="2" />
+          <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#B8A77A" strokeWidth="2" />
+        </svg>
+      </div>
+      <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_active_shifts')}</p>
+      <p className="font-['Lato',sans-serif] text-sm text-[#737874] max-w-[240px]">{t('sv_no_active_shifts_body')}</p>
+      <button
+        onClick={() => navigate('/supervisor/jobs')}
+        className="mt-3 h-10 px-6 bg-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#a8976a] transition-colors"
+      >
+        {t('sv_go_to_jobs')}
+      </button>
+    </div>
+  )
+}
+
+// ─── Desktop Dashboard ────────────────────────────────────────────────────────
+
+function DesktopDashboard() {
+  const { user } = useApp()
+  const navigate = useNavigate()
+  const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { jobs, pendingCount, issueCount, loading } = useDashboardData()
+
+  const h = new Date().getHours()
+  const greeting = h < 12 ? t('good_morning') : h < 17 ? t('good_afternoon') : t('good_evening')
+  const dateStr = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }).toUpperCase()
+
   useGSAP(() => {
     if (loading) return
     gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.dash-heading',  { opacity: 0, y: 16, duration: 0.4 })
-      .from('.stat-card',     { opacity: 0, y: 12, duration: 0.35, stagger: 0.08 }, '-=0.2')
-      .from('.site-card',     { opacity: 0, y: 16, duration: 0.4, stagger: 0.08 }, '-=0.15')
+      .from('.dd-header',  { opacity: 0, y: 14, duration: 0.4 })
+      .from('.dd-stat',    { opacity: 0, y: 12, scale: 0.97, duration: 0.35, stagger: 0.07 }, '-=0.2')
+      .from('.dd-section', { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+      .from('.site-card',  { opacity: 0, y: 14, duration: 0.4, stagger: 0.08 }, '-=0.1')
+  }, { scope: containerRef, dependencies: [loading] })
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <SupervisorDesktopSidebar active="dashboard" />
+      <main className="flex-1 overflow-y-auto ml-60">
+        <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10 flex flex-col gap-10">
+
+          {/* Header */}
+          <div className="dd-header flex items-start justify-between">
+            <div>
+              <p className="font-['Lato',sans-serif] text-[#737874] text-lg">{greeting},</p>
+              <h1 className="font-['Poppins',sans-serif] font-bold text-[44px] text-[#1A1C19] leading-[1.1] tracking-[-1px]">
+                {user?.name?.split(' ')[0] ?? 'Supervisor'}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874]">
+                {dateStr}
+              </span>
+              <button
+                onClick={() => navigate('/supervisor/notifications')}
+                aria-label="Notifications"
+                className="w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
+              >
+                <BellIcon />
+              </button>
+            </div>
+          </div>
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-4 gap-5">
+            <div className="dd-stat">
+              <StatCard
+                label={t('sv_pending_approvals')}
+                value={pendingCount}
+                icon={<CheckCircleIcon />}
+                accent="warning"
+                onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
+              />
+            </div>
+            <div className="dd-stat">
+              <StatCard
+                label={t('sv_issues_reported')}
+                value={issueCount}
+                icon={<AlertIcon />}
+                accent={issueCount > 0 ? 'error' : undefined}
+                onClick={() => navigate('/supervisor/issues')}
+              />
+            </div>
+            <div className="dd-stat">
+              <StatCard
+                label={t('sv_todays_sites')}
+                value={jobs.length}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2" stroke="#1A1C19" strokeWidth="2" />
+                    <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#1A1C19" strokeWidth="2" />
+                  </svg>
+                }
+              />
+            </div>
+            <div className="dd-stat">
+              <StatCard
+                label={t('sv_workers_on_shift')}
+                value={new Set(jobs.flatMap((j) => j.zones.map((z) => z.cleaner_id)).filter(Boolean)).size}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="9" cy="7" r="4" stroke="#1A1C19" strokeWidth="2" />
+                    <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                }
+              />
+            </div>
+          </div>
+
+          {/* Today's sites */}
+          <div>
+            <div className="dd-section flex items-center justify-between mb-5">
+              <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">
+                {t('sv_todays_sites')}
+              </h2>
+              <button
+                onClick={() => navigate('/supervisor/jobs')}
+                className="font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:text-[#a8976a] transition-colors"
+              >
+                {t('sv_view_all_jobs')} →
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-2 gap-5">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-[168px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+                ))}
+              </div>
+            ) : jobs.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="grid grid-cols-2 gap-5">
+                {jobs.map((job) => <SiteCard key={job.id} job={job} />)}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ─── Mobile Dashboard ─────────────────────────────────────────────────────────
+
+function MobileDashboard() {
+  const { user } = useApp()
+  const navigate = useNavigate()
+  const t = useTranslation()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { jobs, pendingCount, issueCount, loading } = useDashboardData()
+  const [showLangSheet, setShowLangSheet] = useState(false)
+
+  useGSAP(() => {
+    if (loading) return
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.dash-heading', { opacity: 0, y: 16, duration: 0.4 })
+      .from('.stat-card',    { opacity: 0, y: 12, duration: 0.35, stagger: 0.08 }, '-=0.2')
+      .from('.site-card',    { opacity: 0, y: 16, duration: 0.4, stagger: 0.08 }, '-=0.15')
   }, { scope: containerRef, dependencies: [loading] })
 
   const greeting = (() => {
@@ -258,7 +385,6 @@ export function Dashboard() {
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
 
-        {/* Header */}
         <div className="dash-heading flex items-center justify-between mb-6">
           <div>
             <p className="font-['Lato',sans-serif] text-[14px] text-[#737874]">{greeting},</p>
@@ -284,7 +410,6 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Quick stats */}
         <div className="flex gap-3 mb-6">
           <StatCard
             label={t('sv_pending_approvals')}
@@ -302,7 +427,6 @@ export function Dashboard() {
           />
         </div>
 
-        {/* Today's section label */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-['Poppins',sans-serif] font-semibold text-[18px] text-[#1A1C19]">
             {t('sv_todays_sites')}
@@ -319,7 +443,7 @@ export function Dashboard() {
             ))}
           </div>
         ) : jobs.length === 0 ? (
-          <EmptyDashboard />
+          <EmptyState />
         ) : (
           <div className="flex flex-col gap-4">
             {jobs.map((job) => <SiteCard key={job.id} job={job} />)}
@@ -331,4 +455,12 @@ export function Dashboard() {
       <SupervisorNav active="dashboard" />
     </div>
   )
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+/** Supervisor dashboard — today's active sites, pending evidence, and issue count. */
+export function Dashboard() {
+  const isDesktop = useIsDesktop()
+  return isDesktop ? <DesktopDashboard /> : <MobileDashboard />
 }
