@@ -216,7 +216,7 @@ export function Dashboard() {
         facility_id: r.facility_id,
         status: r.status,
         facility_name: r.facilities?.name ?? 'Unknown Site',
-        zones: r.job_zones ?? [],
+        zones: (r.job_zones ?? []).filter((z) => z.status !== 'deleted'),
         pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending_review').length,
       }))
       setJobs(mapped.filter((j) => j.status !== 'completed'))
