@@ -122,13 +122,13 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
       supervisor_id: user.id,
       facility_id: facilityId,
       scheduled_date: new Date().toISOString().slice(0, 10),
-      status: 'not_started',
+      status: 'scheduled',
       company_id: user.company_id,
     }).select('id').single()
 
     if (jobErr || !jobData) {
       setSubmitting(false)
-      setSubmitError(jobErr?.message ?? t('sv_failed_start_shift'))
+      setSubmitError(t('sv_failed_start_shift'))
       return
     }
 
