@@ -192,7 +192,7 @@ function StatCard({ label, value, icon, onClick, accent, className: extraClass =
       className={[
         'w-full bg-white rounded-[16px] border border-[#D0CFCA] overflow-hidden flex flex-col text-left group',
         onClick
-          ? 'cursor-pointer hover:-translate-y-1.5 hover:shadow-xl hover:border-[#B8A77A] transition-[border-color,box-shadow,transform] duration-200'
+          ? 'cursor-pointer hover:-translate-y-1.5 hover:shadow-xl hover:border-[#B8A77A] transition-[border-color,box-shadow,transform] duration-150'
           : 'cursor-default pointer-events-none',
         extraClass,
       ].join(' ')}
@@ -260,7 +260,7 @@ function DesktopDashboard() {
     gsap.set(['.dd-header', '.dd-stat', '.dd-section', '.site-card'], { clearProps: 'all' })
     gsap.timeline({ defaults: { ease: 'power2.out' } })
       .fromTo('.dd-header',  { opacity: 0, y: 14 },              { opacity: 1, y: 0, duration: 0.4 })
-      .fromTo('.dd-stat',    { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.35 }, '-=0.2')
+      .fromTo('.dd-stat',    { opacity: 0 },                     { opacity: 1, duration: 0.35 }, '-=0.2')
       .fromTo('.dd-section', { opacity: 0, y: 10 },              { opacity: 1, y: 0, duration: 0.3 }, '-=0.15')
       .fromTo('.site-card',  { opacity: 0, y: 14 },              { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, '-=0.1')
   }, { scope: containerRef, dependencies: [loading] })
