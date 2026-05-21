@@ -30,18 +30,18 @@ interface SiteJob {
 
 function CheckCircleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="#2F4A3D" strokeWidth="2" />
-      <path d="M8 12l3 3 5-5" stroke="#2F4A3D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
 function AlertIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#BA1A1A" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M12 9v4M12 17h.01" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -49,7 +49,7 @@ function AlertIcon() {
 function ChevronRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M9 18l6-6-6-6" stroke="#B8A77A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -179,26 +179,38 @@ function StatCard({ label, value, icon, onClick, accent, className: extraClass =
   label: string; value: number; icon: React.ReactNode
   onClick?: () => void; accent?: 'warning' | 'error'; className?: string
 }) {
-  const borderColor = accent === 'error' ? 'border-[#BA1A1A]' : accent === 'warning' ? 'border-[#B8A77A]' : 'border-[#D0CFCA]'
+  const valueColor = accent === 'error' && value > 0
+    ? 'text-[#BA1A1A]'
+    : accent === 'warning' && value > 0
+      ? 'text-[#B8A77A]'
+      : 'text-[#1A1C19]'
+
   return (
     <button
       onClick={onClick}
-      disabled={!onClick}
+      aria-disabled={!onClick}
       className={[
-        'w-full bg-white rounded-[16px] border p-7 min-h-[200px] flex flex-col justify-between text-left',
-        borderColor,
-        onClick ? 'cursor-pointer hover:shadow-sm transition-shadow' : 'cursor-default',
+        'w-full bg-white rounded-[16px] border border-[#D0CFCA] overflow-hidden flex flex-col text-left group',
+        onClick
+          ? 'cursor-pointer hover:-translate-y-1.5 hover:shadow-xl hover:border-[#B8A77A] transition-all duration-200'
+          : 'cursor-default pointer-events-none',
         extraClass,
       ].join(' ')}
     >
-      <div className="flex items-start justify-between">
-        <div className="w-10 h-10 rounded-[10px] bg-[#F4F4EE] flex items-center justify-center">
+      {/* Dark header */}
+      <div className="bg-[#1A1C19] px-6 py-6 flex items-center justify-between">
+        <div className="w-11 h-11 rounded-[12px] bg-[#B8A77A]/20 flex items-center justify-center text-[#B8A77A]">
           {icon}
         </div>
-        {onClick && <ChevronRightIcon />}
+        {onClick && (
+          <span className="text-[#B8A77A] opacity-60 group-hover:opacity-100 transition-opacity">
+            <ChevronRightIcon />
+          </span>
+        )}
       </div>
-      <div className="flex flex-col gap-1">
-        <span className="font-['Poppins',sans-serif] font-bold text-[48px] text-[#1A1C19] leading-none">{value}</span>
+      {/* Body */}
+      <div className="flex-1 px-6 py-6 flex flex-col justify-end gap-1.5">
+        <span className={`font-['Poppins',sans-serif] font-bold text-[48px] leading-none ${valueColor}`}>{value}</span>
         <span className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-snug">{label}</span>
       </div>
     </button>
@@ -245,11 +257,12 @@ function DesktopDashboard() {
 
   useGSAP(() => {
     if (loading) return
+    gsap.set(['.dd-header', '.dd-stat', '.dd-section', '.site-card'], { clearProps: 'all' })
     gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.dd-header',  { opacity: 0, y: 14, duration: 0.4 })
-      .from('.dd-stat',    { opacity: 0, y: 12, scale: 0.97, duration: 0.35, stagger: 0.07 }, '-=0.2')
-      .from('.dd-section', { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
-      .from('.site-card',  { opacity: 0, y: 14, duration: 0.4, stagger: 0.08 }, '-=0.1')
+      .fromTo('.dd-header',  { opacity: 0, y: 14 },              { opacity: 1, y: 0, duration: 0.4 })
+      .fromTo('.dd-stat',    { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, stagger: 0.07 }, '-=0.2')
+      .fromTo('.dd-section', { opacity: 0, y: 10 },              { opacity: 1, y: 0, duration: 0.3 }, '-=0.15')
+      .fromTo('.site-card',  { opacity: 0, y: 14 },              { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, '-=0.1')
   }, { scope: containerRef, dependencies: [loading] })
 
   return (
@@ -303,9 +316,9 @@ function DesktopDashboard() {
               label={t('sv_todays_sites')}
               value={jobs.length}
               icon={
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="3" y="5" width="18" height="16" rx="2" stroke="#1A1C19" strokeWidth="2" />
-                  <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#1A1C19" strokeWidth="2" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+                  <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" />
                 </svg>
               }
             />
@@ -314,9 +327,9 @@ function DesktopDashboard() {
               label={t('sv_workers_on_shift')}
               value={new Set(jobs.flatMap((j) => j.zones.map((z) => z.cleaner_id)).filter(Boolean)).size}
               icon={
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="9" cy="7" r="4" stroke="#1A1C19" strokeWidth="2" />
-                  <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
+                  <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               }
             />
