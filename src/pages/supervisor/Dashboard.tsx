@@ -192,7 +192,7 @@ function StatCard({ label, value, icon, onClick, accent, className: extraClass =
       className={[
         'w-full bg-white rounded-[16px] border border-[#D0CFCA] overflow-hidden flex flex-col text-left group',
         onClick
-          ? 'cursor-pointer hover:-translate-y-1.5 hover:shadow-xl hover:border-[#B8A77A] transition-all duration-200'
+          ? 'cursor-pointer hover:-translate-y-1.5 hover:shadow-xl hover:border-[#B8A77A] transition-[border-color,box-shadow,transform] duration-200'
           : 'cursor-default pointer-events-none',
         extraClass,
       ].join(' ')}
