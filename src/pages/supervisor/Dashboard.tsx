@@ -175,9 +175,9 @@ function SiteCard({ job }: { job: SiteJob }) {
   )
 }
 
-function StatCard({ label, value, icon, onClick, accent }: {
+function StatCard({ label, value, icon, onClick, accent, className: extraClass = '' }: {
   label: string; value: number; icon: React.ReactNode
-  onClick?: () => void; accent?: 'warning' | 'error'
+  onClick?: () => void; accent?: 'warning' | 'error'; className?: string
 }) {
   const borderColor = accent === 'error' ? 'border-[#BA1A1A]' : accent === 'warning' ? 'border-[#B8A77A]' : 'border-[#D0CFCA]'
   return (
@@ -185,17 +185,22 @@ function StatCard({ label, value, icon, onClick, accent }: {
       onClick={onClick}
       disabled={!onClick}
       className={[
-        'flex-1 bg-white rounded-[12px] border p-4 flex flex-col gap-1.5 text-left',
+        'w-full bg-white rounded-[16px] border p-7 min-h-[200px] flex flex-col justify-between text-left',
         borderColor,
         onClick ? 'cursor-pointer hover:shadow-sm transition-shadow' : 'cursor-default',
+        extraClass,
       ].join(' ')}
     >
-      <div className="flex items-center justify-between">
-        {icon}
+      <div className="flex items-start justify-between">
+        <div className="w-10 h-10 rounded-[10px] bg-[#F4F4EE] flex items-center justify-center">
+          {icon}
+        </div>
         {onClick && <ChevronRightIcon />}
       </div>
-      <span className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-none">{value}</span>
-      <span className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-snug">{label}</span>
+      <div className="flex flex-col gap-1">
+        <span className="font-['Poppins',sans-serif] font-bold text-[48px] text-[#1A1C19] leading-none">{value}</span>
+        <span className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-snug">{label}</span>
+      </div>
     </button>
   )
 }
@@ -276,49 +281,45 @@ function DesktopDashboard() {
           </div>
 
           {/* Stat cards */}
-          <div className="grid grid-cols-4 gap-5">
-            <div className="dd-stat">
-              <StatCard
-                label={t('sv_pending_approvals')}
-                value={pendingCount}
-                icon={<CheckCircleIcon />}
-                accent="warning"
-                onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
-              />
-            </div>
-            <div className="dd-stat">
-              <StatCard
-                label={t('sv_issues_reported')}
-                value={issueCount}
-                icon={<AlertIcon />}
-                accent={issueCount > 0 ? 'error' : undefined}
-                onClick={() => navigate('/supervisor/issues')}
-              />
-            </div>
-            <div className="dd-stat">
-              <StatCard
-                label={t('sv_todays_sites')}
-                value={jobs.length}
-                icon={
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect x="3" y="5" width="18" height="16" rx="2" stroke="#1A1C19" strokeWidth="2" />
-                    <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#1A1C19" strokeWidth="2" />
-                  </svg>
-                }
-              />
-            </div>
-            <div className="dd-stat">
-              <StatCard
-                label={t('sv_workers_on_shift')}
-                value={new Set(jobs.flatMap((j) => j.zones.map((z) => z.cleaner_id)).filter(Boolean)).size}
-                icon={
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="9" cy="7" r="4" stroke="#1A1C19" strokeWidth="2" />
-                    <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                }
-              />
-            </div>
+          <div className="grid grid-cols-4 gap-6">
+            <StatCard
+              className="dd-stat"
+              label={t('sv_pending_approvals')}
+              value={pendingCount}
+              icon={<CheckCircleIcon />}
+              accent="warning"
+              onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
+            />
+            <StatCard
+              className="dd-stat"
+              label={t('sv_issues_reported')}
+              value={issueCount}
+              icon={<AlertIcon />}
+              accent={issueCount > 0 ? 'error' : undefined}
+              onClick={() => navigate('/supervisor/issues')}
+            />
+            <StatCard
+              className="dd-stat"
+              label={t('sv_todays_sites')}
+              value={jobs.length}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" stroke="#1A1C19" strokeWidth="2" />
+                  <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#1A1C19" strokeWidth="2" />
+                </svg>
+              }
+            />
+            <StatCard
+              className="dd-stat"
+              label={t('sv_workers_on_shift')}
+              value={new Set(jobs.flatMap((j) => j.zones.map((z) => z.cleaner_id)).filter(Boolean)).size}
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="9" cy="7" r="4" stroke="#1A1C19" strokeWidth="2" />
+                  <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              }
+            />
           </div>
 
           {/* Today's sites */}
