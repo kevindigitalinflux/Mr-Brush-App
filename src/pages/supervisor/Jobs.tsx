@@ -1005,37 +1005,71 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
 
   return (
     <div className={panelMode ? 'h-full overflow-y-auto bg-[#F4F4EE]' : 'fixed inset-0 bg-[#F4F4EE] overflow-y-auto'}>
-      <div ref={containerRef} className={`w-full max-w-[480px] mx-auto px-6 ${panelMode ? 'pb-8' : 'pb-[100px]'}`}>
+      <div ref={containerRef} className={panelMode ? 'px-10 pb-8' : 'w-full max-w-[480px] mx-auto px-6 pb-[100px]'}>
 
         {/* Header */}
-        <div className="flex items-center gap-3 pt-10 pb-5">
-          <button
-            onClick={() => { if (onBack) onBack(); else navigate('/supervisor/jobs') }}
-            aria-label="Back to facilities"
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <h1 className="font-['Poppins',sans-serif] font-bold text-[22px] text-[#1A1C19] leading-[1.1] tracking-[-0.3px] flex-1 min-w-0 truncate">
-            {facilityName || '…'}
-          </h1>
-          {jobId && (
-            <button
-              onClick={() => navigate(
-                `/supervisor/jobs?facility=${facilityId}&action=add`,
-                { state: { jobId } },
+        {panelMode ? (
+          <div className="flex items-start justify-between pt-10 pb-5">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { if (onBack) onBack(); else navigate('/supervisor/jobs') }}
+                aria-label="Back to facilities"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+                {facilityName || '…'}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              {jobId && (
+                <button
+                  onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}&action=add`, { state: { jobId } })}
+                  className="flex items-center gap-1.5 h-9 px-4 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
+                >
+                  {t('sv_add_zone')}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </button>
               )}
-              className="shrink-0 flex items-center gap-1.5 h-9 px-4 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
+              <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874]">
+                {new Date().toLocaleDateString('en-GB', {
+                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                }).toUpperCase()}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 pt-10 pb-5">
+            <button
+              onClick={() => { if (onBack) onBack(); else navigate('/supervisor/jobs') }}
+              aria-label="Back to facilities"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0"
             >
-              {t('sv_add_zone')}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-          )}
-        </div>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[22px] text-[#1A1C19] leading-[1.1] tracking-[-0.3px] flex-1 min-w-0 truncate">
+              {facilityName || '…'}
+            </h1>
+            {jobId && (
+              <button
+                onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}&action=add`, { state: { jobId } })}
+                className="shrink-0 flex items-center gap-1.5 h-9 px-4 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
+              >
+                {t('sv_add_zone')}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col gap-2">
@@ -1367,13 +1401,11 @@ function DesktopFacilityZonesView({ facilityId }: { facilityId: string }) {
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="jobs" />
       <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
-        <div className="max-w-2xl mx-auto">
-          <FacilityZonesView
-            facilityId={facilityId}
-            onBack={() => navigate('/supervisor/jobs')}
-            panelMode
-          />
-        </div>
+        <FacilityZonesView
+          facilityId={facilityId}
+          onBack={() => navigate('/supervisor/jobs')}
+          panelMode
+        />
       </main>
     </div>
   )

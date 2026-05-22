@@ -267,9 +267,16 @@ function DesktopWorkers() {
       {/* Left: workers list */}
       <div className="w-[380px] shrink-0 border-r border-[#D5D5CF] bg-[#F4F4EE] overflow-y-auto ml-60">
         <div ref={containerRef} className="px-8 pt-10 pb-8">
-          <h1 className="dw-heading font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5">
-            {t('sv_workers_title')}
-          </h1>
+          <div className="dw-heading flex items-start justify-between mb-5">
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
+              {t('sv_workers_title')}
+            </h1>
+            <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-1.5">
+              {new Date().toLocaleDateString('en-GB', {
+                weekday: 'short', day: 'numeric', month: 'short',
+              }).toUpperCase()}
+            </span>
+          </div>
           <WorkersList
             workers={workers}
             loading={loading}
