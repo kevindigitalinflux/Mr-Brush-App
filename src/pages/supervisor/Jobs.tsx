@@ -1113,21 +1113,18 @@ function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onM
         </span>
       </div>
       <div className="px-5 py-4 flex flex-col gap-3">
-        {isActive ? (
-          <>
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-['Lato',sans-serif] text-[#737874]">
-                {cleaners} cleaner{cleaners !== 1 ? 's' : ''} · {total} zone{total !== 1 ? 's' : ''}
-              </span>
-              <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>
-            </div>
-            <div className="w-full h-2 bg-[#E3E3DD] rounded-full overflow-hidden">
-              <div className="h-full bg-[#B8A77A] rounded-full transition-all" style={{ width: `${pct}%` }} />
-            </div>
-          </>
-        ) : (
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#9E9E9E]">{t('sv_no_job_today')}</p>
-        )}
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-['Lato',sans-serif] text-[#737874]">
+            {isActive
+              ? `${cleaners} cleaner${cleaners !== 1 ? 's' : ''} · ${total} zone${total !== 1 ? 's' : ''}`
+              : t('sv_no_job_today')
+            }
+          </span>
+          {isActive && <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>}
+        </div>
+        <div className="w-full h-2 bg-[#E3E3DD] rounded-full overflow-hidden">
+          <div className="h-full bg-[#B8A77A] rounded-full transition-all" style={{ width: isActive ? `${pct}%` : '0%' }} />
+        </div>
         <button
           onClick={onManage}
           className="mt-1 w-full h-10 border border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors"
@@ -1304,13 +1301,15 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
 
   return (
     <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
-      <div className="djobs-heading mb-8">
+      <div className="djobs-heading mb-8 flex items-start justify-between">
         <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
           {t('sv_jobs_title')}
         </h1>
-        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
-          {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+        <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-2">
+          {new Date().toLocaleDateString('en-GB', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          }).toUpperCase()}
+        </span>
       </div>
 
       <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-4">
