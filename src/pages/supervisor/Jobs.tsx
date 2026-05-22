@@ -1244,8 +1244,8 @@ function FacilitiesListView() {
 
 // ─── Desktop facilities panel ─────────────────────────────────────────────────
 
-function DesktopFacilitiesPanel({ selectedId, onSelect }: {
-  selectedId: string | null; onSelect: (id: string) => void
+function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
+  selectedId?: string | null; onSelect: (id: string) => void
 }) {
   const { user } = useApp()
   const t = useTranslation()
@@ -1347,43 +1347,36 @@ function DesktopFacilitiesPanel({ selectedId, onSelect }: {
 // ─── Desktop Jobs ─────────────────────────────────────────────────────────────
 
 function DesktopJobs() {
-  const t = useTranslation()
-  const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null)
-
+  const navigate = useNavigate()
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="jobs" />
+      <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
+        <div className="max-w-3xl mx-auto">
+          <DesktopFacilitiesPanel
+            onSelect={(id) => navigate(`/supervisor/jobs?facility=${id}`)}
+          />
+        </div>
+      </main>
+    </div>
+  )
+}
 
-      {/* Left: facilities list */}
-      <div className="w-[380px] shrink-0 border-r border-[#D5D5CF] bg-[#F4F4EE] overflow-y-auto ml-60">
-        <DesktopFacilitiesPanel
-          selectedId={selectedFacilityId}
-          onSelect={setSelectedFacilityId}
-        />
-      </div>
+// ─── Desktop facility detail ──────────────────────────────────────────────────
 
-      {/* Right: zones panel */}
-      <main className="flex-1 overflow-y-auto bg-[#F4F4EE]">
-        {selectedFacilityId ? (
+function DesktopFacilityZonesView({ facilityId }: { facilityId: string }) {
+  const navigate = useNavigate()
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <SupervisorDesktopSidebar active="jobs" />
+      <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
+        <div className="max-w-2xl mx-auto">
           <FacilityZonesView
-            facilityId={selectedFacilityId}
-            onBack={() => setSelectedFacilityId(null)}
+            facilityId={facilityId}
+            onBack={() => navigate('/supervisor/jobs')}
             panelMode
           />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-            <div className="w-16 h-16 rounded-full bg-[#E3E3DD] flex items-center justify-center mb-1">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="16" rx="2" stroke="#9E9E9E" strokeWidth="2" />
-                <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="#9E9E9E" strokeWidth="2" />
-                <path d="M8 12h8M8 16h5" stroke="#9E9E9E" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-            <p className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#737874]">
-              {t('sv_select_facility_prompt')}
-            </p>
-          </div>
-        )}
+        </div>
       </main>
     </div>
   )
@@ -1405,7 +1398,10 @@ export function Jobs() {
   if (facilityId && action === 'add') return <AddZoneScreen facilityId={facilityId} />
   if (facilityId && action === 'edit' && zoneId) return <ZoneEditScreen facilityId={facilityId} zoneId={zoneId} />
 
-  if (isDesktop) return <DesktopJobs />
+  if (isDesktop) {
+    if (facilityId) return <DesktopFacilityZonesView facilityId={facilityId} />
+    return <DesktopJobs />
+  }
   if (facilityId) return <FacilityZonesView facilityId={facilityId} />
   return <FacilitiesListView />
 }
