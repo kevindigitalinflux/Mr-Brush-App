@@ -1303,24 +1303,24 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
   }, { scope: containerRef, dependencies: [loading] })
 
   return (
-    <div ref={containerRef} className="px-6 pt-10 pb-8">
-      <div className="djobs-heading mb-5">
-        <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
+    <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
+      <div className="djobs-heading mb-8">
+        <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
           {t('sv_jobs_title')}
         </h1>
-        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-0.5">
+        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
           {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
       </div>
 
-      <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-3">
+      <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-4">
         {t('sv_your_facilities')}
       </h2>
 
       {loading ? (
-        <div className="flex flex-col gap-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-[120px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+        <div className="grid grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-[148px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -1329,7 +1329,7 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
           <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('sv_no_facilities_body')}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-6">
           {items.map((item) => (
             <FacilityCard
               key={item.facility.id}
@@ -1352,11 +1352,9 @@ function DesktopJobs() {
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="jobs" />
       <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
-        <div className="max-w-3xl mx-auto">
-          <DesktopFacilitiesPanel
-            onSelect={(id) => navigate(`/supervisor/jobs?facility=${id}`)}
-          />
-        </div>
+        <DesktopFacilitiesPanel
+          onSelect={(id) => navigate(`/supervisor/jobs?facility=${id}`)}
+        />
       </main>
     </div>
   )
