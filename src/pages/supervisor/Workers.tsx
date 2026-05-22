@@ -5,7 +5,6 @@ import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
-import { CleanerProfileContent } from './CleanerProfile'
 import { StarDisplay } from '../../components/supervisor/StarDisplay'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
@@ -248,10 +247,10 @@ function WorkersList({
 
 function DesktopWorkers() {
   const t = useTranslation()
+  const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const { workers, loading } = useWorkersData()
   const [search, setSearch] = useState('')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useGSAP(() => {
     if (loading) return
@@ -263,17 +262,15 @@ function DesktopWorkers() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="workers" />
-
-      {/* Left: workers list */}
-      <div className="w-[380px] shrink-0 border-r border-[#D5D5CF] bg-[#F4F4EE] overflow-y-auto ml-60">
-        <div ref={containerRef} className="px-8 pt-10 pb-8">
-          <div className="dw-heading flex items-start justify-between mb-5">
-            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
+      <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
+        <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
+          <div className="dw-heading mb-8 flex items-start justify-between">
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
               {t('sv_workers_title')}
             </h1>
-            <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-1.5">
+            <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-2">
               {new Date().toLocaleDateString('en-GB', {
-                weekday: 'short', day: 'numeric', month: 'short',
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
               }).toUpperCase()}
             </span>
           </div>
@@ -282,35 +279,10 @@ function DesktopWorkers() {
             loading={loading}
             search={search}
             onSearchChange={setSearch}
-            onSelect={setSelectedId}
-            selectedId={selectedId}
+            onSelect={(id) => navigate(`/supervisor/workers/${id}`)}
+            selectedId={null}
           />
         </div>
-      </div>
-
-      {/* Right: profile panel */}
-      <main className="flex-1 overflow-y-auto bg-[#F4F4EE]">
-        {selectedId ? (
-          <div className="max-w-2xl mx-auto">
-            <CleanerProfileContent
-              cleanerId={selectedId}
-              onBack={() => setSelectedId(null)}
-              panelMode
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-            <div className="w-16 h-16 rounded-full bg-[#E3E3DD] flex items-center justify-center mb-1">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="9" cy="7" r="4" stroke="#9E9E9E" strokeWidth="2" />
-                <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="#9E9E9E" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <p className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#737874]">
-              {t('sv_select_worker_prompt')}
-            </p>
-          </div>
-        )}
       </main>
     </div>
   )
