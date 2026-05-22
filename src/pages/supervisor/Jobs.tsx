@@ -1317,9 +1317,9 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
       </h2>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-5">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-[148px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+            <div key={i} className="h-[168px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -1328,7 +1328,7 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
           <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('sv_no_facilities_body')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-5">
           {items.map((item) => (
             <FacilityCard
               key={item.facility.id}

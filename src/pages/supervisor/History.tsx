@@ -137,10 +137,20 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
   }, { scope: containerRef, dependencies: [loading, tab] })
 
   return (
-    <div ref={containerRef} className={compact ? 'px-6 pt-10 pb-8' : 'w-full max-w-[480px] mx-auto px-6 pt-10 pb-8'}>
-      <h1 className={`history-heading font-['Poppins',sans-serif] font-bold text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5 ${compact ? 'text-[28px]' : 'text-[32px]'}`}>
-        {t('sv_history_title')}
-      </h1>
+    <div ref={containerRef} className={compact ? 'max-w-5xl mx-auto px-10 py-10' : 'w-full max-w-[480px] mx-auto px-6 pt-10 pb-8'}>
+      <div className={compact ? 'history-heading mb-8 flex items-start justify-between' : 'history-heading mb-5'}>
+        <h1 className={`font-['Poppins',sans-serif] font-bold text-[#1A1C19] leading-[1.1] tracking-[-0.4px] ${compact ? 'text-[32px]' : 'text-[32px] mb-0'}`}>
+          {t('sv_history_title')}
+        </h1>
+        {compact && (
+          <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-2">
+            {new Date().toLocaleDateString('en-GB', {
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            }).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <div className={compact ? 'max-w-2xl' : ''}>
 
       {/* Tab toggle */}
       <div className="flex bg-[#E3E3DD] rounded-[8px] p-1 mb-6">
@@ -176,6 +186,7 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
           {jobs.map((job) => <HistoryRow key={job.id} job={job} />)}
         </div>
       )}
+      </div>
     </div>
   )
 }
@@ -187,9 +198,7 @@ function DesktopHistory() {
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="history" />
       <main className="flex-1 overflow-y-auto ml-60">
-        <div className="max-w-2xl mx-auto">
-          <HistoryContent compact />
-        </div>
+        <HistoryContent compact />
       </main>
     </div>
   )

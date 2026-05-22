@@ -266,7 +266,7 @@ function DesktopWorkers() {
 
       {/* Left: workers list */}
       <div className="w-[380px] shrink-0 border-r border-[#D5D5CF] bg-[#F4F4EE] overflow-y-auto ml-60">
-        <div ref={containerRef} className="px-6 pt-10 pb-8">
+        <div ref={containerRef} className="px-8 pt-10 pb-8">
           <h1 className="dw-heading font-['Poppins',sans-serif] font-bold text-[28px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5">
             {t('sv_workers_title')}
           </h1>
