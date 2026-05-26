@@ -1199,8 +1199,8 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
 
         {/* Header */}
         {panelMode ? (
-          <div className="flex items-start justify-between mb-8">
-            <div className="flex items-center gap-3">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => { if (onBack) onBack(); else navigate('/supervisor/jobs') }}
                 aria-label="Back to facilities"
@@ -1217,7 +1217,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
             {jobId && (
               <button
                 onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}&action=add`, { state: { jobId } })}
-                className="mt-2 h-10 px-5 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
+                className="h-10 px-5 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
               >
                 {t('sv_add_zone')} +
               </button>

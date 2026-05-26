@@ -56,7 +56,7 @@ function HistoryRow({ job }: { job: HistoryJob }) {
           {job.facility_name}
         </p>
         <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
-          {job.zone_done} {t('of_count')} {job.zone_total} {t('zones')}
+          {job.zone_done}/{job.zone_total} {t('zones')}
           {job.supervisor_name ? ` · ${job.supervisor_name}` : ''}
         </p>
       </div>
@@ -79,6 +79,7 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
   const { user } = useApp()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
+  const headingAnimated = useRef(false)
   const [tab, setTab] = useState<HistoryTab>('mine')
   const [jobs, setJobs] = useState<HistoryJob[]>([])
   const [loading, setLoading] = useState(true)
@@ -131,26 +132,22 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
 
   useGSAP(() => {
     if (loading) return
-    gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.history-heading', { opacity: 0, y: 14, duration: 0.4 })
-      .from('.history-row', { opacity: 0, y: 10, duration: 0.35, stagger: 0.05 }, '-=0.2')
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
+    if (!headingAnimated.current) {
+      tl.from('.history-heading', { opacity: 0, y: 14, duration: 0.4 })
+      headingAnimated.current = true
+    }
+    tl.from('.history-row', { opacity: 0, y: 10, duration: 0.35, stagger: 0.05 }, '-=0.2')
   }, { scope: containerRef, dependencies: [loading, tab] })
 
   return (
     <div ref={containerRef} className={compact ? 'max-w-5xl mx-auto px-10 py-10' : 'w-full max-w-[480px] mx-auto px-6 pt-10 pb-8'}>
-      <div className={compact ? 'history-heading mb-8 flex items-start justify-between' : 'history-heading mb-5'}>
-        <h1 className={`font-['Poppins',sans-serif] font-bold text-[#1A1C19] leading-[1.1] tracking-[-0.4px] ${compact ? 'text-[32px]' : 'text-[32px] mb-0'}`}>
+      <div className={compact ? 'history-heading mb-8' : 'history-heading mb-5'}>
+        <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
           {t('sv_history_title')}
         </h1>
-        {compact && (
-          <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-2">
-            {new Date().toLocaleDateString('en-GB', {
-              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-            }).toUpperCase()}
-          </span>
-        )}
       </div>
-      <div className={compact ? 'max-w-2xl' : ''}>
+      <div>
 
       {/* Tab toggle */}
       <div className="flex bg-[#E3E3DD] rounded-[8px] p-1 mb-6">
@@ -182,7 +179,7 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {jobs.map((job) => <HistoryRow key={job.id} job={job} />)}
         </div>
       )}
