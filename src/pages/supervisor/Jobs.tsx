@@ -150,9 +150,94 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
     navigate(`/supervisor/jobs?facility=${facilityId}`, { replace: true })
   }
 
-  const dateLabel = new Date().toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  })
+  const backPath = `/supervisor/jobs?facility=${facilityId}`
+  const dateLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+  const isDesktop = useIsDesktop()
+
+  const launchLabel = submitting
+    ? t('sv_confirm_shift_creating')
+    : zones.length > 0
+      ? `${t('sv_launch_shift_btn')} · ${zones.length} zone${zones.length !== 1 ? 's' : ''}`
+      : t('sv_launch_shift_btn')
+
+  if (isDesktop) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+        <SupervisorDesktopSidebar active="jobs" />
+        <main className="flex-1 overflow-y-auto ml-60">
+          <div className="max-w-2xl mx-auto px-10 py-10">
+
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={() => navigate(backPath)} aria-label="Back"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div className="min-w-0">
+                <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-0.5">
+                  {t('sv_start_todays_shift')}
+                </p>
+                <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px] truncate">
+                  {facilityName || '…'}
+                </h1>
+                <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">{dateLabel}</p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-5 flex flex-col gap-4">
+              <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase">{t('sv_build_zones_label')}</h2>
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">{t('sv_zone_name_label')}</label>
+                <input type="text" value={zoneName} onChange={(e) => { setZoneName(e.target.value); setZoneError('') }}
+                  placeholder={t('sv_zone_name_placeholder')}
+                  className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors bg-[#FAFAF8]" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">{t('sv_assign_cleaner_label')}</label>
+                <CleanerPicker cleaners={cleaners} value={cleanerId} onChange={setCleanerId} unassignedLabel={t('sv_unassigned')} />
+              </div>
+              {zoneError && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{zoneError}</p>}
+              <button onClick={addZone} className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors">
+                {t('sv_add_zone_btn')} +
+              </button>
+            </div>
+
+            {zones.length > 0 && (
+              <div className="flex flex-col gap-2 mt-5">
+                <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-1">{t('sv_zones_added')} ({zones.length})</h2>
+                {zones.map((z) => (
+                  <div key={z.tempId} className="flex items-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">{z.zoneName}</p>
+                      <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">{z.cleanerName ?? t('sv_unassigned')}</p>
+                    </div>
+                    <button onClick={() => setZones((prev) => prev.filter((x) => x.tempId !== z.tempId))} aria-label="Remove zone"
+                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#FDECEA] transition-colors shrink-0">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" /></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {submitError && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A] mt-4 text-center">{submitError}</p>}
+
+            <div className="flex flex-col gap-2 mt-8">
+              <button onClick={handleSubmit} disabled={submitting}
+                className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60">
+                {launchLabel}
+              </button>
+              <button onClick={() => navigate(backPath)} className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors">
+                Cancel
+              </button>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] flex flex-col">
@@ -164,7 +249,7 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
           {/* Back */}
           <div className="pt-10 pb-4">
             <button
-              onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
+              onClick={() => navigate(backPath)}
               aria-label="Back"
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors"
             >
@@ -199,7 +284,6 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
             <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase">
               {t('sv_build_zones_label')}
             </h2>
-
             <div className="flex flex-col gap-2">
               <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
                 {t('sv_zone_name_label')}
@@ -212,25 +296,14 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
                 className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors bg-[#FAFAF8]"
               />
             </div>
-
             <div className="flex flex-col gap-2">
               <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
                 {t('sv_assign_cleaner_label')}
               </label>
-              <CleanerPicker
-                cleaners={cleaners}
-                value={cleanerId}
-                onChange={setCleanerId}
-                unassignedLabel={t('sv_unassigned')}
-              />
+              <CleanerPicker cleaners={cleaners} value={cleanerId} onChange={setCleanerId} unassignedLabel={t('sv_unassigned')} />
             </div>
-
             {zoneError && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{zoneError}</p>}
-
-            <button
-              onClick={addZone}
-              className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors"
-            >
+            <button onClick={addZone} className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors">
               {t('sv_add_zone_btn')} +
             </button>
           </div>
@@ -245,15 +318,10 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
                 <div key={z.tempId} className="flex items-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19] truncate">{z.zoneName}</p>
-                    <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">
-                      {z.cleanerName ?? t('sv_unassigned')}
-                    </p>
+                    <p className="font-['Lato',sans-serif] text-[12px] text-[#737874] truncate">{z.cleanerName ?? t('sv_unassigned')}</p>
                   </div>
-                  <button
-                    onClick={() => setZones((prev) => prev.filter((x) => x.tempId !== z.tempId))}
-                    aria-label="Remove zone"
-                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#FDECEA] transition-colors shrink-0"
-                  >
+                  <button onClick={() => setZones((prev) => prev.filter((x) => x.tempId !== z.tempId))} aria-label="Remove zone"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#FDECEA] transition-colors shrink-0">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M18 6L6 18M6 6l12 12" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
                     </svg>
@@ -269,24 +337,14 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
         </div>
       </div>
 
-      {/* Pinned Launch Shift CTA — pb-[72px] clears the fixed nav */}
+      {/* Pinned CTA — pb-[72px] clears the fixed nav */}
       <div className="w-full bg-[#F4F4EE] border-t border-[#E3E3DD] pb-[72px]">
         <div className="max-w-[480px] mx-auto px-6 py-4 flex flex-col gap-2">
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60"
-          >
-            {submitting
-              ? t('sv_confirm_shift_creating')
-              : zones.length > 0
-                ? `${t('sv_launch_shift_btn')} · ${zones.length} zone${zones.length !== 1 ? 's' : ''}`
-                : t('sv_launch_shift_btn')}
+          <button onClick={handleSubmit} disabled={submitting}
+            className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60">
+            {launchLabel}
           </button>
-          <button
-            onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}`)}
-            className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors"
-          >
+          <button onClick={() => navigate(backPath)} className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors">
             Cancel
           </button>
         </div>
@@ -334,6 +392,64 @@ function AddZoneScreen({ facilityId }: { facilityId: string }) {
     setSaving(false)
     if (err) { setError(t('sv_failed_add_zone')); return }
     goBack()
+  }
+
+  const isDesktop = useIsDesktop()
+
+  if (isDesktop) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+        <SupervisorDesktopSidebar active="jobs" />
+        <main className="flex-1 overflow-y-auto ml-60">
+          <div className="max-w-2xl mx-auto px-10 py-10">
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={goBack} aria-label="Back"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div className="min-w-0">
+                <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-0.5">
+                  {t('sv_jobs_title')}
+                </p>
+                <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+                  {t('sv_add_zone')}
+                </h1>
+              </div>
+            </div>
+
+            <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                  {t('sv_zone_name_label')}
+                </label>
+                <input type="text" value={zoneName} onChange={(e) => { setZoneName(e.target.value); setError('') }}
+                  placeholder={t('sv_zone_name_placeholder')}
+                  className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors bg-[#FAFAF8]" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                  {t('sv_assign_cleaner_label')}
+                </label>
+                <CleanerPicker cleaners={cleaners} value={cleanerId} onChange={setCleanerId} unassignedLabel={t('sv_unassigned')} />
+              </div>
+              {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
+            </div>
+
+            <div className="flex flex-col gap-2 mt-8">
+              <button onClick={handleAdd} disabled={saving}
+                className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60">
+                {saving ? t('submitting') : `${t('sv_add_zone')} +`}
+              </button>
+              <button onClick={goBack} className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -605,6 +721,81 @@ function ZoneEditScreen({ facilityId, zoneId }: { facilityId: string; zoneId: st
     goBack()
   }
 
+  const isDesktop = useIsDesktop()
+
+  if (isDesktop) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+        <SupervisorDesktopSidebar active="jobs" />
+        <main className="flex-1 overflow-y-auto ml-60">
+          <div className="max-w-2xl mx-auto px-10 py-10">
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={goBack} aria-label="Back"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div className="min-w-0">
+                <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-0.5">
+                  {t('sv_jobs_title')}
+                </p>
+                <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+                  {t('sv_edit_zone_title')}
+                </h1>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                  {t('sv_zone_name_label')}
+                </label>
+                <input type="text" value={name} onChange={(e) => { setName(e.target.value); setError('') }}
+                  className="h-[52px] border border-[#C3C8C2] rounded-[8px] px-4 font-['Lato',sans-serif] text-[15px] text-[#1A1C19] outline-none focus:border-[#B8A77A] transition-colors bg-[#FAFAF8]" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                  {t('sv_assign_cleaner_label')}
+                </label>
+                <CleanerPicker cleaners={cleaners} value={cleanerId} onChange={setCleanerId} unassignedLabel={t('sv_unassigned')} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase">
+                  {t('sv_zone_notes_label')}
+                </label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t('sv_zone_notes_placeholder')} rows={4}
+                  className="border border-[#C3C8C2] rounded-[8px] px-4 py-3 font-['Lato',sans-serif] text-[14px] text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors resize-none bg-[#FAFAF8]" />
+              </div>
+              {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
+              <div className="flex gap-2">
+                <button onClick={handleDuplicate} disabled={saving}
+                  className="flex-1 h-11 border border-[#D0CFCA] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-[#434844] hover:bg-[#F4F4EE] transition-colors disabled:opacity-40 bg-white">
+                  {t('sv_duplicate_zone')}
+                </button>
+                <button onClick={handleDelete} disabled={deleting}
+                  className={[
+                    "flex-1 h-11 border-2 rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] transition-colors disabled:opacity-40",
+                    confirmDelete ? 'bg-[#BA1A1A] border-[#BA1A1A] text-white' : 'border-[#BA1A1A] text-[#BA1A1A] hover:bg-[#FDECEA]',
+                  ].join(' ')}>
+                  {confirmDelete ? (deleting ? '…' : 'Confirm') : t('sv_delete_zone')}
+                </button>
+              </div>
+              <button onClick={handleSave} disabled={saving}
+                className="w-full h-[56px] bg-[#B8A77A] rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-white hover:bg-[#a8976a] transition-colors disabled:opacity-60">
+                {saving ? t('submitting') : t('sv_save_changes')}
+              </button>
+              <button onClick={goBack} className="w-full h-10 font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] flex flex-col">
       <div className="w-full max-w-[480px] mx-auto px-6 flex flex-col flex-1 overflow-y-auto pb-[100px]">
@@ -829,15 +1020,14 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
   const allDone   = doneCount === zones.length && zones.length > 0
 
   return (
-    <div className="flex flex-col gap-2 mb-4">
+    <div className="flex flex-col gap-3 mb-6">
       {/* Cleaner header row */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-[#D0CFCA] flex items-center justify-center shrink-0">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="8" r="4" stroke="#737874" strokeWidth="2"/>
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#737874" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
+          <div className="w-7 h-7 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">
+            <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#B8A77A]">
+              {(cleanerName ?? '').split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+            </span>
           </div>
           <span className="font-['Poppins',sans-serif] font-semibold text-[13px] text-[#1A1C19] truncate">
             {cleanerName ?? t('sv_unassigned_zones')}
@@ -868,7 +1058,7 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
             <button
               onClick={() => onMarkComplete(cleanerId)}
               disabled={marking}
-              className="shrink-0 h-7 px-3 bg-[#2F4A3D] rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[11px] text-white hover:bg-[#3d6152] transition-colors disabled:opacity-50"
+              className="shrink-0 h-9 px-4 bg-[#2F4A3D] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#3d6152] transition-colors disabled:opacity-50"
             >
               {marking ? '…' : t('sv_mark_cleaner_complete')}
             </button>
@@ -1005,11 +1195,11 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
 
   return (
     <div className={panelMode ? 'h-full overflow-y-auto bg-[#F4F4EE]' : 'fixed inset-0 bg-[#F4F4EE] overflow-y-auto'}>
-      <div ref={containerRef} className={panelMode ? 'px-10 pb-8' : 'w-full max-w-[480px] mx-auto px-6 pb-[100px]'}>
+      <div ref={containerRef} className={panelMode ? 'max-w-5xl mx-auto px-10 py-10' : 'w-full max-w-[480px] mx-auto px-6 pb-[100px]'}>
 
         {/* Header */}
         {panelMode ? (
-          <div className="flex items-start justify-between pt-10 pb-5">
+          <div className="flex items-start justify-between mb-8">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => { if (onBack) onBack(); else navigate('/supervisor/jobs') }}
@@ -1024,24 +1214,14 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
                 {facilityName || '…'}
               </h1>
             </div>
-            <div className="flex items-center gap-3 mt-2">
-              {jobId && (
-                <button
-                  onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}&action=add`, { state: { jobId } })}
-                  className="flex items-center gap-1.5 h-9 px-4 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
-                >
-                  {t('sv_add_zone')}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
-                </button>
-              )}
-              <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874]">
-                {new Date().toLocaleDateString('en-GB', {
-                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                }).toUpperCase()}
-              </span>
-            </div>
+            {jobId && (
+              <button
+                onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}&action=add`, { state: { jobId } })}
+                className="mt-2 h-10 px-5 bg-[#1A1C19] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#2e3130] transition-colors"
+              >
+                {t('sv_add_zone')} +
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-3 pt-10 pb-5">
@@ -1351,7 +1531,7 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
       </h2>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-[168px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
           ))}
@@ -1362,7 +1542,7 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
           <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('sv_no_facilities_body')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-6">
           {items.map((item) => (
             <FacilityCard
               key={item.facility.id}
