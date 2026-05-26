@@ -6,9 +6,9 @@ import logoSrc from '../../assets/logo/logo.png'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 const FLAG_URLS: Record<Language, string> = {
-  en: 'https://www.figma.com/api/mcp/asset/abac7baa-306e-4933-9bfa-fda48c5c11df',
-  es: 'https://www.figma.com/api/mcp/asset/bc271660-c61d-4673-a90c-2d0ae2f5a30d',
-  pt: 'https://www.figma.com/api/mcp/asset/4628787e-1760-42cf-8505-bee76e6f7191',
+  en: 'https://flagcdn.com/w80/gb.png',
+  es: 'https://flagcdn.com/w80/es.png',
+  pt: 'https://flagcdn.com/w80/pt.png',
 }
 
 const LANGUAGES: { code: Language; label: string }[] = [

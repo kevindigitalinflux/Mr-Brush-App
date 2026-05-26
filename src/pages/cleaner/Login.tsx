@@ -98,11 +98,11 @@ function LoginFields({ state }: { state: ReturnType<typeof useLoginForm> }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <label htmlFor="cleanerId" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
-          Cleaner ID
+        <label htmlFor="userId" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
+          User ID
         </label>
         <input
-          id="cleanerId" type="text" value={cleanerId} placeholder="e.g. C002" autoComplete="username"
+          id="userId" type="text" value={cleanerId} placeholder="e.g. C002, S001" autoComplete="username"
           onChange={(e) => { setCleanerId(e.target.value); setError(false) }}
           className="h-[52px] w-full border border-[#C3C8C2] rounded-[4px] px-[17px] font-['Lato',sans-serif] text-base text-[#1A1C19] placeholder:text-[#9E9E9E] outline-none focus:border-[#B8A77A] transition-colors"
         />
@@ -169,7 +169,7 @@ function DesktopLogin() {
             Precision in<br />Every Detail.
           </h2>
           <p className="font-['Lato',sans-serif] text-white/50 text-lg mt-5 leading-[1.7] max-w-sm">
-            Access your cleaner portal to manage shifts, submit zone evidence, and track your work in real time.
+            Access the Mr Brush &amp; Co. app to manage shifts, submit zone evidence, and track your work in real time.
           </p>
         </div>
       </div>
@@ -181,13 +181,13 @@ function DesktopLogin() {
             <img src={logoSrc} alt="Mr Brush & Co." className="w-16 h-16 object-contain" />
             <div className="text-center">
               <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] text-[#1A1C19] tracking-[-0.3px]">Welcome back</h1>
-              <p className="font-['Lato',sans-serif] text-[#737874] text-base mt-1">Sign in to your Cleaner Portal</p>
+              <p className="font-['Lato',sans-serif] text-[#737874] text-base mt-1">Sign in to your User Portal</p>
             </div>
           </div>
           <div className="bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-8">
             <LoginFields state={state} />
             <p className="font-['Lato',sans-serif] text-sm text-[#1A1C19] text-center underline decoration-[#C3C8C2] leading-[1.6] mt-6">
-              Forgotten your Cleaner ID?<br />Let your supervisor know
+              Forgotten your User ID?<br />Let your supervisor know
             </p>
           </div>
         </div>
@@ -216,14 +216,14 @@ function MobileLogin() {
           <img src={logoSrc} alt="Mr Brush & Co." className="w-28 h-28 object-contain" />
           <div className="login-title flex flex-col items-center gap-2">
             <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] leading-[38px] tracking-[-0.32px] text-[#1A1C19] text-center">Welcome back</h1>
-            <p className="font-['Lato',sans-serif] text-base text-[#434844] text-center">Sign in with your Cleaner ID</p>
+            <p className="font-['Lato',sans-serif] text-base text-[#434844] text-center">Sign in with your User ID</p>
           </div>
         </div>
         <div className="login-card bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex flex-col gap-6">
           <LoginFields state={state} />
           <div className="flex flex-col items-center">
             <p className="font-['Lato',sans-serif] text-base text-[#1A1C19] text-center underline decoration-[#C3C8C2] leading-[1.6]">
-              Forgotten your Cleaner ID?<br />Let your supervisor know
+              Forgotten your User ID?<br />Let your supervisor know
             </p>
           </div>
         </div>
