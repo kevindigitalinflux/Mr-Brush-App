@@ -283,8 +283,8 @@ export function Evidence() {
   if (isDesktop) {
     return (
       <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
-        <SupervisorDesktopSidebar active="dashboard" />
-        <main className="flex-1 overflow-y-scroll ml-60">
+        <SupervisorDesktopSidebar active="history" />
+        <main className="flex-1 overflow-y-auto ml-60" style={{ scrollbarGutter: 'stable' }}>
           <div className="max-w-4xl mx-auto px-10 py-10">
             <div className="flex items-center gap-4 mb-8">
               <button onClick={() => navigate(-1)} aria-label="Go back"
@@ -324,7 +324,7 @@ export function Evidence() {
         </div>
         {content}
       </div>
-      <SupervisorNav active="dashboard" />
+      <SupervisorNav active="history" />
     </div>
   )
 }
