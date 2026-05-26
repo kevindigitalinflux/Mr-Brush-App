@@ -123,8 +123,8 @@ function WorkerCard({ worker, onClick, selected }: { worker: Worker; onClick: ()
     <button
       onClick={onClick}
       className={[
-        'worker-card w-full bg-white border rounded-[12px] p-4 flex items-center gap-4 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]',
-        selected ? 'border-[#B8A77A] bg-[#FDFCF8] shadow-md -translate-y-px' : 'border-[#D0CFCA] hover:border-[#B8A77A] hover:shadow-md hover:-translate-y-px',
+        'worker-card w-full bg-white border rounded-[12px] p-4 flex items-center gap-4 text-left transition-[box-shadow,border-color,background-color] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]',
+        selected ? 'border-[#B8A77A] bg-[#FDFCF8] shadow-md' : 'border-[#D0CFCA] hover:border-[#B8A77A] hover:shadow-md',
       ].join(' ')}
     >
       <div className="w-11 h-11 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">

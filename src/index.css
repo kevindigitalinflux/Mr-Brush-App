@@ -113,7 +113,6 @@ body,
 .scrollbar-stable::-webkit-scrollbar-thumb { background: transparent; }
 
 /* Button press micro-interaction — applies to every button in the app */
-button { transition: transform 100ms ease; }
 button:active:not(:disabled) { transform: scale(0.97); }
 
 /* Slide-up fade — used for popover menus */

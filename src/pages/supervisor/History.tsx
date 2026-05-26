@@ -45,7 +45,7 @@ function HistoryRow({ job }: { job: HistoryJob }) {
   return (
     <button
       onClick={() => navigate(`/supervisor/evidence/${job.id}`)}
-      className="history-row w-full bg-white border border-[#D0CFCA] rounded-[12px] flex items-stretch overflow-hidden text-left transition-all duration-200 hover:shadow-md hover:-translate-y-px cursor-pointer"
+      className="history-row w-full bg-white border border-[#D0CFCA] rounded-[12px] flex items-stretch overflow-hidden text-left transition-[box-shadow] duration-200 hover:shadow-md cursor-pointer"
     >
       <div className="w-[68px] flex flex-col items-center justify-center border-r border-[#E3E3DD] py-4 shrink-0">
         <span className="font-['Poppins',sans-serif] font-bold text-[30px] text-[#1A1C19] leading-none">{dayNum}</span>
@@ -80,13 +80,14 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const headingAnimated = useRef(false)
+  const isFirstLoad = useRef(true)
   const [tab, setTab] = useState<HistoryTab>('mine')
   const [jobs, setJobs] = useState<HistoryJob[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
-    setLoading(true)
+    if (isFirstLoad.current) setLoading(true)
 
     async function load() {
       const query = supabase
@@ -125,6 +126,7 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
         setJobs(mapped)
       }
       setLoading(false)
+      isFirstLoad.current = false
     }
 
     load()
@@ -137,8 +139,8 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
       tl.from('.history-heading', { opacity: 0, y: 14, duration: 0.4 })
       headingAnimated.current = true
     }
-    tl.from('.history-row', { opacity: 0, y: 10, duration: 0.35, stagger: 0.05 }, '-=0.2')
-  }, { scope: containerRef, dependencies: [loading, tab] })
+    tl.from('.history-row', { opacity: 0, y: 8, duration: 0.25, stagger: 0.03, ease: 'power3.out' }, '-=0.15')
+  }, { scope: containerRef, dependencies: [loading] })
 
   return (
     <div ref={containerRef} className={compact ? 'max-w-5xl mx-auto px-10 py-10' : 'w-full max-w-[480px] mx-auto px-6 pt-10 pb-8'}>

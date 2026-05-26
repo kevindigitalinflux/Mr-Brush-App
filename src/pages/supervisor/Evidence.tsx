@@ -182,6 +182,7 @@ export function Evidence() {
   const navigate = useNavigate()
   const t = useTranslation()
   const isDesktop = useIsDesktop()
+  const pageRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [logs, setLogs] = useState<EvidenceLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -253,8 +254,13 @@ export function Evidence() {
   }, [user, load])
 
   useGSAP(() => {
+    if (!pageRef.current) return
+    gsap.from(pageRef.current, { opacity: 0, y: 18, duration: 0.45, ease: 'power2.out' })
+  }, { dependencies: [] })
+
+  useGSAP(() => {
     if (loading) return
-    gsap.from('.evidence-ticket', { opacity: 0, y: 16, duration: 0.4, stagger: 0.08, ease: 'power2.out' })
+    gsap.from('.evidence-ticket', { opacity: 0, y: 12, duration: 0.28, stagger: 0.05, ease: 'power3.out' })
   }, { scope: containerRef, dependencies: [loading] })
 
   const content = (
@@ -284,7 +290,7 @@ export function Evidence() {
     return (
       <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="history" />
-        <main className="flex-1 ml-60 scrollbar-stable">
+        <main ref={pageRef} className="flex-1 ml-60 scrollbar-stable">
           <div className="max-w-4xl mx-auto px-10 py-10">
             <div className="flex items-center gap-4 mb-8">
               <button onClick={() => navigate(-1)} aria-label="Go back"
@@ -310,7 +316,7 @@ export function Evidence() {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+    <div ref={pageRef} className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
         <div className="flex items-center gap-3 pt-10 pb-5">
           <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">

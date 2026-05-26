@@ -1315,7 +1315,7 @@ function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onM
   const isActive = !!job
 
   return (
-    <div className={`facility-card bg-white border rounded-[12px] overflow-hidden transition-all duration-200 ${selected ? 'border-[#B8A77A] shadow-md -translate-y-px' : 'border-[#D0CFCA] hover:shadow-md hover:-translate-y-px'}`}>
+    <div className={`facility-card bg-white border rounded-[12px] overflow-hidden transition-[box-shadow,border-color] duration-200 ${selected ? 'border-[#B8A77A] shadow-md' : 'border-[#D0CFCA] hover:shadow-md'}`}>
       <div className="bg-[#1A1C19] px-5 py-3 flex items-center justify-between">
         <h3 className="font-['Poppins',sans-serif] font-semibold text-base text-white truncate pr-3">
           {facility.name}
