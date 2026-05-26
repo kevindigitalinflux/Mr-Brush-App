@@ -611,34 +611,34 @@ export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: 
               </button>
             </div>
 
-            {/* 2-column: rate worker left, rating history right */}
-            <div className="grid grid-cols-2 gap-8 items-start">
-              <div className="profile-section">
-                {submitted ? (
-                  <div className="bg-[#D7E6DB] border border-[#2F4A3D] rounded-[12px] p-5 text-center flex flex-col gap-1">
-                    <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#2F4A3D]">{t('sv_rating_submitted')}</p>
-                    <p className="font-['Lato',sans-serif] text-[13px] text-[#2F4A3D]">{t('sv_rating_submitted_body')}</p>
-                  </div>
-                ) : (
-                  <RatingForm
-                    cleanerId={cleaner.id}
-                    supervisorId={user!.id}
-                    supervisorName={user!.name}
-                    onSubmitted={handleSubmitted}
-                  />
-                )}
-              </div>
-              {ratings.length > 0 && (
-                <div className="profile-section">
-                  <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-3">
-                    {t('sv_rating_history')}
-                  </h2>
-                  <div className="flex flex-col gap-3">
-                    {ratings.map((r) => <RatingCard key={r.id} rating={r} />)}
-                  </div>
+            {/* Rating form — full width */}
+            <div className="profile-section">
+              {submitted ? (
+                <div className="bg-[#D7E6DB] border border-[#2F4A3D] rounded-[12px] p-5 text-center flex flex-col gap-1">
+                  <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#2F4A3D]">{t('sv_rating_submitted')}</p>
+                  <p className="font-['Lato',sans-serif] text-[13px] text-[#2F4A3D]">{t('sv_rating_submitted_body')}</p>
                 </div>
+              ) : (
+                <RatingForm
+                  cleanerId={cleaner.id}
+                  supervisorId={user!.id}
+                  supervisorName={user!.name}
+                  onSubmitted={handleSubmitted}
+                />
               )}
             </div>
+
+            {/* Rating history — full width, below form */}
+            {ratings.length > 0 && (
+              <div className="profile-section">
+                <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-3">
+                  {t('sv_rating_history')}
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {ratings.map((r) => <RatingCard key={r.id} rating={r} />)}
+                </div>
+              </div>
+            )}
 
           </div>
 

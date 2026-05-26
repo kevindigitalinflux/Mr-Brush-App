@@ -4,6 +4,8 @@ import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { ImageViewer } from '../../components/ImageViewer'
 import { gsap, useGSAP } from '../../lib/gsap'
 
@@ -179,6 +181,7 @@ export function Evidence() {
   const { user } = useApp()
   const navigate = useNavigate()
   const t = useTranslation()
+  const isDesktop = useIsDesktop()
   const containerRef = useRef<HTMLDivElement>(null)
   const [logs, setLogs] = useState<EvidenceLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -254,11 +257,61 @@ export function Evidence() {
     gsap.from('.evidence-ticket', { opacity: 0, y: 16, duration: 0.4, stagger: 0.08, ease: 'power2.out' })
   }, { scope: containerRef, dependencies: [loading] })
 
+  const content = (
+    <div ref={containerRef}>
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-[320px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+          ))}
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 flex flex-col items-center gap-2 text-center">
+          <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_submissions')}</p>
+          <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('sv_no_submissions_body')}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {logs.map((log) => (
+            <EvidenceTicket key={log.id} log={log} supervisorId={user!.id} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  if (isDesktop) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+        <SupervisorDesktopSidebar active="dashboard" />
+        <main className="flex-1 overflow-y-scroll ml-60">
+          <div className="max-w-4xl mx-auto px-10 py-10">
+            <div className="flex items-center gap-4 mb-8">
+              <button onClick={() => navigate(-1)} aria-label="Go back"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div>
+                <p className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[1.2px] text-[#B8A77A] uppercase mb-0.5">
+                  {t('sv_jobs_title')}
+                </p>
+                <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+                  {jobId ? t('sv_job_evidence') : t('sv_pending_approvals_title')}
+                </h1>
+              </div>
+            </div>
+            {content}
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
-
-        {/* Header */}
+      <div className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
         <div className="flex items-center gap-3 pt-10 pb-5">
           <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -269,27 +322,7 @@ export function Evidence() {
             {jobId ? t('sv_job_evidence') : t('sv_pending_approvals_title')}
           </h1>
         </div>
-
-        {loading ? (
-          <div className="flex flex-col gap-4">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-[320px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
-            ))}
-          </div>
-        ) : logs.length === 0 ? (
-          <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 flex flex-col items-center gap-2 text-center">
-            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{t('sv_no_submissions')}</p>
-            <p className="font-['Lato',sans-serif] text-sm text-[#737874]">
-              {t('sv_no_submissions_body')}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-5">
-            {logs.map((log) => (
-              <EvidenceTicket key={log.id} log={log} supervisorId={user!.id} />
-            ))}
-          </div>
-        )}
+        {content}
       </div>
       <SupervisorNav active="dashboard" />
     </div>
