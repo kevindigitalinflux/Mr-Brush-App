@@ -45,7 +45,7 @@ function HistoryRow({ job }: { job: HistoryJob }) {
   return (
     <button
       onClick={() => navigate(`/supervisor/evidence/${job.id}`)}
-      className="history-row w-full bg-white border border-[#D0CFCA] rounded-[12px] flex items-stretch overflow-hidden text-left hover:shadow-sm transition-shadow cursor-pointer"
+      className="history-row w-full bg-white border border-[#D0CFCA] rounded-[12px] flex items-stretch overflow-hidden text-left transition-all duration-200 hover:shadow-md hover:-translate-y-px cursor-pointer"
     >
       <div className="w-[68px] flex flex-col items-center justify-center border-r border-[#E3E3DD] py-4 shrink-0">
         <span className="font-['Poppins',sans-serif] font-bold text-[30px] text-[#1A1C19] leading-none">{dayNum}</span>
@@ -156,8 +156,8 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
             key={key}
             onClick={() => setTab(key)}
             className={[
-              "flex-1 h-9 rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[13px] transition-colors",
-              tab === key ? 'bg-white text-[#1A1C19] shadow-sm' : 'text-[#737874]',
+              "flex-1 h-9 rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[13px] transition-all duration-200",
+              tab === key ? 'bg-white text-[#1A1C19] shadow-sm' : 'text-[#737874] hover:text-[#1A1C19]',
             ].join(' ')}
           >
             {key === 'mine' ? t('sv_my_shifts') : t('sv_all_workers')}
