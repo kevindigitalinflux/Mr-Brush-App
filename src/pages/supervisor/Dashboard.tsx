@@ -294,7 +294,7 @@ function DesktopDashboard() {
           </div>
 
           {/* Stat cards */}
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-4 gap-8">
             <StatCard
               className="dd-stat"
               label={t('sv_pending_approvals')}
@@ -337,7 +337,7 @@ function DesktopDashboard() {
 
           {/* Today's sites */}
           <div>
-            <div className="dd-section flex items-center justify-between mb-5">
+            <div className="dd-section flex items-center justify-between mb-6">
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">
                 {t('sv_todays_sites')}
               </h2>
@@ -350,7 +350,7 @@ function DesktopDashboard() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="h-[168px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
                 ))}
@@ -358,7 +358,7 @@ function DesktopDashboard() {
             ) : jobs.length === 0 ? (
               <EmptyState />
             ) : (
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-2 gap-6">
                 {jobs.map((job) => <SiteCard key={job.id} job={job} />)}
               </div>
             )}

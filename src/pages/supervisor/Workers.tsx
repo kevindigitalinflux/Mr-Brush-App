@@ -200,13 +200,13 @@ function WorkersList({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           {active.length > 0 && (
             <section>
               <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-2">
                 {t('sv_on_shift_section')} ({active.length})
               </h2>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {active.map((w) => (
                   <WorkerCard key={w.id} worker={w} selected={selectedId === w.id} onClick={() => onSelect(w.id)} />
                 ))}
@@ -218,7 +218,7 @@ function WorkersList({
               <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-2">
                 {t('sv_idle_section')} ({idle.length})
               </h2>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {idle.map((w) => (
                   <WorkerCard key={w.id} worker={w} selected={selectedId === w.id} onClick={() => onSelect(w.id)} />
                 ))}
@@ -230,7 +230,7 @@ function WorkersList({
               <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-2">
                 {t('sv_replacement_section')} ({replacement.length})
               </h2>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {replacement.map((w) => (
                   <WorkerCard key={w.id} worker={w} selected={selectedId === w.id} onClick={() => onSelect(w.id)} />
                 ))}
@@ -264,15 +264,10 @@ function DesktopWorkers() {
       <SupervisorDesktopSidebar active="workers" />
       <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
-          <div className="dw-heading mb-8 flex items-start justify-between">
+          <div className="dw-heading mb-8">
             <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
               {t('sv_workers_title')}
             </h1>
-            <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-2">
-              {new Date().toLocaleDateString('en-GB', {
-                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-              }).toUpperCase()}
-            </span>
           </div>
           <WorkersList
             workers={workers}

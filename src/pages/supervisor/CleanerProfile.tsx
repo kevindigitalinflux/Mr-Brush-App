@@ -575,7 +575,7 @@ export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: 
         panelMode ? (
 
           /* ── Desktop layout ─────────────────────────────────────────── */
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-8">
 
             {/* Profile card — full width, absence button inline */}
             <div className="profile-section bg-white border border-[#D0CFCA] rounded-[12px] p-6 flex items-center justify-between gap-6">
@@ -612,7 +612,7 @@ export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: 
             </div>
 
             {/* 2-column: rate worker left, rating history right */}
-            <div className="grid grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-2 gap-8 items-start">
               <div className="profile-section">
                 {submitted ? (
                   <div className="bg-[#D7E6DB] border border-[#2F4A3D] rounded-[12px] p-5 text-center flex flex-col gap-1">
