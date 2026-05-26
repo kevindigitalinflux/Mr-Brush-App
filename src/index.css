@@ -111,3 +111,14 @@ body,
 .scrollbar-stable { overflow-y: scroll; scrollbar-color: transparent transparent; }
 .scrollbar-stable::-webkit-scrollbar { background: transparent; }
 .scrollbar-stable::-webkit-scrollbar-thumb { background: transparent; }
+
+/* Button press micro-interaction — applies to every button in the app */
+button { transition: transform 100ms ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+
+/* Slide-up fade — used for popover menus */
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-slide-up { animation: slide-up-fade 0.15s ease-out; }

@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import type { Language } from '../../lib/i18n'
 import logoSrc from '../../assets/logo/logo.png'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history'
 
@@ -108,6 +109,7 @@ export function SupervisorDesktopSidebar({ active }: Props) {
   const t = useTranslation()
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLElement>(null)
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -123,8 +125,12 @@ export function SupervisorDesktopSidebar({ active }: Props) {
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
 
+  useGSAP(() => {
+    gsap.from(sidebarRef.current, { x: -16, opacity: 0, duration: 0.35, ease: 'power2.out' })
+  }, { scope: sidebarRef })
+
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 bg-[#EEEEE8] border-r border-[#D5D5CF] flex flex-col overflow-y-auto z-30">
+    <aside ref={sidebarRef} className="fixed left-0 top-0 h-screen w-60 bg-[#EEEEE8] border-r border-[#D5D5CF] flex flex-col overflow-y-auto z-30">
 
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-4">
@@ -160,9 +166,9 @@ export function SupervisorDesktopSidebar({ active }: Props) {
               key={key}
               onClick={() => navigate(path)}
               className={[
-                'flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] text-left transition-colors',
+                'flex items-center gap-3 w-full px-3 py-2.5 rounded-[8px] text-left transition-all duration-200',
                 isActive
-                  ? 'bg-[#B8A77A] text-white'
+                  ? 'bg-[#B8A77A] text-white shadow-sm'
                   : 'text-[#434844] hover:bg-[#E5E5DF] hover:text-[#1A1C19]',
               ].join(' ')}
             >
@@ -192,7 +198,7 @@ export function SupervisorDesktopSidebar({ active }: Props) {
           </button>
 
           {langOpen && (
-            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-[#D0CFCA] rounded-[10px] shadow-lg overflow-hidden">
+            <div className="anim-slide-up absolute bottom-full left-0 right-0 mb-1 bg-white border border-[#D0CFCA] rounded-[10px] shadow-lg overflow-hidden">
               {LANGS.map((opt) => (
                 <button
                   key={opt.code}

@@ -60,7 +60,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
   const dateStr = new Date(log.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
   return (
-    <div className="evidence-ticket bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
+    <div className="evidence-ticket bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-px">
       {/* Ticket header */}
       <div className="px-5 py-4 border-b border-[#E3E3DD]">
         <div className="flex items-center justify-between mb-1">
