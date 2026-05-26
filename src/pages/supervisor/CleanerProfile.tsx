@@ -4,8 +4,10 @@ import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
+import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { StarDisplay } from '../../components/supervisor/StarDisplay'
 import { ImageViewer } from '../../components/ImageViewer'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -454,13 +456,18 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
   )
 }
 
-// ─── Cleaner profile page ─────────────────────────────────────────────────────
+// ─── Cleaner profile content (shared by mobile page + desktop panel) ──────────
 
-/** Shows a cleaner's profile, rating form with guardrail, and absence reporting. */
-export function CleanerProfile() {
-  const { cleanerId } = useParams<{ cleanerId: string }>()
+interface CleanerProfileContentProps {
+  cleanerId: string
+  onBack: () => void
+  /** When true, renders as a scrollable panel (no fixed full-screen wrapper). */
+  panelMode?: boolean
+}
+
+/** Core cleaner profile content. Used by the mobile page and the desktop side panel. */
+export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: CleanerProfileContentProps) {
   const { user } = useApp()
-  const navigate = useNavigate()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [cleaner, setCleaner] = useState<CleanerDetail | null>(null)
@@ -503,7 +510,13 @@ export function CleanerProfile() {
     setLoading(false)
   }, [user, cleanerId])
 
-  useEffect(() => { if (user) load() }, [load, user])
+  useEffect(() => {
+    setLoading(true)
+    setSubmitted(false)
+    setCleaner(null)
+    setRatings([])
+    if (user) void load()
+  }, [cleanerId, user, load])
 
   useGSAP(() => {
     if (loading) return
@@ -520,11 +533,28 @@ export function CleanerProfile() {
     : '?'
 
   return (
-    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
+    <div ref={containerRef} className={panelMode ? 'max-w-5xl mx-auto px-10 py-10' : 'w-full px-6 pb-[100px]'}>
 
-        <div className="flex items-center gap-3 pt-10 pb-5">
-          <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">
+      {/* Header */}
+      {panelMode ? (
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
+              {cleaner?.full_name || t('sv_cleaner_profile')}
+            </h1>
+          </div>
+          <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-2">
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 pt-8 pb-5">
+          <button onClick={onBack} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -533,12 +563,88 @@ export function CleanerProfile() {
             {t('sv_cleaner_profile')}
           </h1>
         </div>
+      )}
 
-        {loading ? (
-          <div className="flex flex-col gap-4">
-            {[1, 2].map((i) => <div key={i} className="h-[160px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />)}
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-[160px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+          ))}
+        </div>
+      ) : cleaner ? (
+        panelMode ? (
+
+          /* ── Desktop layout ─────────────────────────────────────────── */
+          <div className="flex flex-col gap-8">
+
+            {/* Profile card — full width, absence button inline */}
+            <div className="profile-section bg-white border border-[#D0CFCA] rounded-[12px] p-6 flex items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="w-20 h-20 rounded-full bg-[#1A1C19] flex items-center justify-center shrink-0">
+                  <span className="font-['Poppins',sans-serif] font-bold text-2xl text-[#B8A77A]">{initials}</span>
+                </div>
+                <div>
+                  <p className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#1A1C19]">{cleaner.full_name}</p>
+                  <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mb-2">{cleaner.display_id}</p>
+                  {cleaner.avg_rating !== null ? (
+                    <div className="flex items-center gap-2">
+                      <StarDisplay value={cleaner.avg_rating} size="sm" />
+                      <span className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
+                        {cleaner.avg_rating.toFixed(1)} · {cleaner.total_ratings} {t('sv_ratings_count')}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] italic">{t('sv_no_ratings_yet')}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAbsenceSheet(true)}
+                className="shrink-0 h-[48px] px-5 border-2 border-[#BA1A1A] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-[14px] text-[#BA1A1A] hover:bg-[#FDECEA] transition-colors flex items-center gap-2"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="9" cy="7" r="4" stroke="#BA1A1A" strokeWidth="2" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t('sv_report_absence')}
+              </button>
+            </div>
+
+            {/* Rating form — full width */}
+            <div className="profile-section">
+              {submitted ? (
+                <div className="bg-[#D7E6DB] border border-[#2F4A3D] rounded-[12px] p-5 text-center flex flex-col gap-1">
+                  <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#2F4A3D]">{t('sv_rating_submitted')}</p>
+                  <p className="font-['Lato',sans-serif] text-[13px] text-[#2F4A3D]">{t('sv_rating_submitted_body')}</p>
+                </div>
+              ) : (
+                <RatingForm
+                  cleanerId={cleaner.id}
+                  supervisorId={user!.id}
+                  supervisorName={user!.name}
+                  onSubmitted={handleSubmitted}
+                />
+              )}
+            </div>
+
+            {/* Rating history — full width, below form */}
+            {ratings.length > 0 && (
+              <div className="profile-section">
+                <h2 className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.2px] text-[#737874] uppercase mb-3">
+                  {t('sv_rating_history')}
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {ratings.map((r) => <RatingCard key={r.id} rating={r} />)}
+                </div>
+              </div>
+            )}
+
           </div>
-        ) : cleaner ? (
+
+        ) : (
+
+          /* ── Mobile layout ──────────────────────────────────────────── */
           <div className="flex flex-col gap-5">
 
             {/* Profile header */}
@@ -607,13 +713,12 @@ export function CleanerProfile() {
             )}
 
           </div>
-        ) : (
-          <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
-            <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">Worker not found</p>
-          </div>
-        )}
-
-      </div>
+        )
+      ) : (
+        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
+          <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">Worker not found</p>
+        </div>
+      )}
 
       {showAbsenceSheet && cleaner && user && (
         <AbsenceSheet
@@ -623,7 +728,41 @@ export function CleanerProfile() {
           onClose={() => setShowAbsenceSheet(false)}
         />
       )}
+    </div>
+  )
+}
 
+// ─── Cleaner profile page ─────────────────────────────────────────────────────
+
+/** Shows a cleaner's profile page — mobile full screen or desktop with sidebar. */
+export function CleanerProfile() {
+  const { cleanerId } = useParams<{ cleanerId: string }>()
+  const navigate = useNavigate()
+  const isDesktop = useIsDesktop()
+
+  if (!cleanerId) return null
+
+  if (isDesktop) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+        <SupervisorDesktopSidebar active="workers" />
+        <main className="flex-1 overflow-y-auto ml-60">
+          <CleanerProfileContent
+            cleanerId={cleanerId}
+            onBack={() => navigate('/supervisor/workers')}
+            panelMode
+          />
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <CleanerProfileContent
+        cleanerId={cleanerId}
+        onBack={() => navigate(-1)}
+      />
       <SupervisorNav active="workers" />
     </div>
   )
