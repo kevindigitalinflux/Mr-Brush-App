@@ -262,7 +262,7 @@ function DesktopWorkers() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="workers" />
-      <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]" style={{ scrollbarGutter: 'stable' }}>
+      <main className="flex-1 ml-60 bg-[#F4F4EE] scrollbar-stable">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
           <div className="dw-heading mb-8">
             <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
