@@ -402,9 +402,9 @@ function DesktopOverview() {
   }).toUpperCase()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F4EF]">
+    <div className="min-h-screen bg-[#F5F4EF]">
       <ClientSidebar active="overview" complaintsCount={data.openComplaintCount} />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="ml-60">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10 flex flex-col gap-8">
 
           {/* Header */}
