@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { ImageViewer } from '../../components/ImageViewer'
+import { RateCleanModal } from '../../components/client/RateCleanModal'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -200,9 +201,13 @@ function FilterChips({ mode, onMode, zoneNames, activeZone, onZone }: {
 
 // ─── Evidence card ────────────────────────────────────────────────────────────
 
-function EvidenceCard({ log, onPhotoTap }: {
-  log: EvidenceLog; onPhotoTap: (url: string) => void
+function EvidenceCard({ log, onPhotoTap, onRateTap, isRatedOverride }: {
+  log: EvidenceLog
+  onPhotoTap: (url: string) => void
+  onRateTap: (log: EvidenceLog) => void
+  isRatedOverride?: boolean
 }) {
+  const isRated = log.isRated || (isRatedOverride ?? false)
   const hasPhotos = log.photoUrls.length > 0
   const extraCount = log.photoUrls.length - 1
   const displayNote = log.noteLanguage && log.noteLanguage !== 'en' && log.noteTranslated
@@ -278,10 +283,10 @@ function EvidenceCard({ log, onPhotoTap }: {
       )}
 
       {/* Rate entry point */}
-      {!log.isRated && hasPhotos && (
+      {!isRated && hasPhotos && (
         <div className="px-4 pb-3.5 pt-1 border-t border-[#F0EFE9] mt-1">
           <button
-            // TODO: open RateCleanModal with log.jobZoneId
+            onClick={() => onRateTap(log)}
             className="flex items-center gap-1 font-['Poppins',sans-serif] font-semibold text-[13px] text-[#B8A77A] hover:text-[#a8976a] transition-colors"
           >
             Rate this clean <ChevronRightIcon />
@@ -289,7 +294,7 @@ function EvidenceCard({ log, onPhotoTap }: {
         </div>
       )}
 
-      {log.isRated && (
+      {isRated && (
         <div className="px-4 pb-3.5 pt-1 border-t border-[#F0EFE9] mt-1">
           <span className="font-['Lato',sans-serif] text-[12px] text-[#2F4A3D] font-bold">✓ Rated</span>
         </div>
@@ -340,6 +345,8 @@ function MobileEvidenceFeed() {
   const [mode, setMode] = useState<FilterMode>('all')
   const [activeZone, setActiveZone] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [ratingLog, setRatingLog] = useState<EvidenceLog | null>(null)
+  const [localRatedIds, setLocalRatedIds] = useState<Set<string>>(new Set())
 
   const zoneNames = [...new Set(logs.map((l) => l.zoneName))].sort()
   const filtered = applyFilter(logs, mode, activeZone)
@@ -349,6 +356,10 @@ function MobileEvidenceFeed() {
     gsap.set('.ev-card', { clearProps: 'all' })
     gsap.from('.ev-card', { opacity: 0, y: 16, duration: 0.35, stagger: 0.07, ease: 'power2.out' })
   }, { scope: containerRef, dependencies: [loading, mode, activeZone] })
+
+  function handleRated(jobZoneId: string) {
+    setLocalRatedIds((s) => new Set([...s, jobZoneId]))
+  }
 
   return (
     <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto">
@@ -383,13 +394,27 @@ function MobileEvidenceFeed() {
         ) : (
           <div className="flex flex-col gap-4">
             {filtered.map((log) => (
-              <EvidenceCard key={log.id} log={log} onPhotoTap={setLightbox} />
+              <EvidenceCard
+                key={log.id} log={log}
+                onPhotoTap={setLightbox}
+                onRateTap={setRatingLog}
+                isRatedOverride={localRatedIds.has(log.jobZoneId)}
+              />
             ))}
           </div>
         )}
       </div>
 
       {lightbox && <ImageViewer src={lightbox} onClose={() => setLightbox(null)} />}
+      {ratingLog && (
+        <RateCleanModal
+          jobZoneId={ratingLog.jobZoneId}
+          zoneName={ratingLog.zoneName}
+          cleanerFirstName={ratingLog.cleanerFirstName}
+          onClose={() => setRatingLog(null)}
+          onRated={handleRated}
+        />
+      )}
       <ClientNav active="evidence" />
     </div>
   )
@@ -403,9 +428,15 @@ function DesktopEvidenceFeed() {
   const [mode, setMode] = useState<FilterMode>('all')
   const [activeZone, setActiveZone] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [ratingLog, setRatingLog] = useState<EvidenceLog | null>(null)
+  const [localRatedIds, setLocalRatedIds] = useState<Set<string>>(new Set())
 
   const zoneNames = [...new Set(logs.map((l) => l.zoneName))].sort()
   const filtered = applyFilter(logs, mode, activeZone)
+
+  function handleRated(jobZoneId: string) {
+    setLocalRatedIds((s) => new Set([...s, jobZoneId]))
+  }
 
   useGSAP(() => {
     if (loading) return
@@ -448,7 +479,12 @@ function DesktopEvidenceFeed() {
           ) : (
             <div className="grid grid-cols-2 gap-5">
               {filtered.map((log) => (
-                <EvidenceCard key={log.id} log={log} onPhotoTap={setLightbox} />
+                <EvidenceCard
+                  key={log.id} log={log}
+                  onPhotoTap={setLightbox}
+                  onRateTap={setRatingLog}
+                  isRatedOverride={localRatedIds.has(log.jobZoneId)}
+                />
               ))}
             </div>
           )}
@@ -456,6 +492,15 @@ function DesktopEvidenceFeed() {
       </main>
 
       {lightbox && <ImageViewer src={lightbox} onClose={() => setLightbox(null)} />}
+      {ratingLog && (
+        <RateCleanModal
+          jobZoneId={ratingLog.jobZoneId}
+          zoneName={ratingLog.zoneName}
+          cleanerFirstName={ratingLog.cleanerFirstName}
+          onClose={() => setRatingLog(null)}
+          onRated={handleRated}
+        />
+      )}
     </div>
   )
 }
