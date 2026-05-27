@@ -23,6 +23,10 @@ import { Evidence } from './pages/supervisor/Evidence'
 import { SupervisorNotifications } from './pages/supervisor/SupervisorNotifications'
 import { Issues } from './pages/supervisor/Issues'
 import { CleanerProfile } from './pages/supervisor/CleanerProfile'
+import { Overview } from './pages/client/Overview'
+import { EvidenceFeed } from './pages/client/EvidenceFeed'
+import { Complaints } from './pages/client/Complaints'
+import { ClientHistory } from './pages/client/ClientHistory'
 
 export default function App() {
   return (
@@ -53,8 +57,12 @@ export default function App() {
           <Route path="/supervisor/notifications" element={<SupervisorNotifications />} />
           <Route path="/supervisor/issues" element={<Issues />} />
           <Route path="/supervisor/workers/:cleanerId" element={<CleanerProfile />} />
-          {/* Client — not yet built */}
-          <Route path="/client/*" element={<Placeholder label="Client Portal" />} />
+          {/* Client */}
+          <Route path="/client/overview"   element={<Overview />}      />
+          <Route path="/client/evidence"   element={<EvidenceFeed />}  />
+          <Route path="/client/complaints" element={<Complaints />}    />
+          <Route path="/client/history"    element={<ClientHistory />} />
+          <Route path="/client/home"       element={<Overview />}      />
         </Routes>
       </BrowserRouter>
     </AppProvider>
@@ -67,14 +75,6 @@ function GlobalOfflineBanner() {
   return (
     <div className="fixed top-0 left-0 right-0 z-[200]">
       <OfflineBanner />
-    </div>
-  )
-}
-
-function Placeholder({ label }: { label: string }) {
-  return (
-    <div className="flex items-center justify-center h-screen w-full bg-ivory">
-      <p className="text-charcoal font-heading text-lg">{label} — coming soon</p>
     </div>
   )
 }

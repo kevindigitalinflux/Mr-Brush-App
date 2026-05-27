@@ -283,6 +283,14 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_success: 'Absence Reported',
     sv_absence_success_body: "Today's zones have been reassigned to the replacement.",
     sv_absence_error: 'Could not submit. Try again.',
+
+    // Client — Navigation
+    cl_portal_label: 'Client Portal',
+    cl_nav_overview: 'Overview',
+    cl_nav_evidence: 'Evidence',
+    cl_nav_complaints: 'Complaints',
+    cl_nav_history: 'History',
+    cl_sign_out: 'Sign Out',
   },
   es: {
     // Auth
@@ -561,6 +569,14 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_success: 'Ausencia reportada',
     sv_absence_success_body: 'Las zonas de hoy han sido reasignadas al sustituto.',
     sv_absence_error: 'No se pudo enviar. Inténtalo de nuevo.',
+
+    // Client — Navigation
+    cl_portal_label: 'Portal del Cliente',
+    cl_nav_overview: 'Resumen',
+    cl_nav_evidence: 'Evidencias',
+    cl_nav_complaints: 'Quejas',
+    cl_nav_history: 'Historial',
+    cl_sign_out: 'Cerrar Sesión',
   },
   pt: {
     // Auth
@@ -839,5 +855,13 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_success: 'Ausência relatada',
     sv_absence_success_body: 'As zonas de hoje foram reatribuídas ao substituto.',
     sv_absence_error: 'Não foi possível enviar. Tente novamente.',
+
+    // Client — Navigation
+    cl_portal_label: 'Portal do Cliente',
+    cl_nav_overview: 'Resumo',
+    cl_nav_evidence: 'Evidências',
+    cl_nav_complaints: 'Reclamações',
+    cl_nav_history: 'Histórico',
+    cl_sign_out: 'Sair',
   },
 }
