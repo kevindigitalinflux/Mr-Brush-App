@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
@@ -363,7 +364,8 @@ function applyFilter(logs: EvidenceLog[], mode: FilterMode, activeZone: string |
 function MobileEvidenceFeed() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { logs, loading } = useEvidenceData()
-  const [mode, setMode] = useState<FilterMode>('all')
+  const [searchParams] = useSearchParams()
+  const [mode, setMode] = useState<FilterMode>((searchParams.get('filter') as FilterMode | null) ?? 'all')
   const [activeZone, setActiveZone] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [ratingLog, setRatingLog] = useState<EvidenceLog | null>(null)
@@ -446,7 +448,8 @@ function MobileEvidenceFeed() {
 function DesktopEvidenceFeed() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { logs, loading } = useEvidenceData()
-  const [mode, setMode] = useState<FilterMode>('all')
+  const [searchParams] = useSearchParams()
+  const [mode, setMode] = useState<FilterMode>((searchParams.get('filter') as FilterMode | null) ?? 'all')
   const [activeZone, setActiveZone] = useState<string | null>(null)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [ratingLog, setRatingLog] = useState<EvidenceLog | null>(null)

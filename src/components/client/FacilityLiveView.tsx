@@ -101,7 +101,7 @@ function ZoneRow({ zone }: { zone: ZoneLiveRow }) {
           <div className="w-3 h-3 rounded-full bg-[#B8A77A] relative" />
         </div>
       ) : (
-        <div className="w-5 h-5 rounded-full border-2 border-[#D0CFCA] shrink-0" />
+        <div className="w-5 h-5 rounded-full border-2 border-[#D0CFCA] border-t-[#B8A77A] animate-spin shrink-0" />
       )}
 
       <span className={`flex-1 font-['Lato',sans-serif] text-[13px] ${live ? 'font-bold text-[#2F4A3D]' : 'text-[#434B4D]'}`}>
@@ -158,7 +158,7 @@ export function FacilityLiveView({ facilityId }: { facilityId: string }) {
           </div>
           <span className="flex-1 font-['Lato',sans-serif] text-[13px] text-[#434B4D]">Weekly Report Ready</span>
           <button
-            onClick={() => navigate('/client/evidence')}
+            onClick={() => navigate('/client/evidence?filter=week')}
             className="font-['Lato',sans-serif] text-[12px] font-bold text-[#B8A77A] hover:text-[#a8976a] transition-colors"
           >
             View →
