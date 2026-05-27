@@ -228,10 +228,10 @@ function ComplaintCard({ complaint, onDelete }: { complaint: Complaint; onDelete
           <button
             onClick={() => setConfirmDelete((v) => !v)}
             aria-label="Delete complaint"
-            className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+            className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
               confirmDelete
-                ? 'bg-[#FEE2E2] text-[#DC2626]'
-                : 'text-[#D0CFCA] hover:text-[#DC2626] hover:bg-[#FEF2F2]'
+                ? 'bg-[#DC2626] text-white'
+                : 'bg-[#FEF2F2] text-[#DC2626] hover:bg-[#DC2626] hover:text-white'
             }`}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
