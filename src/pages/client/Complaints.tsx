@@ -119,6 +119,23 @@ function useComplaintsData(): ComplaintsState & { reload: () => void } {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function compressToDataUri(file: File, maxPx = 900, quality = 0.82): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const blobUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl)
+      const ratio = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * ratio)
+      canvas.height = Math.round(img.height * ratio)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.src = blobUrl
+  })
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
@@ -352,13 +369,7 @@ function NewComplaintModal({
 
     setForm((s) => ({ ...s, submitting: true, error: null }))
     try {
-      const uploadedUrls: string[] = []
-      for (let i = 0; i < form.photos.length; i++) {
-        const path = `complaints/${userId}/${Date.now()}_${i}`
-        await supabase.storage.from('evidence-photos').upload(path, form.photos[i])
-        const { data: urlData } = supabase.storage.from('evidence-photos').getPublicUrl(path)
-        uploadedUrls.push(urlData.publicUrl)
-      }
+      const uploadedUrls = await Promise.all(form.photos.map((f) => compressToDataUri(f)))
 
       const { error: insertErr } = await supabase.from('complaints').insert({
         facility_id: form.facilityId,
@@ -569,7 +580,7 @@ export function Complaints() {
   const [showModal, setShowModal] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const openCount = complaints.filter((c) => c.status !== 'resolved').length
+  const progressCount = complaints.filter((c) => c.status !== 'received').length
 
   useGSAP(() => {
     if (!containerRef.current || loading || complaints.length === 0) return
@@ -595,10 +606,10 @@ export function Complaints() {
       </div>
 
       {/* Summary pill */}
-      {!loading && openCount > 0 && (
+      {!loading && progressCount > 0 && (
         <div className="mb-4 flex items-center gap-2">
           <span className="font-['Lato'] text-[12px] text-[#434B4D]">
-            {openCount} open issue{openCount > 1 ? 's' : ''} pending resolution
+            {progressCount} complaint{progressCount > 1 ? 's' : ''} with updates from your supervisor
           </span>
         </div>
       )}
@@ -628,7 +639,7 @@ export function Complaints() {
   return (
     <>
       <div className="hidden md:block">
-        <ClientSidebar active="complaints" complaintsCount={openCount} />
+        <ClientSidebar active="complaints" complaintsCount={progressCount} />
       </div>
 
       <div className="md:pl-60 min-h-screen bg-[#F5F4EF]">
@@ -636,7 +647,7 @@ export function Complaints() {
       </div>
 
       <div className="md:hidden">
-        <ClientNav active="complaints" complaintsCount={openCount} />
+        <ClientNav active="complaints" complaintsCount={progressCount} />
       </div>
 
       {showModal && user && (

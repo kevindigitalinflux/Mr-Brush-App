@@ -2,6 +2,23 @@ import { useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 
+function compressToDataUri(file: File, maxPx = 900, quality = 0.82): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const blobUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl)
+      const ratio = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * ratio)
+      canvas.height = Math.round(img.height * ratio)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.src = blobUrl
+  })
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -100,13 +117,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
 
     setForm((s) => ({ ...s, submitting: true, error: null }))
     try {
-      const uploadedUrls: string[] = []
-      for (let i = 0; i < form.photos.length; i++) {
-        const path = `ratings/client/${user.id}/${Date.now()}_${i}`
-        await supabase.storage.from('evidence-photos').upload(path, form.photos[i])
-        const { data: urlData } = supabase.storage.from('evidence-photos').getPublicUrl(path)
-        uploadedUrls.push(urlData.publicUrl)
-      }
+      const uploadedUrls = await Promise.all(form.photos.map((f) => compressToDataUri(f)))
 
       const { error: insertErr } = await supabase.from('cleaner_ratings').insert({
         job_zone_id: jobZoneId,
