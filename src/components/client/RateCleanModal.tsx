@@ -112,10 +112,10 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
         job_zone_id: jobZoneId,
         rated_by: user.id,
         rated_by_role: 'client',
-        stars: form.stars,
-        notes: form.notes.trim(),
-        photo_urls: uploadedUrls,
-        submitted_at: new Date().toISOString(),
+        rating: form.stars,
+        review_text: form.notes.trim(),
+        evidence_urls: uploadedUrls,
+        company_id: user.company_id,
       })
       if (insertErr) throw insertErr
 

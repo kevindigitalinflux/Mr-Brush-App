@@ -262,10 +262,11 @@ interface ModalForm {
 }
 
 function NewComplaintModal({
-  facilities, userId, onClose, onSubmitted,
+  facilities, userId, companyId, onClose, onSubmitted,
 }: {
   facilities: FacilityOption[]
   userId: string
+  companyId: string
   onClose: () => void
   onSubmitted: () => void
 }) {
@@ -312,13 +313,13 @@ function NewComplaintModal({
 
       const { error: insertErr } = await supabase.from('complaints').insert({
         facility_id: form.facilityId,
-        submitted_by: userId,
+        filed_by: userId,
+        company_id: companyId,
         title: form.title.trim(),
         description: form.description.trim(),
         severity: form.severity,
         status: 'received',
         photo_urls: uploadedUrls,
-        submitted_at: new Date().toISOString(),
       })
       if (insertErr) throw insertErr
 
@@ -591,6 +592,7 @@ export function Complaints() {
         <NewComplaintModal
           facilities={facilities}
           userId={user.id}
+          companyId={user.company_id}
           onClose={() => setShowModal(false)}
           onSubmitted={() => void reload()}
         />
