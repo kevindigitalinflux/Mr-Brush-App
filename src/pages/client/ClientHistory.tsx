@@ -154,7 +154,7 @@ function MonthPicker({ month, onChange }: { month: Date; onChange: (d: Date) => 
   }
 
   return (
-    <div className="flex items-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-3 py-2 w-fit">
+    <div className="flex items-center justify-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-3 py-2">
       <button onClick={prev} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#F5F4EF] text-[#434B4D]">
         <ChevronIcon dir="left" />
       </button>
