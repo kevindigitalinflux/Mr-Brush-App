@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
+import { FacilityLiveView } from '../../components/client/FacilityLiveView'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -165,6 +166,17 @@ function ChevronRightIcon() {
   )
 }
 
+function ChevronDownIcon({ rotated }: { rotated: boolean }) {
+  return (
+    <svg
+      width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      className={`transition-transform duration-300 ${rotated ? 'rotate-180' : ''}`}
+    >
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ComplaintBanner({ count, onTap }: { count: number; onTap: () => void }) {
@@ -192,10 +204,14 @@ function ComplaintBanner({ count, onTap }: { count: number; onTap: () => void })
 function SiteStatusCard({ facility, lastCleanedDate, openCount }: {
   facility: FacilityInfo; lastCleanedDate: string | null; openCount: number
 }) {
+  const [expanded, setExpanded] = useState(false)
   const allClear = openCount === 0
   return (
     <div className="ov-site bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
-      <div className="bg-[#3D3B3A] px-5 py-3.5 flex items-center justify-between gap-3">
+      <button
+        className="w-full text-left bg-[#3D3B3A] px-5 py-3.5 flex items-center justify-between gap-3"
+        onClick={() => setExpanded((e) => !e)}
+      >
         <div className="min-w-0">
           <h3 className="font-['Poppins',sans-serif] font-semibold text-[15px] text-white truncate">
             {facility.name}
@@ -204,22 +220,28 @@ function SiteStatusCard({ facility, lastCleanedDate, openCount }: {
             <p className="font-['Lato',sans-serif] text-[11px] text-white/50 truncate mt-0.5">{facility.address}</p>
           )}
         </div>
-        {allClear ? (
-          <span className="shrink-0 flex items-center gap-1.5 bg-[#2F4A3D] text-white font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-3 py-1 rounded-full uppercase">
-            <CheckCircleIcon /> All Clear
-          </span>
-        ) : (
-          <span className="shrink-0 bg-red-500 text-white font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-3 py-1 rounded-full uppercase">
-            {openCount} issue{openCount > 1 ? 's' : ''}
-          </span>
-        )}
-      </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {allClear ? (
+            <span className="flex items-center gap-1.5 bg-[#2F4A3D] text-white font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-3 py-1 rounded-full uppercase">
+              <CheckCircleIcon /> All Clear
+            </span>
+          ) : (
+            <span className="bg-red-500 text-white font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-3 py-1 rounded-full uppercase">
+              {openCount} issue{openCount > 1 ? 's' : ''}
+            </span>
+          )}
+          <span className="text-white/60"><ChevronDownIcon rotated={expanded} /></span>
+        </div>
+      </button>
       <div className="px-5 py-4">
         <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
           {lastCleanedDate
             ? <>Last cleaned: <span className="text-[#3D3B3A] font-bold">{formatLastCleaned(lastCleanedDate)}</span></>
             : 'No cleaning visits on record yet'}
         </p>
+      </div>
+      <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${expanded ? 'max-h-[600px]' : 'max-h-0'}`}>
+        <FacilityLiveView facilityId={facility.id} />
       </div>
     </div>
   )
