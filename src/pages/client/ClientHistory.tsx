@@ -183,7 +183,7 @@ function ShiftCard({ shift }: { shift: ShiftRecord }) {
       onClick={() => navigate(`/client/evidence?date=${shift.scheduledDate}`)}
     >
       {/* Date block */}
-      <div className="w-12 shrink-0 flex flex-col items-center justify-center">
+      <div className="w-12 shrink-0 flex flex-col items-center justify-center text-center">
         <p className="font-['Poppins'] font-bold text-[20px] text-[#3D3B3A] leading-none">
           {new Date(shift.scheduledDate).getDate()}
         </p>
