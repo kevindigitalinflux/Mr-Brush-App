@@ -103,8 +103,8 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
       const uploadedUrls: string[] = []
       for (let i = 0; i < form.photos.length; i++) {
         const path = `ratings/client/${user.id}/${Date.now()}_${i}`
-        await supabase.storage.from('evidence').upload(path, form.photos[i])
-        const { data: urlData } = supabase.storage.from('evidence').getPublicUrl(path)
+        await supabase.storage.from('evidence-photos').upload(path, form.photos[i])
+        const { data: urlData } = supabase.storage.from('evidence-photos').getPublicUrl(path)
         uploadedUrls.push(urlData.publicUrl)
       }
 

@@ -209,20 +209,35 @@ function ComplaintCard({ complaint, onDelete }: { complaint: Complaint; onDelete
   return (
     <div className="cl-cmp-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
       <div className="px-5 pt-5 pb-5 space-y-4">
-        {/* Badges + title */}
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <SeverityBadge n={complaint.severity} />
-            <span className={`text-[11px] font-['Lato'] font-bold uppercase tracking-[0.8px] px-2 py-0.5 rounded-full ${STATUS_COLORS[complaint.status]}`}>
-              {STATUS_LABELS[complaint.status]}
-            </span>
+        {/* Badges row + trash icon */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <SeverityBadge n={complaint.severity} />
+              <span className={`text-[11px] font-['Lato'] font-bold uppercase tracking-[0.8px] px-2 py-0.5 rounded-full ${STATUS_COLORS[complaint.status]}`}>
+                {STATUS_LABELS[complaint.status]}
+              </span>
+            </div>
+            <p className="font-['Poppins'] font-semibold text-[14px] text-[#3D3B3A] leading-snug">
+              {complaint.title}
+            </p>
+            <p className="font-['Lato'] text-[12px] text-[#434B4D] mt-0.5">
+              {complaint.facilityName} · {formatDate(complaint.submittedAt)}
+            </p>
           </div>
-          <p className="font-['Poppins'] font-semibold text-[14px] text-[#3D3B3A] leading-snug">
-            {complaint.title}
-          </p>
-          <p className="font-['Lato'] text-[12px] text-[#434B4D] mt-0.5">
-            {complaint.facilityName} · {formatDate(complaint.submittedAt)}
-          </p>
+          <button
+            onClick={() => setConfirmDelete((v) => !v)}
+            aria-label="Delete complaint"
+            className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+              confirmDelete
+                ? 'bg-[#FEE2E2] text-[#DC2626]'
+                : 'text-[#D0CFCA] hover:text-[#DC2626] hover:bg-[#FEF2F2]'
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
 
         {/* Timeline */}
@@ -256,8 +271,8 @@ function ComplaintCard({ complaint, onDelete }: { complaint: Complaint; onDelete
         )}
       </div>
 
-      {/* Delete row */}
-      {confirmDelete ? (
+      {/* Inline delete confirmation */}
+      {confirmDelete && (
         <div className="flex items-center justify-between px-5 py-3 border-t border-[#F0EFEA] bg-[#FEF2F2]">
           <p className="font-['Lato'] text-[12px] text-[#DC2626]">Remove this complaint?</p>
           <div className="flex items-center gap-3">
@@ -275,15 +290,6 @@ function ComplaintCard({ complaint, onDelete }: { complaint: Complaint; onDelete
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="flex justify-end px-5 py-2.5 border-t border-[#F0EFEA]">
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="font-['Lato'] text-[11px] text-[#D0CFCA] hover:text-[#DC2626] transition-colors"
-          >
-            Delete complaint
-          </button>
         </div>
       )}
     </div>
@@ -349,8 +355,8 @@ function NewComplaintModal({
       const uploadedUrls: string[] = []
       for (let i = 0; i < form.photos.length; i++) {
         const path = `complaints/${userId}/${Date.now()}_${i}`
-        await supabase.storage.from('evidence').upload(path, form.photos[i])
-        const { data: urlData } = supabase.storage.from('evidence').getPublicUrl(path)
+        await supabase.storage.from('evidence-photos').upload(path, form.photos[i])
+        const { data: urlData } = supabase.storage.from('evidence-photos').getPublicUrl(path)
         uploadedUrls.push(urlData.publicUrl)
       }
 
