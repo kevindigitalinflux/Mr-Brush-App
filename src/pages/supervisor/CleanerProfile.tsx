@@ -23,12 +23,12 @@ interface CleanerDetail {
 interface CleanerRating {
   id: string
   cleaner_id: string
-  rated_by_id: string
-  rated_by_name: string
+  rated_by: string
   rated_by_role: 'supervisor' | 'client'
   rating: number
-  notes: string
+  review_text: string
   evidence_urls: string[]
+  photo_url: string | null
   created_at: string
 }
 
@@ -83,7 +83,6 @@ function RatingCard({ rating }: { rating: CleanerRating }) {
     <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19]">{rating.rated_by_name}</p>
           <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">{dateStr}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -93,12 +92,12 @@ function RatingCard({ rating }: { rating: CleanerRating }) {
           <StarDisplay value={rating.rating} size="sm" />
         </div>
       </div>
-      {rating.notes && (
-        <p className="font-['Lato',sans-serif] text-[13px] text-[#434844] leading-relaxed">{rating.notes}</p>
+      {rating.review_text && (
+        <p className="font-['Lato',sans-serif] text-[13px] text-[#434844] leading-relaxed">{rating.review_text}</p>
       )}
-      {rating.evidence_urls.length > 0 && (
+      {(rating.evidence_urls ?? []).length > 0 && (
         <div className="flex gap-2 overflow-x-auto">
-          {rating.evidence_urls.map((url, i) => (
+          {(rating.evidence_urls ?? []).map((url, i) => (
             <button
               key={i}
               onClick={() => setLightbox(url)}
@@ -313,11 +312,11 @@ function AbsenceSheet({ cleaner, supervisorId, companyId, onClose }: AbsenceShee
 interface RatingFormProps {
   cleanerId: string
   supervisorId: string
-  supervisorName: string
+  companyId: string
   onSubmitted: () => void
 }
 
-function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: RatingFormProps) {
+function RatingForm({ cleanerId, supervisorId, companyId, onSubmitted }: RatingFormProps) {
   const t = useTranslation()
   const [star, setStar] = useState(0)
   const [notes, setNotes] = useState('')
@@ -354,13 +353,12 @@ function RatingForm({ cleanerId, supervisorId, supervisorName, onSubmitted }: Ra
 
     await supabase.from('cleaner_ratings').insert({
       cleaner_id:    cleanerId,
-      rated_by_id:   supervisorId,
-      rated_by_name: supervisorName,
+      rated_by:      supervisorId,
       rated_by_role: 'supervisor',
       rating:        star,
-      notes:         notes.trim(),
+      review_text:   notes.trim(),
       evidence_urls: uploadedUrls,
-      created_at:    new Date().toISOString(),
+      company_id:    companyId,
     })
 
     setSubmitting(false)
@@ -488,11 +486,10 @@ export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: 
     const { data: ratingRows } = await supabase
       .from('cleaner_ratings')
       .select('*')
+      .eq('cleaner_id', cleanerId)
       .order('created_at', { ascending: false })
 
-    const cleanerRatings = ((ratingRows as CleanerRating[]) ?? []).filter(
-      (r) => r.cleaner_id === cleanerId
-    )
+    const cleanerRatings = (ratingRows as CleanerRating[]) ?? []
 
     if (profile) {
       const avg = cleanerRatings.length > 0
@@ -622,7 +619,7 @@ export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: 
                 <RatingForm
                   cleanerId={cleaner.id}
                   supervisorId={user!.id}
-                  supervisorName={user!.name}
+                  companyId={user!.company_id}
                   onSubmitted={handleSubmitted}
                 />
               )}
@@ -694,7 +691,7 @@ export function CleanerProfileContent({ cleanerId, onBack, panelMode = false }: 
                 <RatingForm
                   cleanerId={cleaner.id}
                   supervisorId={user!.id}
-                  supervisorName={user!.name}
+                  companyId={user!.company_id}
                   onSubmitted={handleSubmitted}
                 />
               </div>
