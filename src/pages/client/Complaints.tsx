@@ -190,39 +190,47 @@ function StatusTimeline({ complaint }: { complaint: Complaint }) {
 }
 
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
-  const [expanded, setExpanded] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
 
   return (
     <div className="cl-cmp-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
-      <button className="w-full text-left px-5 pt-5 pb-4" onClick={() => setExpanded((e) => !e)}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <SeverityBadge n={complaint.severity} />
-              <span className={`text-[11px] font-['Lato'] font-bold uppercase tracking-[0.8px] px-2 py-0.5 rounded-full ${STATUS_COLORS[complaint.status]}`}>
-                {STATUS_LABELS[complaint.status]}
-              </span>
-            </div>
-            <p className="font-['Poppins'] font-semibold text-[14px] text-[#3D3B3A] leading-snug">
-              {complaint.title}
-            </p>
-            <p className="font-['Lato'] text-[12px] text-[#434B4D] mt-0.5">
-              {complaint.facilityName} · {formatDate(complaint.submittedAt)}
-            </p>
-          </div>
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none"
-            className={`shrink-0 mt-1 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          >
-            <path d="M6 9l6 6 6-6" stroke="#434B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      {/* Always-visible header */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <SeverityBadge n={complaint.severity} />
+          <span className={`text-[11px] font-['Lato'] font-bold uppercase tracking-[0.8px] px-2 py-0.5 rounded-full ${STATUS_COLORS[complaint.status]}`}>
+            {STATUS_LABELS[complaint.status]}
+          </span>
         </div>
+        <p className="font-['Poppins'] font-semibold text-[14px] text-[#3D3B3A] leading-snug">
+          {complaint.title}
+        </p>
+        <p className="font-['Lato'] text-[12px] text-[#434B4D] mt-0.5">
+          {complaint.facilityName} · {formatDate(complaint.submittedAt)}
+        </p>
         <StatusTimeline complaint={complaint} />
+      </div>
+
+      {/* Notes toggle */}
+      <button
+        onClick={() => setNotesOpen((o) => !o)}
+        className="w-full flex items-center gap-2 px-5 py-2.5 border-t border-[#F0EFEA] hover:bg-[#F5F4EF] transition-colors"
+      >
+        <svg
+          width="13" height="13" viewBox="0 0 24 24" fill="none"
+          className={`transition-transform duration-200 text-[#B8A77A] ${notesOpen ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="font-['Lato'] text-[11px] font-bold text-[#B8A77A] uppercase tracking-[0.8px]">
+          {notesOpen ? 'Hide notes' : 'View notes'}
+        </span>
       </button>
 
-      {expanded && (
-        <div className="px-5 pb-5 border-t border-[#F0EFEA] pt-4 space-y-3">
+      {/* Expandable notes */}
+      {notesOpen && (
+        <div className="px-5 pb-5 pt-3 space-y-3">
           <p className="font-['Lato'] text-[13px] text-[#434B4D] leading-relaxed">{complaint.description}</p>
           {complaint.photoUrls.length > 0 && (
             <div className="flex gap-2 flex-wrap">
