@@ -43,6 +43,7 @@ interface ModalForm {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STAR_LABELS = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent']
+const STAR_COLORS = ['', '#DC2626', '#EA580C', '#D97706', '#2F4A3D', '#2F4A3D']
 
 // ─── Stars selector ───────────────────────────────────────────────────────────
 
@@ -51,17 +52,17 @@ function StarSelector({ value, onChange }: { value: number; onChange: (n: number
   const active = hovered || value
 
   return (
-    <div className="flex gap-1.5" onMouseLeave={() => setHovered(0)}>
+    <div className="flex gap-2" onMouseLeave={() => setHovered(0)}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
           onMouseEnter={() => setHovered(n)}
           onClick={() => onChange(n)}
-          className="focus:outline-none"
+          className="focus:outline-none transition-transform active:scale-90"
           aria-label={`${n} star${n > 1 ? 's' : ''}`}
         >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
               fill={n <= active ? '#B8A77A' : 'none'}
@@ -88,7 +89,8 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
   })
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const isLowRating = form.stars > 0 && form.stars <= 2
+  const isNegativeRating = form.stars > 0 && form.stars <= 3
+  const isVeryLowRating = form.stars > 0 && form.stars <= 2
 
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, 3 - form.photos.length)
@@ -111,8 +113,15 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
 
   async function handleSubmit() {
     if (!form.stars) { setForm((s) => ({ ...s, error: 'Please select a star rating.' })); return }
-    if (!form.notes.trim()) { setForm((s) => ({ ...s, error: 'Please add a note to support your rating.' })); return }
-    if (isLowRating && !form.lowRatingConfirmed) { setForm((s) => ({ ...s, error: 'Please confirm this rating is fair before submitting.' })); return }
+    if (!form.notes.trim()) { setForm((s) => ({ ...s, error: 'Please add a written review.' })); return }
+    if (isNegativeRating && form.photos.length === 0) {
+      setForm((s) => ({ ...s, error: 'Please upload at least one photo to support a rating of 3 stars or below.' }))
+      return
+    }
+    if (isVeryLowRating && !form.lowRatingConfirmed) {
+      setForm((s) => ({ ...s, error: 'Please confirm this rating is fair before submitting.' }))
+      return
+    }
     if (!user) return
 
     setForm((s) => ({ ...s, submitting: true, error: null }))
@@ -130,10 +139,6 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
       })
       if (insertErr) throw insertErr
 
-      // TODO: if isLowRating, POST to n8n webhook for management review
-      // const url = import.meta.env.VITE_N8N_LOW_RATING_WEBHOOK
-      // if (url && isLowRating) await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobZoneId, stars: form.stars, rated_by_role: 'client' }) })
-
       setForm((s) => ({ ...s, submitting: false, success: true }))
       setTimeout(() => { onRated(jobZoneId); onClose() }, 1600)
     } catch {
@@ -143,7 +148,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-8 bg-black/40">
-      <div className="w-full max-w-[480px] bg-[#F5F4EF] rounded-t-[20px] md:rounded-[16px] overflow-hidden flex flex-col max-h-[88vh]">
+      <div className="w-full max-w-[480px] bg-[#F5F4EF] rounded-t-[20px] md:rounded-[16px] overflow-hidden flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="flex items-center gap-4 px-6 pt-6 pb-5 shrink-0">
@@ -188,16 +193,21 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
               <label className="block font-['Lato'] text-[12px] font-bold text-[#434B4D] uppercase tracking-[0.8px] mb-3">
                 Your Rating
               </label>
-              <StarSelector value={form.stars} onChange={(n) => setForm((s) => ({ ...s, stars: n, lowRatingConfirmed: false }))} />
+              <StarSelector
+                value={form.stars}
+                onChange={(n) => setForm((s) => ({ ...s, stars: n, lowRatingConfirmed: false, error: null }))}
+              />
               {form.stars > 0 && (
-                <p className="font-['Lato'] text-[13px] text-[#434B4D] mt-2">{STAR_LABELS[form.stars]}</p>
+                <p className="font-['Lato'] text-[13px] mt-2 font-semibold" style={{ color: STAR_COLORS[form.stars] }}>
+                  {STAR_LABELS[form.stars]}
+                </p>
               )}
             </div>
 
-            {/* Notes */}
+            {/* Written review — always required */}
             <div>
               <label className="block font-['Lato'] text-[12px] font-bold text-[#434B4D] uppercase tracking-[0.8px] mb-2">
-                Notes
+                Written Review <span className="text-[#DC2626]">*</span>
               </label>
               <textarea
                 value={form.notes}
@@ -208,12 +218,25 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
               />
             </div>
 
-            {/* Photos (optional) */}
+            {/* Photo evidence */}
             <div>
               <label className="block font-['Lato'] text-[12px] font-bold text-[#434B4D] uppercase tracking-[0.8px] mb-2">
-                Supporting Photos{' '}
-                <span className="normal-case tracking-normal font-normal text-[#B8A77A]">(optional)</span>
+                Photo Evidence{' '}
+                {isNegativeRating ? (
+                  <span className="normal-case tracking-normal font-normal text-[#DC2626]">
+                    (required for ratings ≤ 3★)
+                  </span>
+                ) : (
+                  <span className="normal-case tracking-normal font-normal text-[#B8A77A]">(optional)</span>
+                )}
               </label>
+
+              {isNegativeRating && form.photos.length === 0 && (
+                <p className="font-['Lato'] text-[12px] text-[#DC2626] mb-2">
+                  Upload at least one photo showing the issue before submitting.
+                </p>
+              )}
+
               <div className="flex gap-2 flex-wrap">
                 {form.previews.map((src, i) => (
                   <div key={i} className="relative w-20 h-20">
@@ -233,7 +256,11 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="w-20 h-20 rounded-[8px] border-2 border-dashed border-[#D0CFCA] flex flex-col items-center justify-center gap-1 text-[#B8A77A] hover:border-[#B8A77A] transition-colors"
+                    className={`w-20 h-20 rounded-[8px] border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors ${
+                      isNegativeRating && form.photos.length === 0
+                        ? 'border-[#DC2626] text-[#DC2626] bg-[#FEF2F2]'
+                        : 'border-[#D0CFCA] text-[#B8A77A] hover:border-[#B8A77A]'
+                    }`}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -245,8 +272,8 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
               </div>
             </div>
 
-            {/* Low rating guardrail */}
-            {isLowRating && (
+            {/* Very low rating guardrail (≤2 stars) */}
+            {isVeryLowRating && (
               <div className="bg-[#FDF6E3] border border-[#B8A77A]/40 rounded-[10px] p-4">
                 <p className="font-['Lato'] text-[13px] text-[#3D3B3A] leading-relaxed mb-3">
                   Ratings of 2 stars or below are automatically flagged and reviewed by management to ensure fair treatment. Please confirm this rating accurately reflects the quality of work.
@@ -267,7 +294,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
 
             {/* Error */}
             {form.error && (
-              <p className="font-['Lato'] text-[13px] text-red-600">{form.error}</p>
+              <p className="font-['Lato'] text-[13px] text-[#DC2626]">{form.error}</p>
             )}
 
             {/* Submit */}
