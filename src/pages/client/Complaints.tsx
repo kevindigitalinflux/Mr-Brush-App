@@ -73,16 +73,20 @@ function useComplaintsData(): ComplaintsState & { reload: () => void } {
   const load = useCallback(async () => {
     if (!user) return
 
-    const { data: memberships } = await supabase
+    const { data: memberRows } = await supabase
       .from('client_org_members')
-      .select('client_organisations ( facilities ( id, name ) )')
+      .select('org_id')
       .eq('profile_id', user.id)
 
-    const facilities: FacilityOption[] = (memberships ?? []).flatMap((m) => {
-      const orgs = (m as unknown as { client_organisations: { facilities: { id: string; name: string }[] } | null }).client_organisations
-      return (orgs?.facilities ?? []).map((f) => ({ id: f.id, name: f.name }))
-    })
+    const orgIds = (memberRows ?? []).map((m) => (m as { org_id: string }).org_id)
+    if (orgIds.length === 0) { setState({ loading: false, complaints: [], facilities: [] }); return }
 
+    const { data: facilityRows } = await supabase
+      .from('facilities')
+      .select('id, name')
+      .in('org_id', orgIds)
+
+    const facilities: FacilityOption[] = (facilityRows ?? []).map((f) => (f as { id: string; name: string }))
     const facilityIds = facilities.map((f) => f.id)
     if (facilityIds.length === 0) { setState({ loading: false, complaints: [], facilities }); return }
 

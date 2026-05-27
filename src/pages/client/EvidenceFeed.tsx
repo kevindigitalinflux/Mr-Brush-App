@@ -51,20 +51,25 @@ function useEvidenceData() {
   const load = useCallback(async () => {
     if (!user) return
 
-    // Step 1 — facility IDs via org chain
-    const { data: memberships } = await supabase
+    // Step 1 — org IDs for this user
+    const { data: memberRows } = await supabase
       .from('client_org_members')
-      .select('client_organisations ( facilities ( id ) )')
+      .select('org_id')
       .eq('profile_id', user.id)
 
-    const facilityIds: string[] = (memberships ?? []).flatMap((m) => {
-      const orgs = (m as unknown as { client_organisations: { facilities: { id: string }[] } | null }).client_organisations
-      return (orgs?.facilities ?? []).map((f) => f.id)
-    })
+    const orgIds = (memberRows ?? []).map((m) => (m as { org_id: string }).org_id)
+    if (orgIds.length === 0) { setLoading(false); return }
 
+    // Step 2 — facility IDs for those orgs
+    const { data: facilityRows } = await supabase
+      .from('facilities')
+      .select('id')
+      .in('org_id', orgIds)
+
+    const facilityIds = (facilityRows ?? []).map((f) => (f as { id: string }).id)
     if (facilityIds.length === 0) { setLoading(false); return }
 
-    // Step 2 — recent job IDs
+    // Step 3 — recent job IDs at those facilities
     const { data: jobRows } = await supabase
       .from('jobs')
       .select('id')
@@ -72,53 +77,69 @@ function useEvidenceData() {
       .order('scheduled_date', { ascending: false })
       .limit(30)
 
-    const jobIds = (jobRows ?? []).map((j) => j.id)
+    const jobIds = (jobRows ?? []).map((j) => (j as { id: string }).id)
     if (jobIds.length === 0) { setLoading(false); return }
 
-    // Step 3 — cleaning logs with related data (parallel with ratings check)
-    const [logsRes, ratingsRes] = await Promise.all([
-      supabase
-        .from('cleaning_logs')
-        .select(`
-          id, submitted_at, note, note_translated, note_language, job_id,
-          job_zones ( id, zone_name, status ),
-          evidence_files ( id, public_url ),
-          profiles ( full_name )
-        `)
-        .in('job_id', jobIds)
-        .order('submitted_at', { ascending: false })
-        .limit(60),
-      supabase
-        .from('cleaner_ratings')
-        .select('job_zone_id')
-        .eq('rated_by', user.id)
-        .eq('rated_by_role', 'client'),
+    // Step 4 — cleaning logs (flat columns only)
+    const { data: logRows } = await supabase
+      .from('cleaning_logs')
+      .select('id, submitted_at, note, note_translated, note_language, job_id, job_zone_id, cleaner_id')
+      .in('job_id', jobIds)
+      .order('submitted_at', { ascending: false })
+      .limit(60)
+
+    if (!logRows || logRows.length === 0) { setLogs([]); setLoading(false); return }
+
+    type LogRow = { id: string; submitted_at: string; note: string | null; note_translated: string | null; note_language: string | null; job_id: string; job_zone_id: string; cleaner_id: string }
+    const rows = logRows as unknown as LogRow[]
+
+    const logIds = rows.map((l) => l.id)
+    const zoneIds = [...new Set(rows.map((l) => l.job_zone_id).filter(Boolean))]
+    const cleanerIds = [...new Set(rows.map((l) => l.cleaner_id).filter(Boolean))]
+
+    // Step 5 — parallel lookups
+    const [zonesRes, profilesRes, evidenceRes, ratingsRes] = await Promise.all([
+      supabase.from('job_zones').select('id, zone_name, status').in('id', zoneIds),
+      supabase.from('profiles').select('id, full_name').in('id', cleanerIds),
+      supabase.from('evidence_files').select('cleaning_log_id, public_url').in('cleaning_log_id', logIds),
+      supabase.from('cleaner_ratings').select('job_zone_id').eq('rated_by', user.id).eq('rated_by_role', 'client'),
     ])
 
-    const ratedZoneIds = new Set((ratingsRes.data ?? []).map((r) => r.job_zone_id).filter(Boolean))
+    type ZoneRow    = { id: string; zone_name: string; status: string }
+    type ProfileRow = { id: string; full_name: string }
+    type EvidRow    = { cleaning_log_id: string; public_url: string }
+    type RatingRow  = { job_zone_id: string }
 
-    type RawLog = {
-      id: string; submitted_at: string; note: string | null
-      note_translated: string | null; note_language: string | null; job_id: string
-      job_zones: { id: string; zone_name: string; status: string } | null
-      evidence_files: { id: string; public_url: string }[]
-      profiles: { full_name: string } | null
+    const zoneMap    = Object.fromEntries(((zonesRes.data    ?? []) as unknown as ZoneRow[]).map((z) => [z.id, z]))
+    const profileMap = Object.fromEntries(((profilesRes.data ?? []) as unknown as ProfileRow[]).map((p) => [p.id, p]))
+
+    const evidenceMap: Record<string, string[]> = {}
+    for (const ef of (evidenceRes.data ?? []) as unknown as EvidRow[]) {
+      if (!evidenceMap[ef.cleaning_log_id]) evidenceMap[ef.cleaning_log_id] = []
+      evidenceMap[ef.cleaning_log_id].push(ef.public_url)
     }
 
-    const mapped: EvidenceLog[] = ((logsRes.data ?? []) as unknown as RawLog[]).map((r) => ({
-      id: r.id,
-      jobZoneId: r.job_zones?.id ?? '',
-      jobId: r.job_id,
-      submittedAt: r.submitted_at,
-      note: r.note,
-      noteTranslated: r.note_translated,
-      noteLanguage: r.note_language,
-      zoneName: r.job_zones?.zone_name ?? 'Zone',
-      zoneStatus: r.job_zones?.status ?? 'completed',
-      cleanerFirstName: firstName(r.profiles?.full_name ?? 'Cleaner'),
-      photoUrls: (r.evidence_files ?? []).map((ef) => ef.public_url),
-      isRated: ratedZoneIds.has(r.job_zones?.id ?? ''),
-    }))
+    const ratedZoneIds = new Set(((ratingsRes.data ?? []) as unknown as RatingRow[]).map((r) => r.job_zone_id).filter(Boolean))
+
+    const mapped: EvidenceLog[] = rows.map((log) => {
+      const zone    = zoneMap[log.job_zone_id]
+      const profile = profileMap[log.cleaner_id]
+      const fullName = profile?.full_name ?? 'Cleaner'
+      return {
+        id:                log.id,
+        jobZoneId:         log.job_zone_id ?? '',
+        jobId:             log.job_id,
+        submittedAt:       log.submitted_at,
+        note:              log.note,
+        noteTranslated:    log.note_translated,
+        noteLanguage:      log.note_language,
+        zoneName:          zone?.zone_name ?? 'Zone',
+        zoneStatus:        zone?.status ?? 'completed',
+        cleanerFirstName:  firstName(fullName),
+        photoUrls:         evidenceMap[log.id] ?? [],
+        isRated:           ratedZoneIds.has(log.job_zone_id ?? ''),
+      }
+    })
 
     setLogs(mapped)
     setLoading(false)
