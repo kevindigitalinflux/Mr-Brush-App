@@ -190,67 +190,55 @@ function StatusTimeline({ complaint }: { complaint: Complaint }) {
 }
 
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
-  const [notesOpen, setNotesOpen] = useState(false)
-
   return (
     <div className="cl-cmp-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
-      {/* Always-visible header */}
-      <div className="px-5 pt-5 pb-4">
-        <div className="flex flex-wrap items-center gap-2 mb-1.5">
-          <SeverityBadge n={complaint.severity} />
-          <span className={`text-[11px] font-['Lato'] font-bold uppercase tracking-[0.8px] px-2 py-0.5 rounded-full ${STATUS_COLORS[complaint.status]}`}>
-            {STATUS_LABELS[complaint.status]}
-          </span>
+      <div className="px-5 pt-5 pb-5 space-y-4">
+        {/* Badges + title */}
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <SeverityBadge n={complaint.severity} />
+            <span className={`text-[11px] font-['Lato'] font-bold uppercase tracking-[0.8px] px-2 py-0.5 rounded-full ${STATUS_COLORS[complaint.status]}`}>
+              {STATUS_LABELS[complaint.status]}
+            </span>
+          </div>
+          <p className="font-['Poppins'] font-semibold text-[14px] text-[#3D3B3A] leading-snug">
+            {complaint.title}
+          </p>
+          <p className="font-['Lato'] text-[12px] text-[#434B4D] mt-0.5">
+            {complaint.facilityName} · {formatDate(complaint.submittedAt)}
+          </p>
         </div>
-        <p className="font-['Poppins'] font-semibold text-[14px] text-[#3D3B3A] leading-snug">
-          {complaint.title}
-        </p>
-        <p className="font-['Lato'] text-[12px] text-[#434B4D] mt-0.5">
-          {complaint.facilityName} · {formatDate(complaint.submittedAt)}
-        </p>
+
+        {/* Timeline */}
         <StatusTimeline complaint={complaint} />
+
+        {/* Divider */}
+        <div className="border-t border-[#F0EFEA]" />
+
+        {/* Description */}
+        <p className="font-['Lato'] text-[13px] text-[#434B4D] leading-relaxed">{complaint.description}</p>
+
+        {/* Photos */}
+        {complaint.photoUrls.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {complaint.photoUrls.map((url, i) => (
+              <img key={i} src={url} alt="" className="w-20 h-20 object-cover rounded-[8px] border border-[#D0CFCA]" />
+            ))}
+          </div>
+        )}
+
+        {/* Supervisor response */}
+        {complaint.supervisorNote && (
+          <div className="bg-[#F5F4EF] rounded-[8px] p-3">
+            <p className="font-['Lato'] text-[11px] font-bold text-[#B8A77A] uppercase tracking-[0.8px] mb-1">
+              Supervisor Response
+            </p>
+            <p className="font-['Lato'] text-[13px] text-[#3D3B3A] leading-relaxed">
+              {complaint.supervisorNote}
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Notes toggle */}
-      <button
-        onClick={() => setNotesOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-5 py-2.5 border-t border-[#F0EFEA] hover:bg-[#F5F4EF] transition-colors"
-      >
-        <svg
-          width="13" height="13" viewBox="0 0 24 24" fill="none"
-          className={`transition-transform duration-200 text-[#B8A77A] ${notesOpen ? 'rotate-180' : ''}`}
-          aria-hidden="true"
-        >
-          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="font-['Lato'] text-[11px] font-bold text-[#B8A77A] uppercase tracking-[0.8px]">
-          {notesOpen ? 'Hide notes' : 'View notes'}
-        </span>
-      </button>
-
-      {/* Expandable notes */}
-      {notesOpen && (
-        <div className="px-5 pb-5 pt-3 space-y-3">
-          <p className="font-['Lato'] text-[13px] text-[#434B4D] leading-relaxed">{complaint.description}</p>
-          {complaint.photoUrls.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {complaint.photoUrls.map((url, i) => (
-                <img key={i} src={url} alt="" className="w-20 h-20 object-cover rounded-[8px] border border-[#D0CFCA]" />
-              ))}
-            </div>
-          )}
-          {complaint.supervisorNote && (
-            <div className="bg-[#F5F4EF] rounded-[8px] p-3">
-              <p className="font-['Lato'] text-[11px] font-bold text-[#B8A77A] uppercase tracking-[0.8px] mb-1">
-                Supervisor Response
-              </p>
-              <p className="font-['Lato'] text-[13px] text-[#3D3B3A] leading-relaxed">
-                {complaint.supervisorNote}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
