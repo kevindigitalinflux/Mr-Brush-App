@@ -11,6 +11,7 @@ type ComplaintStatus = 'received' | 'acknowledged' | 'in_progress' | 'resolved'
 
 interface Complaint {
   id: string
+  facilityId: string
   facilityName: string
   title: string
   description: string
@@ -95,6 +96,7 @@ function useComplaintsData(): ComplaintsState & { reload: () => void } {
 
     const complaints: Complaint[] = (rows ?? []).map((r) => ({
       id: r.id as string,
+      facilityId: r.facility_id as string,
       facilityName: (facilityMap[r.facility_id as string]) ?? 'Site',
       title: (r.title as string) ?? '',
       description: (r.description as string) ?? '',
@@ -189,7 +191,21 @@ function StatusTimeline({ complaint }: { complaint: Complaint }) {
   )
 }
 
-function ComplaintCard({ complaint }: { complaint: Complaint }) {
+function ComplaintCard({ complaint, onDelete }: { complaint: Complaint; onDelete: () => void }) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    void supabase.rpc('notify_complaint_event', {
+      p_facility_id: complaint.facilityId,
+      p_event: 'deleted',
+      p_title: complaint.title,
+    })
+    await supabase.from('complaints').delete().eq('id', complaint.id)
+    onDelete()
+  }
+
   return (
     <div className="cl-cmp-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
       <div className="px-5 pt-5 pb-5 space-y-4">
@@ -239,6 +255,37 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
           </div>
         )}
       </div>
+
+      {/* Delete row */}
+      {confirmDelete ? (
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[#F0EFEA] bg-[#FEF2F2]">
+          <p className="font-['Lato'] text-[12px] text-[#DC2626]">Remove this complaint?</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="font-['Lato'] text-[12px] font-bold text-[#434B4D]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="font-['Lato'] text-[12px] font-bold text-white bg-[#DC2626] px-3 py-1.5 rounded-[8px] disabled:opacity-50"
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end px-5 py-2.5 border-t border-[#F0EFEA]">
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="font-['Lato'] text-[11px] text-[#D0CFCA] hover:text-[#DC2626] transition-colors"
+          >
+            Delete complaint
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -319,9 +366,11 @@ function NewComplaintModal({
       })
       if (insertErr) throw insertErr
 
-      // TODO: POST to n8n webhook for supervisor notification
-      // const url = import.meta.env.VITE_N8N_CLIENT_COMPLAINT_WEBHOOK
-      // if (url) await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ facilityId: form.facilityId, severity: form.severity, title: form.title }) })
+      void supabase.rpc('notify_complaint_event', {
+        p_facility_id: form.facilityId,
+        p_event: 'filed',
+        p_title: form.title.trim(),
+      })
 
       setForm((s) => ({ ...s, submitting: false, success: true }))
       setTimeout(() => { onSubmitted(); onClose() }, 1800)
@@ -564,7 +613,7 @@ export function Complaints() {
         </div>
       ) : (
         <div className="space-y-3">
-          {complaints.map((c) => <ComplaintCard key={c.id} complaint={c} />)}
+          {complaints.map((c) => <ComplaintCard key={c.id} complaint={c} onDelete={() => void reload()} />)}
         </div>
       )}
     </div>
