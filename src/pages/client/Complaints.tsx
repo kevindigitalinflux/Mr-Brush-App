@@ -117,7 +117,17 @@ function useComplaintsData(): ComplaintsState & { reload: () => void } {
     setState({ loading: false, complaints, facilities })
   }, [user])
 
-  useEffect(() => { if (user) void load() }, [load, user])
+  useEffect(() => {
+    if (!user) return
+    void load()
+
+    const channel = supabase
+      .channel('client-complaints-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'complaints' }, () => { void load() })
+      .subscribe()
+
+    return () => { void supabase.removeChannel(channel) }
+  }, [load, user])
   return { ...state, reload: load }
 }
 

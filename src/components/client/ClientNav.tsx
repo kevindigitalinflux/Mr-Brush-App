@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 
-export type ClientTab = 'overview' | 'evidence' | 'complaints' | 'history'
+export type ClientTab = 'overview' | 'evidence' | 'complaints' | 'history' | 'notifications'
 
 function OverviewIcon({ active }: { active: boolean }) {
   const stroke = active ? '#FFFFFF' : '#434B4D'

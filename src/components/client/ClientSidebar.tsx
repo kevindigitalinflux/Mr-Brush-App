@@ -6,7 +6,7 @@ import type { Language } from '../../lib/i18n'
 import logoSrc from '../../assets/logo/logo.png'
 import { gsap, useGSAP } from '../../lib/gsap'
 
-export type ClientTab = 'overview' | 'evidence' | 'complaints' | 'history'
+export type ClientTab = 'overview' | 'evidence' | 'complaints' | 'history' | 'notifications'
 
 interface Props {
   active: ClientTab

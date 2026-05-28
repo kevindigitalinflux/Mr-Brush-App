@@ -8,7 +8,7 @@ import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type IssueStatus = 'open' | 'acknowledged' | 'resolved'
+type IssueStatus = 'received' | 'acknowledged' | 'in_progress' | 'resolved'
 
 interface ClientIssue {
   id: string
@@ -16,6 +16,7 @@ interface ClientIssue {
   client_name: string
   facility_name: string
   title: string
+  description: string
   note: string | null
   status: IssueStatus
   photo_urls: string[]
@@ -24,15 +25,23 @@ interface ClientIssue {
 // ─── Status pill ──────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<IssueStatus, string> = {
-  open:         'bg-[#FDECEA] text-[#BA1A1A]',
+  received:     'bg-[#FDECEA] text-[#BA1A1A]',
   acknowledged: 'bg-[#FFF3D1] text-[#6F613A]',
+  in_progress:  'bg-blue-50 text-blue-700',
   resolved:     'bg-[#D7E6DB] text-[#2F4A3D]',
 }
 
-function StatusPill({ status, label }: { status: IssueStatus; label: string }) {
+const STATUS_LABELS: Record<IssueStatus, string> = {
+  received:     'New',
+  acknowledged: 'Acknowledged',
+  in_progress:  'In Progress',
+  resolved:     'Resolved',
+}
+
+function StatusPill({ status }: { status: IssueStatus }) {
   return (
     <span className={`font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] px-2.5 py-1 rounded-full ${STATUS_STYLES[status]}`}>
-      {label}
+      {STATUS_LABELS[status]}
     </span>
   )
 }
@@ -40,84 +49,112 @@ function StatusPill({ status, label }: { status: IssueStatus; label: string }) {
 // ─── Issue ticket ─────────────────────────────────────────────────────────────
 
 function IssueTicket({ issue }: { issue: ClientIssue }) {
-  const t = useTranslation()
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [localStatus, setLocalStatus] = useState<IssueStatus>(issue.status)
+  const [localNote, setLocalNote] = useState<string>(issue.note ?? '')
+  const [noteText, setNoteText] = useState<string>(issue.note ?? '')
   const [submitting, setSubmitting] = useState(false)
 
   const timeStr = new Date(issue.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const dateStr = new Date(issue.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 
-  const statusLabel: Record<IssueStatus, string> = {
-    open:         t('sv_status_open'),
-    acknowledged: t('sv_status_acknowledged'),
-    resolved:     t('sv_status_resolved'),
-  }
-
   async function handleAction(next: IssueStatus) {
     setSubmitting(true)
-    await supabase.from('issues').update({ status: next }).eq('id', issue.id)
+    const updates: Record<string, unknown> = { status: next }
+    if (noteText.trim() && noteText.trim() !== localNote) updates.supervisor_note = noteText.trim()
+    await supabase.from('complaints').update(updates).eq('id', issue.id)
     setLocalStatus(next)
+    if (noteText.trim() && noteText.trim() !== localNote) setLocalNote(noteText.trim())
+    setSubmitting(false)
+  }
+
+  async function handleSendNote() {
+    const trimmed = noteText.trim()
+    if (!trimmed || trimmed === localNote) return
+    setSubmitting(true)
+    await supabase.from('complaints').update({ supervisor_note: trimmed }).eq('id', issue.id)
+    setLocalNote(trimmed)
     setSubmitting(false)
   }
 
   return (
     <div className="issue-ticket bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
-      {/* Ticket header */}
+      {/* Header */}
       <div className="px-5 py-4 border-b border-[#E3E3DD]">
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19] flex-1 min-w-0 pr-3 truncate">
             {issue.title}
           </h3>
-          <StatusPill status={localStatus} label={statusLabel[localStatus]} />
+          <StatusPill status={localStatus} />
         </div>
         <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
-          {t('sv_reported_by')} {issue.client_name} · {dateStr} at {timeStr}
+          {issue.client_name} · {dateStr} at {timeStr}
         </p>
         <p className="font-['Lato',sans-serif] text-[12px] text-[#9E9E9E] mt-0.5">{issue.facility_name}</p>
       </div>
 
       {/* Photos */}
       {issue.photo_urls.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto px-5 py-4">
+        <div className="flex gap-2 overflow-x-auto px-5 pt-4 pb-0">
           {issue.photo_urls.map((url, i) => (
             <button
               key={i}
               onClick={() => setLightbox(url)}
               className="shrink-0 w-[120px] h-[90px] rounded-[8px] overflow-hidden bg-[#E3E3DD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]"
             >
-              <img
-                src={url}
-                alt={`Issue photo ${i + 1}`}
-                className="w-full h-full object-cover"
-              />
+              <img src={url} alt={`Issue photo ${i + 1}`} className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
       )}
 
-      {/* Client note */}
-      {issue.note && (
-        <div className="px-5 pb-4">
-          <p className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.8px] text-[#737874] uppercase mb-1">
-            {t('sv_client_note_label')}
-          </p>
-          <p className="font-['Lato',sans-serif] text-[14px] text-[#434844] leading-relaxed">
-            {issue.note}
-          </p>
-        </div>
-      )}
+      {/* Description */}
+      <div className="px-5 pt-4 pb-4">
+        <p className="font-['Lato',sans-serif] text-[14px] text-[#434844] leading-relaxed">{issue.description}</p>
+      </div>
 
-      {/* Action buttons — only show if not yet resolved */}
+      {/* Supervisor response */}
+      <div className="px-5 pb-4">
+        <label className="block font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] text-[#737874] uppercase mb-2">
+          Response to client
+        </label>
+        <textarea
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          rows={3}
+          placeholder="Add a note or update for the client…"
+          className="w-full rounded-[10px] border border-[#D0CFCA] bg-[#F9F9F5] px-4 py-3 font-['Lato',sans-serif] text-[14px] text-[#3D3B3A] placeholder:text-[#B0AFA9] focus:outline-none focus:ring-2 focus:ring-[#B8A77A] resize-none"
+        />
+        {noteText.trim() && noteText.trim() !== localNote && (
+          <button
+            onClick={handleSendNote}
+            disabled={submitting}
+            className="mt-2 h-9 px-4 rounded-[8px] bg-[#F5F4EF] border border-[#D0CFCA] font-['Poppins',sans-serif] font-semibold text-[12px] text-[#3D3B3A] hover:bg-[#E8E7E2] transition-colors disabled:opacity-40"
+          >
+            {submitting ? 'Sending…' : 'Send Response'}
+          </button>
+        )}
+      </div>
+
+      {/* Action buttons */}
       {localStatus !== 'resolved' && (
-        <div className="px-5 pb-5 pt-4 border-t border-[#E3E3DD] flex gap-2">
-          {localStatus === 'open' && (
+        <div className="px-5 pb-5 pt-1 border-t border-[#E3E3DD] flex gap-2">
+          {localStatus === 'received' && (
             <button
               onClick={() => handleAction('acknowledged')}
               disabled={submitting}
               className="flex-1 h-10 border-2 border-[#B8A77A] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#B8A77A] hover:bg-[#B8A77A] hover:text-white transition-colors disabled:opacity-40"
             >
-              {t('sv_acknowledge')}
+              Acknowledge
+            </button>
+          )}
+          {localStatus === 'acknowledged' && (
+            <button
+              onClick={() => handleAction('in_progress')}
+              disabled={submitting}
+              className="flex-1 h-10 border-2 border-blue-400 rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
+            >
+              Mark In Progress
             </button>
           )}
           <button
@@ -125,7 +162,7 @@ function IssueTicket({ issue }: { issue: ClientIssue }) {
             disabled={submitting}
             className="flex-1 h-10 bg-[#2F4A3D] border-2 border-[#2F4A3D] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#253d31] transition-colors disabled:opacity-40"
           >
-            {t('sv_mark_resolved')}
+            Mark Resolved
           </button>
         </div>
       )}
@@ -137,7 +174,7 @@ function IssueTicket({ issue }: { issue: ClientIssue }) {
 
 // ─── Issues page ──────────────────────────────────────────────────────────────
 
-/** Client-reported issue tickets — acknowledge and resolve complaints. */
+/** Client complaint tickets — read, respond to, and resolve client complaints in real time. */
 export function Issues() {
   const { user } = useApp()
   const navigate = useNavigate()
@@ -151,17 +188,82 @@ export function Issues() {
 
     async function load() {
       setLoading(true)
-      const { data } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('supervisor_id', user!.id)
-        .order('created_at', { ascending: false })
 
-      setIssues((data as unknown as ClientIssue[]) ?? [])
+      // Get unique facility_ids for this supervisor via their jobs
+      const { data: jobRows } = await supabase
+        .from('jobs')
+        .select('facility_id')
+        .eq('supervisor_id', user!.id)
+
+      const facilityIds = [...new Set((jobRows ?? []).map((j) => (j as { facility_id: string }).facility_id))]
+      if (facilityIds.length === 0) { setIssues([]); setLoading(false); return }
+
+      // Facility names
+      const { data: facilityRows } = await supabase
+        .from('facilities')
+        .select('id, name')
+        .in('id', facilityIds)
+
+      const facilityMap: Record<string, string> = Object.fromEntries(
+        (facilityRows ?? []).map((f) => {
+          const row = f as { id: string; name: string }
+          return [row.id, row.name]
+        })
+      )
+
+      // Complaints for those facilities
+      const { data: rows } = await supabase
+        .from('complaints')
+        .select('id, submitted_at, filed_by, facility_id, title, description, status, supervisor_note, photo_urls')
+        .in('facility_id', facilityIds)
+        .order('submitted_at', { ascending: false })
+
+      if (!rows || rows.length === 0) { setIssues([]); setLoading(false); return }
+
+      // Client names from profiles
+      const filedByIds = [...new Set(rows.map((r) => (r as { filed_by: string }).filed_by))]
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', filedByIds)
+
+      const profileMap: Record<string, string> = Object.fromEntries(
+        (profileRows ?? []).map((p) => {
+          const row = p as { id: string; name: string }
+          return [row.id, row.name]
+        })
+      )
+
+      setIssues(rows.map((r) => {
+        const row = r as {
+          id: string; submitted_at: string; filed_by: string; facility_id: string
+          title: string; description: string; status: string
+          supervisor_note: string | null; photo_urls: string[]
+        }
+        return {
+          id: row.id,
+          created_at: row.submitted_at,
+          client_name: profileMap[row.filed_by] ?? 'Client',
+          facility_name: facilityMap[row.facility_id] ?? 'Site',
+          title: row.title,
+          description: row.description,
+          note: row.supervisor_note,
+          status: row.status as IssueStatus,
+          photo_urls: row.photo_urls ?? [],
+        }
+      }))
       setLoading(false)
     }
 
-    load()
+    void load()
+
+    // Realtime — refresh list when any complaint changes
+    const channel = supabase
+      .channel('sv-issues-complaints')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'complaints' }, () => { void load() })
+      .subscribe()
+
+    return () => { void supabase.removeChannel(channel) }
   }, [user])
 
   useGSAP(() => {

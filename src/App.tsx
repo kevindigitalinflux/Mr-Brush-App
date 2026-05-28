@@ -27,6 +27,7 @@ import { Overview } from './pages/client/Overview'
 import { EvidenceFeed } from './pages/client/EvidenceFeed'
 import { Complaints } from './pages/client/Complaints'
 import { ClientHistory } from './pages/client/ClientHistory'
+import { ClientNotifications } from './pages/client/ClientNotifications'
 
 export default function App() {
   return (
@@ -58,11 +59,12 @@ export default function App() {
           <Route path="/supervisor/issues" element={<Issues />} />
           <Route path="/supervisor/workers/:cleanerId" element={<CleanerProfile />} />
           {/* Client */}
-          <Route path="/client/overview"   element={<Overview />}      />
-          <Route path="/client/evidence"   element={<EvidenceFeed />}  />
-          <Route path="/client/complaints" element={<Complaints />}    />
-          <Route path="/client/history"    element={<ClientHistory />} />
-          <Route path="/client/home"       element={<Overview />}      />
+          <Route path="/client/overview"       element={<Overview />}             />
+          <Route path="/client/evidence"       element={<EvidenceFeed />}         />
+          <Route path="/client/complaints"     element={<Complaints />}           />
+          <Route path="/client/history"        element={<ClientHistory />}        />
+          <Route path="/client/notifications"  element={<ClientNotifications />}  />
+          <Route path="/client/home"           element={<Overview />}             />
         </Routes>
       </BrowserRouter>
     </AppProvider>

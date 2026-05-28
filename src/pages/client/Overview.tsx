@@ -7,6 +7,62 @@ import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { FacilityLiveView } from '../../components/client/FacilityLiveView'
 import { gsap, useGSAP } from '../../lib/gsap'
 
+// ─── Unread notifications badge hook ─────────────────────────────────────────
+
+function useUnreadNotifCount(userId: string | undefined): number {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!userId) return
+
+    async function fetchCount() {
+      const { count: c } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false)
+      setCount(c ?? 0)
+    }
+
+    void fetchCount()
+
+    const channel = supabase
+      .channel(`client-notif-badge-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        void fetchCount()
+      })
+      .subscribe()
+
+    return () => { void supabase.removeChannel(channel) }
+  }, [userId])
+
+  return count
+}
+
+// ─── Bell button ──────────────────────────────────────────────────────────────
+
+function BellButton({ unread, onClick }: { unread: number; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={unread > 0 ? `${unread} unread notifications` : 'Notifications'}
+      className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#E8E7E2] transition-colors shrink-0"
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#3D3B3A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="#3D3B3A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {unread > 0 && (
+        <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-[#BA1A1A] rounded-full flex items-center justify-center px-1">
+          <span className="text-white text-[9px] font-bold leading-none">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        </span>
+      )}
+    </button>
+  )
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FacilityInfo {
@@ -304,6 +360,7 @@ function MobileOverview() {
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const data = useOverviewData()
+  const unreadCount = useUnreadNotifCount(user?.id)
 
   useGSAP(() => {
     if (data.loading) return
@@ -329,14 +386,17 @@ function MobileOverview() {
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
 
         {/* Header */}
-        <div className="ov-heading mb-7">
-          <p className="font-['Lato',sans-serif] text-[14px] text-[#737874]">{greeting},</p>
-          <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#3D3B3A] leading-[1.1] tracking-[-0.4px]">
-            {user?.name?.split(' ')[0] ?? 'there'}
-          </h1>
-          <p className="font-['Lato',sans-serif] text-[12px] text-[#9A9A94] mt-1 tracking-[0.5px]">
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
-          </p>
+        <div className="ov-heading flex items-start justify-between mb-7">
+          <div>
+            <p className="font-['Lato',sans-serif] text-[14px] text-[#737874]">{greeting},</p>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] text-[#3D3B3A] leading-[1.1] tracking-[-0.4px]">
+              {user?.name?.split(' ')[0] ?? 'there'}
+            </h1>
+            <p className="font-['Lato',sans-serif] text-[12px] text-[#9A9A94] mt-1 tracking-[0.5px]">
+              {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+            </p>
+          </div>
+          <BellButton unread={unreadCount} onClick={() => navigate('/client/notifications')} />
         </div>
 
         {data.loading ? <Skeleton /> : (
@@ -406,6 +466,7 @@ function DesktopOverview() {
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const data = useOverviewData()
+  const unreadCount = useUnreadNotifCount(user?.id)
 
   useGSAP(() => {
     if (data.loading) return
@@ -437,9 +498,12 @@ function DesktopOverview() {
                 {user?.name?.split(' ')[0] ?? 'there'}
               </h1>
             </div>
-            <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mb-2">
-              {dateStr}
-            </span>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874]">
+                {dateStr}
+              </span>
+              <BellButton unread={unreadCount} onClick={() => navigate('/client/notifications')} />
+            </div>
           </div>
 
           {data.loading ? (
