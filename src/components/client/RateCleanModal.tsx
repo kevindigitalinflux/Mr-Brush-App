@@ -186,6 +186,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
             </div>
           </div>
         ) : (
+          <>
           <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-5">
 
             {/* Stars */}
@@ -309,6 +310,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
               {form.submitting ? 'Submitting…' : 'Submit Rating'}
             </button>
           </div>
+          </>
         )}
       </div>
     </div>
