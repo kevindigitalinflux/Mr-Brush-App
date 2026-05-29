@@ -355,12 +355,11 @@ function Skeleton() {
 
 // ─── Mobile view ──────────────────────────────────────────────────────────────
 
-function MobileOverview() {
+function MobileOverview({ unreadCount }: { unreadCount: number }) {
   const { user } = useApp()
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const data = useOverviewData()
-  const unreadCount = useUnreadNotifCount(user?.id)
 
   useGSAP(() => {
     if (data.loading) return
@@ -461,12 +460,11 @@ function MobileOverview() {
 
 // ─── Desktop view ─────────────────────────────────────────────────────────────
 
-function DesktopOverview() {
+function DesktopOverview({ unreadCount }: { unreadCount: number }) {
   const { user } = useApp()
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const data = useOverviewData()
-  const unreadCount = useUnreadNotifCount(user?.id)
 
   useGSAP(() => {
     if (data.loading) return
@@ -591,10 +589,12 @@ function DesktopOverview() {
 
 /** Client portal — site overview screen. Shows at a glance: site status, quick stats, recent evidence. */
 export function Overview() {
+  const { user } = useApp()
+  const unreadCount = useUnreadNotifCount(user?.id)
   return (
     <>
-      <div className="md:hidden"><MobileOverview /></div>
-      <div className="hidden md:block"><DesktopOverview /></div>
+      <div className="md:hidden"><MobileOverview unreadCount={unreadCount} /></div>
+      <div className="hidden md:block"><DesktopOverview unreadCount={unreadCount} /></div>
     </>
   )
 }
