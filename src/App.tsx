@@ -26,6 +26,7 @@ import { CleanerProfile } from './pages/supervisor/CleanerProfile'
 import { Rates } from './pages/supervisor/Rates'
 import { PayRecords } from './pages/supervisor/PayRecords'
 import { Payslips } from './pages/supervisor/Payslips'
+import { Absence } from './pages/supervisor/Absence'
 import { Overview } from './pages/client/Overview'
 import { EvidenceFeed } from './pages/client/EvidenceFeed'
 import { Complaints } from './pages/client/Complaints'
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/supervisor/rates" element={<Rates />} />
           <Route path="/supervisor/pay-records" element={<PayRecords />} />
           <Route path="/supervisor/payslips" element={<Payslips />} />
+          <Route path="/supervisor/absence" element={<Absence />} />
           {/* Client */}
           <Route path="/client/overview"       element={<Overview />}             />
           <Route path="/client/evidence"       element={<EvidenceFeed />}         />

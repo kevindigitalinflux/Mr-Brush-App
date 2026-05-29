@@ -264,10 +264,16 @@ function DesktopWorkers() {
       <SupervisorDesktopSidebar active="workers" />
       <main className="flex-1 ml-60 bg-[#F4F4EE] scrollbar-stable">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
-          <div className="dw-heading mb-8">
+          <div className="dw-heading flex items-start justify-between gap-4 mb-8">
             <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
               {t('sv_workers_title')}
             </h1>
+            <button
+              onClick={() => navigate('/supervisor/absence')}
+              className="shrink-0 mt-1 flex items-center gap-1.5 px-3 h-9 rounded-[8px] border border-[#D5D5CF] bg-white font-['Lato',sans-serif] text-[13px] text-[#1A1C19] font-semibold whitespace-nowrap"
+            >
+              Absences
+            </button>
           </div>
           <WorkersList
             workers={workers}
@@ -302,9 +308,17 @@ function MobileWorkers() {
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-10 pb-[100px]">
-        <h1 className="workers-heading font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px] mb-5">
-          {t('sv_workers_title')}
-        </h1>
+        <div className="workers-heading flex items-center justify-between gap-4 mb-5">
+          <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.4px]">
+            {t('sv_workers_title')}
+          </h1>
+          <button
+            onClick={() => navigate('/supervisor/absence')}
+            className="shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-[8px] border border-[#D5D5CF] bg-white font-['Lato',sans-serif] text-[13px] text-[#1A1C19] font-semibold whitespace-nowrap"
+          >
+            Absences
+          </button>
+        </div>
         <WorkersList
           workers={workers}
           loading={loading}
