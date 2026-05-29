@@ -194,9 +194,9 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
 
 function DesktopHistory() {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="history" />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="pl-60">
         <HistoryContent compact />
       </main>
     </div>
