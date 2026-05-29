@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
@@ -215,6 +216,7 @@ function FacilityCard({ facility, editState, onEdit, onSave, onCancel, onChange 
 
 function RatesContent() {
   const { user } = useApp()
+  const navigate = useNavigate()
   const { loading, facilities, reload } = useRatesData()
   const [editState, setEditState] = useState<EditState | null>(null)
 
@@ -247,10 +249,23 @@ function RatesContent() {
     <div className="max-w-4xl mx-auto px-6 md:px-10 py-8 md:py-10 pb-[100px] md:pb-10">
       <div className="mb-8">
         <p className="font-['Lato',sans-serif] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">Pay Management</p>
-        <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] md:text-[36px] text-[#1A1C19] leading-tight">Facility Rates</h1>
-        <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-2">
-          Set hourly rates per facility. New rates take effect immediately for all future pay records.
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] md:text-[36px] text-[#1A1C19] leading-tight">Facility Rates</h1>
+            <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-2">
+              Set hourly rates per facility. New rates take effect immediately for all future pay records.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/supervisor/pay-records')}
+            className="shrink-0 mt-1 flex items-center gap-1.5 px-4 h-9 rounded-[8px] bg-[#1A1C19] text-white font-['Lato',sans-serif] text-[13px] font-semibold whitespace-nowrap"
+          >
+            Pay Records
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {loading ? (
