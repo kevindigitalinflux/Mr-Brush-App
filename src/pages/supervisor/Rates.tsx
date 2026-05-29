@@ -18,14 +18,6 @@ interface FacilityRate {
   supervisorFrom: string | null
 }
 
-interface EditState {
-  facilityId: string
-  roleType: 'cleaner' | 'supervisor'
-  value: string
-  saving: boolean
-  error: string | null
-}
-
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function BuildingIcon() {
@@ -91,7 +83,7 @@ function useRatesData() {
   }, [user])
 
   useEffect(() => { void load() }, [load])
-  return { loading, facilities, reload: load }
+  return { loading, facilities }
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -104,91 +96,31 @@ interface RateRowProps {
   label: string
   rate: number | null
   effectiveFrom: string | null
-  editing: EditState | null
-  onEdit: () => void
-  onSave: () => void
-  onCancel: () => void
-  onChange: (v: string) => void
 }
 
-function RateRow({ label, rate, effectiveFrom, editing, onEdit, onSave, onCancel, onChange }: RateRowProps) {
+function RateRow({ label, rate, effectiveFrom }: RateRowProps) {
   return (
     <div className="flex flex-col gap-2 p-4 bg-[#F4F4EE] rounded-[10px]">
       <p className="font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[1px] text-[#737874]">{label}</p>
-      {editing ? (
+      {rate !== null ? (
         <>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-['Poppins',sans-serif] font-semibold text-[18px] text-[#1A1C19]">£</span>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={editing.value}
-              onChange={(e) => onChange(e.target.value)}
-              className="w-24 h-9 rounded-[8px] border border-[#D5D5CF] bg-white px-3 font-['Lato',sans-serif] text-[14px] text-[#1A1C19] focus:outline-none focus:ring-2 focus:ring-[#B8A77A]"
-              autoFocus
-            />
-            <span className="font-['Lato',sans-serif] text-[13px] text-[#737874]">/hr</span>
-            <button
-              onClick={onSave}
-              disabled={editing.saving || !editing.value}
-              className="h-9 px-4 rounded-[8px] bg-[#1A1C19] text-white font-['Lato',sans-serif] text-[13px] font-semibold disabled:opacity-50"
-            >
-              {editing.saving ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              onClick={onCancel}
-              className="h-9 px-3 rounded-[8px] bg-white border border-[#D5D5CF] text-[#737874] font-['Lato',sans-serif] text-[13px]"
-            >
-              Cancel
-            </button>
-          </div>
-          {editing.error && (
-            <p className="font-['Lato',sans-serif] text-[12px] text-[#BA1A1A]">{editing.error}</p>
+          <span className="font-['Poppins',sans-serif] font-semibold text-[22px] text-[#1A1C19]">
+            £{Number(rate).toFixed(2)}<span className="text-[14px] font-normal text-[#737874]">/hr</span>
+          </span>
+          {effectiveFrom && (
+            <p className="font-['Lato',sans-serif] text-[11px] text-[#737874]">
+              Effective {formatDate(effectiveFrom)}
+            </p>
           )}
         </>
       ) : (
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            {rate !== null ? (
-              <>
-                <span className="font-['Poppins',sans-serif] font-semibold text-[22px] text-[#1A1C19]">
-                  £{Number(rate).toFixed(2)}<span className="text-[14px] font-normal text-[#737874]">/hr</span>
-                </span>
-                {effectiveFrom && (
-                  <p className="font-['Lato',sans-serif] text-[11px] text-[#737874] mt-0.5">
-                    Effective {formatDate(effectiveFrom)}
-                  </p>
-                )}
-              </>
-            ) : (
-              <span className="font-['Lato',sans-serif] text-[14px] text-[#B8A77A] italic">Not set</span>
-            )}
-          </div>
-          <button
-            onClick={onEdit}
-            className="shrink-0 text-[12px] font-['Lato',sans-serif] font-bold text-[#B8A77A] hover:text-[#8B7A5A] uppercase tracking-[0.5px] transition-colors"
-          >
-            {rate !== null ? 'Edit' : 'Set rate'}
-          </button>
-        </div>
+        <span className="font-['Lato',sans-serif] text-[14px] text-[#737874] italic">Not set</span>
       )}
     </div>
   )
 }
 
-interface CardProps {
-  facility: FacilityRate
-  editState: EditState | null
-  onEdit: (fId: string, role: 'cleaner' | 'supervisor') => void
-  onSave: () => void
-  onCancel: () => void
-  onChange: (v: string) => void
-}
-
-function FacilityCard({ facility, editState, onEdit, onSave, onCancel, onChange }: CardProps) {
-  const editingCleaner = editState?.facilityId === facility.facilityId && editState.roleType === 'cleaner' ? editState : null
-  const editingSupervisor = editState?.facilityId === facility.facilityId && editState.roleType === 'supervisor' ? editState : null
+function FacilityCard({ facility }: { facility: FacilityRate }) {
   return (
     <div className="bg-white border border-[#D5D5CF] rounded-[12px] p-6">
       <div className="flex items-center gap-3 mb-5">
@@ -201,12 +133,8 @@ function FacilityCard({ facility, editState, onEdit, onSave, onCancel, onChange 
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <RateRow label="Cleaner Rate" rate={facility.cleanerRate} effectiveFrom={facility.cleanerFrom}
-          editing={editingCleaner} onEdit={() => onEdit(facility.facilityId, 'cleaner')}
-          onSave={onSave} onCancel={onCancel} onChange={onChange} />
-        <RateRow label="Supervisor Rate" rate={facility.supervisorRate} effectiveFrom={facility.supervisorFrom}
-          editing={editingSupervisor} onEdit={() => onEdit(facility.facilityId, 'supervisor')}
-          onSave={onSave} onCancel={onCancel} onChange={onChange} />
+        <RateRow label="Cleaner Rate" rate={facility.cleanerRate} effectiveFrom={facility.cleanerFrom} />
+        <RateRow label="Supervisor Rate" rate={facility.supervisorRate} effectiveFrom={facility.supervisorFrom} />
       </div>
     </div>
   )
@@ -215,35 +143,8 @@ function FacilityCard({ facility, editState, onEdit, onSave, onCancel, onChange 
 // ─── Page content ─────────────────────────────────────────────────────────────
 
 function RatesContent() {
-  const { user } = useApp()
   const navigate = useNavigate()
-  const { loading, facilities, reload } = useRatesData()
-  const [editState, setEditState] = useState<EditState | null>(null)
-
-  function startEdit(facilityId: string, roleType: 'cleaner' | 'supervisor') {
-    const fac = facilities.find((f) => f.facilityId === facilityId)
-    const current = roleType === 'cleaner' ? fac?.cleanerRate : fac?.supervisorRate
-    setEditState({ facilityId, roleType, value: current ? Number(current).toFixed(2) : '', saving: false, error: null })
-  }
-
-  async function handleSave() {
-    if (!editState || !user) return
-    const parsed = parseFloat(editState.value)
-    if (isNaN(parsed) || parsed <= 0) {
-      setEditState((s) => s && ({ ...s, error: 'Enter a rate greater than £0.00.' })); return
-    }
-    setEditState((s) => s && ({ ...s, saving: true, error: null }))
-    const { error } = await supabase.from('facility_rates').insert({
-      facility_id: editState.facilityId,
-      role_type: editState.roleType,
-      hourly_rate: parsed,
-      effective_from: new Date().toISOString().slice(0, 10),
-      company_id: user.company_id,
-    })
-    if (error) { setEditState((s) => s && ({ ...s, saving: false, error: 'Could not save. Try again.' })); return }
-    setEditState(null)
-    void reload()
-  }
+  const { loading, facilities } = useRatesData()
 
   return (
     <div className="max-w-4xl mx-auto px-6 md:px-10 py-8 md:py-10 pb-[100px] md:pb-10">
@@ -253,7 +154,7 @@ function RatesContent() {
           <div>
             <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] md:text-[36px] text-[#1A1C19] leading-tight">Facility Rates</h1>
             <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-2">
-              Set hourly rates per facility. New rates take effect immediately for all future pay records.
+              Current hourly rates for your facilities. Contact an administrator to update rates.
             </p>
           </div>
           <button
@@ -270,7 +171,7 @@ function RatesContent() {
 
       {loading ? (
         <div className="space-y-4">
-          {[1, 2].map((i) => <div key={i} className="h-52 rounded-[12px] bg-white border border-[#D5D5CF] animate-pulse" />)}
+          {[1, 2].map((i) => <div key={i} className="h-44 rounded-[12px] bg-white border border-[#D5D5CF] animate-pulse" />)}
         </div>
       ) : facilities.length === 0 ? (
         <div className="bg-white border border-[#D5D5CF] rounded-[12px] p-10 text-center">
@@ -279,12 +180,7 @@ function RatesContent() {
         </div>
       ) : (
         <div className="space-y-4">
-          {facilities.map((fac) => (
-            <FacilityCard key={fac.facilityId} facility={fac} editState={editState}
-              onEdit={startEdit} onSave={handleSave}
-              onCancel={() => setEditState(null)}
-              onChange={(v) => setEditState((s) => s && ({ ...s, value: v }))} />
-          ))}
+          {facilities.map((fac) => <FacilityCard key={fac.facilityId} facility={fac} />)}
         </div>
       )}
     </div>
@@ -313,7 +209,7 @@ function DesktopRates() {
   )
 }
 
-/** Supervisor portal — view and set hourly rates per facility. */
+/** Supervisor portal — view current hourly rates per facility (read-only). */
 export function Rates() {
   const isDesktop = useIsDesktop()
   return isDesktop ? <DesktopRates /> : <MobileRates />
