@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 
@@ -260,7 +261,7 @@ function DesktopHome() {
 // ─── Mobile Home ──────────────────────────────────────────────────────────────
 
 function MobileHome() {
-  const { user, setUser } = useApp()
+  const { user } = useApp()
   const navigate = useNavigate()
   const { jobs, totalZones, doneZones, allDone } = useJobData()
   const t = useTranslation()
@@ -292,16 +293,12 @@ function MobileHome() {
             </div>
             <div className="flex items-center gap-2 mt-1">
               <LanguageDropdown />
-              <button
-                onClick={() => { setUser(null); navigate('/login') }}
-                aria-label="Sign out"
-                className="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] flex items-center justify-center text-[#6B5D36] hover:bg-[#F4F4EE] transition-colors"
-              >
+              <SignOutConfirmButton triggerClassName="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] flex items-center justify-center text-[#6B5D36] hover:bg-[#F4F4EE] transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                   <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </button>
+              </SignOutConfirmButton>
             </div>
           </div>
           <div className="home-stats w-full px-6">

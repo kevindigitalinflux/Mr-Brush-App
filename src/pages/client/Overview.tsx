@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
@@ -356,7 +357,7 @@ function Skeleton() {
 // ─── Mobile view ──────────────────────────────────────────────────────────────
 
 function MobileOverview({ unreadCount }: { unreadCount: number }) {
-  const { user, setUser } = useApp()
+  const { user } = useApp()
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const data = useOverviewData()
@@ -397,16 +398,12 @@ function MobileOverview({ unreadCount }: { unreadCount: number }) {
           </div>
           <div className="flex items-center gap-2 mt-1">
             <BellButton unread={unreadCount} onClick={() => navigate('/client/notifications')} />
-            <button
-              onClick={() => { setUser(null); navigate('/login') }}
-              aria-label="Sign out"
-              className="w-10 h-10 rounded-full flex items-center justify-center text-[#9A9A94] hover:bg-[#E8E7E2] transition-colors"
-            >
+            <SignOutConfirmButton triggerClassName="w-10 h-10 rounded-full flex items-center justify-center text-[#9A9A94] hover:bg-[#E8E7E2] transition-colors">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </button>
+            </SignOutConfirmButton>
           </div>
         </div>
 

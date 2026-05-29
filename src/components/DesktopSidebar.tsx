@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { SignOutConfirmButton } from './SignOutConfirmButton'
 import type { Language } from '../lib/i18n'
 import logoSrc from '../assets/logo/logo.png'
 
@@ -87,7 +88,7 @@ function CheckIcon() {
 
 /** Persistent left navigation for all cleaner desktop screens. */
 export function DesktopSidebar({ active }: Props) {
-  const { user, setUser, language, setLanguage } = useApp()
+  const { user, language, setLanguage } = useApp()
   const navigate = useNavigate()
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
@@ -193,13 +194,14 @@ export function DesktopSidebar({ active }: Props) {
           )}
         </div>
 
-        <button
-          onClick={() => { setUser(null); navigate('/login') }}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-[8px] text-[#737874] hover:bg-[#E5E5DF] hover:text-[#1A1C19] transition-colors"
+        <SignOutConfirmButton
+          triggerClassName="flex items-center gap-2.5 w-full px-3 py-2 rounded-[8px] text-[#737874] hover:bg-[#E5E5DF] hover:text-[#1A1C19] transition-colors"
+          popoverSide="above"
+          popoverAlign="left"
         >
           <LogOutIcon />
           <span className="font-['Lato',sans-serif] text-[13px]">Sign Out</span>
-        </button>
+        </SignOutConfirmButton>
       </div>
 
     </aside>
