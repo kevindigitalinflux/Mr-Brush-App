@@ -147,7 +147,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
       <div className="w-full max-w-[480px] bg-[#F5F4EF] rounded-[16px] overflow-hidden flex flex-col max-h-[92vh]">
 
         {/* Header */}
@@ -187,7 +187,7 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
           </div>
         ) : (
           <>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 space-y-5">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-8 space-y-5">
 
             {/* Stars */}
             <div>

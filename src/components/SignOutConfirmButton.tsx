@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 
@@ -9,7 +10,8 @@ interface Props {
   children: React.ReactNode
 }
 
-/** Drop-in replacement for any sign-out button — shows a confirmation popover before signing out. */
+/** Sign-out button that shows a confirmation popover before signing out.
+ *  Uses a portal so the popover always renders above navbars and stacking contexts. */
 export function SignOutConfirmButton({
   triggerClassName,
   popoverSide = 'below',
@@ -17,36 +19,59 @@ export function SignOutConfirmButton({
   children,
 }: Props) {
   const [open, setOpen] = useState(false)
+  const [rect, setRect] = useState<DOMRect | null>(null)
   const { setUser } = useApp()
   const navigate = useNavigate()
-  const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+
+  function handleClick() {
+    if (triggerRef.current) setRect(triggerRef.current.getBoundingClientRect())
+    setOpen((v) => !v)
+  }
 
   useEffect(() => {
     if (!open) return
     function onPointerDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (
+        triggerRef.current?.contains(e.target as Node) ||
+        popoverRef.current?.contains(e.target as Node)
+      ) return
+      setOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open])
 
-  const sideClass = popoverSide === 'below' ? 'top-full mt-1' : 'bottom-full mb-1'
-  const alignClass = popoverAlign === 'right' ? 'right-0' : 'left-0'
+  const popoverStyle: React.CSSProperties = rect ? {
+    position: 'fixed',
+    zIndex: 9999,
+    width: '192px',
+    ...(popoverSide === 'below'
+      ? { top: rect.bottom + 4 }
+      : { bottom: window.innerHeight - rect.top + 4 }),
+    ...(popoverAlign === 'right'
+      ? { right: window.innerWidth - rect.right }
+      : { left: rect.left }),
+  } : {}
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleClick}
         className={triggerClassName}
         aria-label="Sign out"
         aria-expanded={open}
       >
         {children}
       </button>
-      {open && (
+      {open && rect && createPortal(
         <div
-          className={`absolute ${sideClass} ${alignClass} z-50 bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg p-4 w-48`}
+          ref={popoverRef}
+          style={popoverStyle}
+          className="bg-white border border-[#D0CFCA] rounded-[12px] shadow-lg p-4"
         >
           <p className="font-['Lato'] text-[12px] text-[#434B4D] mb-3 leading-relaxed">
             Sign out of your account?
@@ -67,8 +92,9 @@ export function SignOutConfirmButton({
               Cancel
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
