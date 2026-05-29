@@ -162,9 +162,9 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
 
   if (isDesktop) {
     return (
-      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <div className="min-h-screen bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="jobs" />
-        <main className="flex-1 overflow-y-auto ml-60">
+        <main className="pl-60">
           <div className="max-w-2xl mx-auto px-10 py-10">
 
             <div className="flex items-center gap-4 mb-8">
@@ -398,9 +398,9 @@ function AddZoneScreen({ facilityId }: { facilityId: string }) {
 
   if (isDesktop) {
     return (
-      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <div className="min-h-screen bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="jobs" />
-        <main className="flex-1 overflow-y-auto ml-60">
+        <main className="pl-60">
           <div className="max-w-2xl mx-auto px-10 py-10">
             <div className="flex items-center gap-4 mb-8">
               <button onClick={goBack} aria-label="Back"
@@ -725,9 +725,9 @@ function ZoneEditScreen({ facilityId, zoneId }: { facilityId: string; zoneId: st
 
   if (isDesktop) {
     return (
-      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <div className="min-h-screen bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="jobs" />
-        <main className="flex-1 overflow-y-auto ml-60">
+        <main className="pl-60">
           <div className="max-w-2xl mx-auto px-10 py-10">
             <div className="flex items-center gap-4 mb-8">
               <button onClick={goBack} aria-label="Back"
@@ -1194,7 +1194,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
   })
 
   return (
-    <div className={panelMode ? 'h-full overflow-y-auto bg-[#F4F4EE]' : 'fixed inset-0 bg-[#F4F4EE] overflow-y-auto'}>
+    <div className={panelMode ? 'bg-[#F4F4EE]' : 'fixed inset-0 bg-[#F4F4EE] overflow-y-auto'}>
       <div ref={containerRef} className={panelMode ? 'max-w-5xl mx-auto px-10 py-10' : 'w-full max-w-[480px] mx-auto px-6 pb-[100px]'}>
 
         {/* Header */}
@@ -1562,9 +1562,9 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
 function DesktopJobs() {
   const navigate = useNavigate()
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
+      <main className="pl-60">
         <DesktopFacilitiesPanel
           onSelect={(id) => navigate(`/supervisor/jobs?facility=${id}`)}
         />
@@ -1578,9 +1578,9 @@ function DesktopJobs() {
 function DesktopFacilityZonesView({ facilityId }: { facilityId: string }) {
   const navigate = useNavigate()
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto ml-60 bg-[#F4F4EE]">
+      <main className="pl-60">
         <FacilityZonesView
           facilityId={facilityId}
           onBack={() => navigate('/supervisor/jobs')}
