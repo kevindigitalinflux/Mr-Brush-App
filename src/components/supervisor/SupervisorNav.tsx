@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 
-export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history'
+export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history' | 'rates'
 
 function DashboardIcon({ active }: { active: boolean }) {
   const stroke = active ? '#FFFFFF' : '#434B4D'
@@ -47,11 +47,22 @@ function HistoryIcon({ active }: { active: boolean }) {
   )
 }
 
+function RatesIcon({ active }: { active: boolean }) {
+  const stroke = active ? '#FFFFFF' : '#434B4D'
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke={stroke} strokeWidth="2" />
+      <path d="M9 15h4.5a1.5 1.5 0 0 0 0-3h-3a1.5 1.5 0 0 1 0-3H15M12 6v2m0 8v2" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 const TABS: { id: SupervisorTab; label: string; route: string }[] = [
   { id: 'dashboard', label: 'Dashboard', route: '/supervisor/dashboard' },
   { id: 'jobs',      label: 'Jobs',      route: '/supervisor/jobs'      },
   { id: 'workers',   label: 'Workers',   route: '/supervisor/workers'   },
   { id: 'history',   label: 'History',   route: '/supervisor/history'   },
+  { id: 'rates',     label: 'Rates',     route: '/supervisor/rates'     },
 ]
 
 /** Bottom navigation bar for the supervisor portal. */
@@ -77,6 +88,7 @@ export function SupervisorNav({ active }: { active: SupervisorTab }) {
               {id === 'jobs'      && <JobsIcon active={isActive} />}
               {id === 'workers'   && <WorkersIcon active={isActive} />}
               {id === 'history'   && <HistoryIcon active={isActive} />}
+              {id === 'rates'     && <RatesIcon active={isActive} />}
             </div>
             <span className={[
               "font-['Lato',sans-serif] text-[11px] tracking-[0.3px]",

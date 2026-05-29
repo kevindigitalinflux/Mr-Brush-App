@@ -121,6 +121,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_nav_jobs: 'Jobs',
     sv_nav_workers: 'Workers',
     sv_nav_history: 'History',
+    sv_nav_rates: 'Rates',
     sv_sign_out: 'Sign Out',
 
     // Supervisor — Dashboard
@@ -412,6 +413,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_nav_jobs: 'Trabajos',
     sv_nav_workers: 'Trabajadores',
     sv_nav_history: 'Historial',
+    sv_nav_rates: 'Tarifas',
     sv_sign_out: 'Cerrar Sesión',
 
     // Supervisor — Dashboard
@@ -698,6 +700,7 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_nav_jobs: 'Trabalhos',
     sv_nav_workers: 'Trabalhadores',
     sv_nav_history: 'Histórico',
+    sv_nav_rates: 'Tarifas',
     sv_sign_out: 'Sair',
 
     // Supervisor — Dashboard

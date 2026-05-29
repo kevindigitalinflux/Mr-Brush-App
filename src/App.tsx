@@ -23,6 +23,7 @@ import { Evidence } from './pages/supervisor/Evidence'
 import { SupervisorNotifications } from './pages/supervisor/SupervisorNotifications'
 import { Issues } from './pages/supervisor/Issues'
 import { CleanerProfile } from './pages/supervisor/CleanerProfile'
+import { Rates } from './pages/supervisor/Rates'
 import { Overview } from './pages/client/Overview'
 import { EvidenceFeed } from './pages/client/EvidenceFeed'
 import { Complaints } from './pages/client/Complaints'
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/supervisor/notifications" element={<SupervisorNotifications />} />
           <Route path="/supervisor/issues" element={<Issues />} />
           <Route path="/supervisor/workers/:cleanerId" element={<CleanerProfile />} />
+          <Route path="/supervisor/rates" element={<Rates />} />
           {/* Client */}
           <Route path="/client/overview"       element={<Overview />}             />
           <Route path="/client/evidence"       element={<EvidenceFeed />}         />

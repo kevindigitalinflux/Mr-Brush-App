@@ -7,7 +7,7 @@ import type { Language } from '../../lib/i18n'
 import logoSrc from '../../assets/logo/logo.png'
 import { gsap, useGSAP } from '../../lib/gsap'
 
-export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history'
+export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history' | 'rates'
 
 interface Props { active: SupervisorTab }
 
@@ -16,6 +16,7 @@ const NAV: { key: SupervisorTab; labelKey: string; path: string; icon: () => Rea
   { key: 'jobs',      labelKey: 'sv_nav_jobs',      path: '/supervisor/jobs',      icon: JobsIcon      },
   { key: 'workers',   labelKey: 'sv_nav_workers',   path: '/supervisor/workers',   icon: WorkersIcon   },
   { key: 'history',   labelKey: 'sv_nav_history',   path: '/supervisor/history',   icon: HistoryIcon   },
+  { key: 'rates',     labelKey: 'sv_nav_rates',     path: '/supervisor/rates',     icon: RatesIcon     },
 ]
 
 const LANGS: { code: Language; label: string; flag: string }[] = [
@@ -63,6 +64,15 @@ function HistoryIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
       <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function RatesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9 15h4.5a1.5 1.5 0 0 0 0-3h-3a1.5 1.5 0 0 1 0-3H15M12 6v2m0 8v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }
