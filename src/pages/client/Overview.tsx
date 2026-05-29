@@ -307,7 +307,7 @@ function StatTile({ value, label, accent }: { value: string; label: string; acce
   const colour = accent === 'red' ? 'text-red-500' : accent === 'green' ? 'text-[#2F4A3D]' : 'text-[#B8A77A]'
   return (
     <div className="ov-stat flex-1 bg-white border border-[#D0CFCA] rounded-[12px] px-3 py-4 flex flex-col items-center gap-1">
-      <span className={`font-['Poppins',sans-serif] font-bold text-[28px] leading-none ${colour}`}>{value}</span>
+      <span className={`font-['Poppins',sans-serif] font-bold text-[20px] leading-none w-full text-center ${colour}`}>{value}</span>
       <span className="font-['Lato',sans-serif] text-[11px] text-[#737874] text-center leading-snug">{label}</span>
     </div>
   )
@@ -356,7 +356,7 @@ function Skeleton() {
 // ─── Mobile view ──────────────────────────────────────────────────────────────
 
 function MobileOverview({ unreadCount }: { unreadCount: number }) {
-  const { user } = useApp()
+  const { user, setUser } = useApp()
   const navigate = useNavigate()
   const containerRef = useRef<HTMLDivElement>(null)
   const data = useOverviewData()
@@ -395,7 +395,19 @@ function MobileOverview({ unreadCount }: { unreadCount: number }) {
               {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
             </p>
           </div>
-          <BellButton unread={unreadCount} onClick={() => navigate('/client/notifications')} />
+          <div className="flex items-center gap-2 mt-1">
+            <BellButton unread={unreadCount} onClick={() => navigate('/client/notifications')} />
+            <button
+              onClick={() => { setUser(null); navigate('/login') }}
+              aria-label="Sign out"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[#9A9A94] hover:bg-[#E8E7E2] transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {data.loading ? <Skeleton /> : (

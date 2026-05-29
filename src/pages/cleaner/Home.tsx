@@ -260,7 +260,7 @@ function DesktopHome() {
 // ─── Mobile Home ──────────────────────────────────────────────────────────────
 
 function MobileHome() {
-  const { user } = useApp()
+  const { user, setUser } = useApp()
   const navigate = useNavigate()
   const { jobs, totalZones, doneZones, allDone } = useJobData()
   const t = useTranslation()
@@ -290,7 +290,19 @@ function MobileHome() {
               </h2>
               <span className="font-['Lato',sans-serif] text-base text-[#6B5D36]">{today}</span>
             </div>
-            <LanguageDropdown />
+            <div className="flex items-center gap-2 mt-1">
+              <LanguageDropdown />
+              <button
+                onClick={() => { setUser(null); navigate('/login') }}
+                aria-label="Sign out"
+                className="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] flex items-center justify-center text-[#6B5D36] hover:bg-[#F4F4EE] transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="home-stats w-full px-6">
             <div className="bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">

@@ -296,8 +296,10 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
             {form.error && (
               <p className="font-['Lato'] text-[13px] text-[#DC2626]">{form.error}</p>
             )}
+          </div>
 
-            {/* Submit */}
+          {/* Sticky submit footer */}
+          <div className="shrink-0 px-6 pt-3 pb-6 border-t border-[#E8E7E2]">
             <button
               type="button"
               onClick={handleSubmit}
