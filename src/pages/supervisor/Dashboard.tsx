@@ -88,22 +88,20 @@ function useDashboardData() {
     const today = new Date().toISOString().slice(0, 10)
     if (!silent) setLoading(true)
 
-    // Parallel: today's jobs, all supervisor facilities (for complaints), unread notif count
+    // Round 1 — parallel independent queries
     const [jobsRes, allJobsRes, notifRes] = await Promise.all([
+      // Today's jobs + zones (no nested cleaning_logs — FK ambiguity causes silent empty)
       supabase
         .from('jobs')
-        .select(`
-          id, status, facility_id,
-          facilities ( name ),
-          job_zones ( id, status, cleaner_id ),
-          cleaning_logs ( id, status )
-        `)
+        .select('id, status, facility_id, facilities ( name ), job_zones ( id, status, cleaner_id )')
         .eq('supervisor_id', user.id)
         .eq('scheduled_date', today),
+      // All supervisor facilities (for complaint scope)
       supabase
         .from('jobs')
         .select('facility_id')
         .eq('supervisor_id', user.id),
+      // Unread notification count
       supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
@@ -111,38 +109,48 @@ function useDashboardData() {
         .eq('is_read', false),
     ])
 
-    // Today's jobs → site cards + pending evidence count
+    const jobIds = (jobsRes.data ?? []).map((r) => (r as { id: string }).id)
+    const facilityIds = [...new Set(
+      (allJobsRes.data ?? []).map((j) => (j as { facility_id: string }).facility_id)
+    )]
+
+    // Round 2 — depend on job IDs / facility IDs from round 1
+    const [pendingLogsRes, complaintsRes] = await Promise.all([
+      jobIds.length > 0
+        ? supabase.from('cleaning_logs').select('id, job_id').in('job_id', jobIds).eq('status', 'pending')
+        : Promise.resolve({ data: [] as { id: string; job_id: string }[] }),
+      facilityIds.length > 0
+        ? supabase.from('complaints').select('*', { count: 'exact', head: true })
+            .in('facility_id', facilityIds)
+            .in('status', ['received', 'acknowledged', 'in_progress', 'open'])
+        : Promise.resolve({ count: 0 }),
+    ])
+
+    // Pending count keyed by job_id
+    const pendingByJob = new Map<string, number>()
+    for (const log of (pendingLogsRes.data ?? [])) {
+      const r = log as { id: string; job_id: string }
+      pendingByJob.set(r.job_id, (pendingByJob.get(r.job_id) ?? 0) + 1)
+    }
+
     if (jobsRes.data) {
       const mapped: SiteJob[] = (jobsRes.data as unknown as {
         id: string; facility_id: string; status: string
         facilities: { name: string } | null
         job_zones: ZoneSummary[]
-        cleaning_logs: { id: string; status: string }[]
       }[]).map((r) => ({
         id: r.id,
         facility_id: r.facility_id,
         status: r.status,
         facility_name: r.facilities?.name ?? 'Unknown Site',
         zones: (r.job_zones ?? []).filter((z) => z.status !== 'deleted'),
-        pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending').length,
+        pending_evidence: pendingByJob.get(r.id) ?? 0,
       }))
       setJobs(mapped.filter((j) => j.status !== 'completed'))
       setPendingCount(mapped.reduce((sum, j) => sum + j.pending_evidence, 0))
     }
 
-    // Unresolved complaints across all supervisor's facilities
-    const facilityIds = [...new Set(
-      (allJobsRes.data ?? []).map((j) => (j as { facility_id: string }).facility_id)
-    )]
-    if (facilityIds.length > 0) {
-      const { count } = await supabase
-        .from('complaints')
-        .select('*', { count: 'exact', head: true })
-        .in('facility_id', facilityIds)
-        .in('status', ['received', 'acknowledged', 'in_progress', 'open'])
-      setIssueCount(count ?? 0)
-    }
-
+    setIssueCount((complaintsRes as { count: number | null }).count ?? 0)
     setUnreadNotifCount(notifRes.count ?? 0)
     setLoading(false)
   }, [user])

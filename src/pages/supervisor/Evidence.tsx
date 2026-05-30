@@ -14,10 +14,10 @@ import { gsap, useGSAP } from '../../lib/gsap'
 interface EvidenceLog {
   id: string
   job_id: string
+  company_id: string
   created_at: string
   note: string | null
   note_translated: string | null
-  no_photo_reason: boolean
   status: string
   cleaner_name: string
   cleaner_display_id: string
@@ -46,10 +46,11 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
     if (!decision) return
     setSubmitting(true)
     await supabase.from('feedback_comments').insert({
-      log_id: log.id,
+      cleaning_log_id: log.id,
       supervisor_id: supervisorId,
       comment: comment.trim() || null,
       status: decision,
+      company_id: log.company_id,
     })
     await supabase.from('cleaning_logs').update({ status: decision }).eq('id', log.id)
     setSubmitted(true)
@@ -81,14 +82,8 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
         </p>
       </div>
 
-      {/* Photos or no-photo note */}
-      {log.no_photo_reason ? (
-        <div className="px-5 py-4 bg-[#FFF8EC]">
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#6F613A] italic">
-            {t('sv_no_photo_msg')}
-          </p>
-        </div>
-      ) : log.photo_urls.length > 0 ? (
+      {/* Photos */}
+      {log.photo_urls.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto px-5 py-4">
           {log.photo_urls.map((url, i) => (
             <button
@@ -194,7 +189,8 @@ export function Evidence() {
     let query = supabase
       .from('cleaning_logs')
       .select(`
-        id, job_id, created_at, note, note_translated, no_photo_reason, status,
+        id, job_id, created_at, note, note_translated, status,
+        jobs!cleaning_logs_job_id_fkey ( company_id ),
         profiles!cleaning_logs_cleaner_id_fkey ( full_name, display_id ),
         job_zones ( zone_name ),
         evidence_files ( public_url ),
@@ -205,7 +201,7 @@ export function Evidence() {
     if (jobId) {
       query = query.eq('job_id', jobId)
     } else {
-      query = query.eq('status', 'pending_review')
+      query = query.eq('status', 'pending')
     }
 
     const { data } = await query
@@ -217,8 +213,8 @@ export function Evidence() {
         created_at: string
         note: string | null
         note_translated: string | null
-        no_photo_reason: boolean
         status: string
+        jobs: { company_id: string } | null
         profiles: { full_name: string; display_id: string } | null
         job_zones: { zone_name: string } | null
         evidence_files: { public_url: string }[]
@@ -226,10 +222,10 @@ export function Evidence() {
       }[]).map((r) => ({
         id: r.id,
         job_id: r.job_id,
+        company_id: r.jobs?.company_id ?? '',
         created_at: r.created_at,
         note: r.note,
         note_translated: r.note_translated,
-        no_photo_reason: r.no_photo_reason,
         status: r.status,
         cleaner_name: r.profiles?.full_name ?? 'Unknown',
         cleaner_display_id: r.profiles?.display_id ?? '',
@@ -288,9 +284,9 @@ export function Evidence() {
 
   if (isDesktop) {
     return (
-      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <div ref={pageRef} className="min-h-screen bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="history" />
-        <main ref={pageRef} className="flex-1 ml-60 scrollbar-stable">
+        <main className="pl-60">
           <div className="max-w-4xl mx-auto px-10 py-10">
             <div className="flex items-center gap-4 mb-8">
               <button onClick={() => navigate(-1)} aria-label="Go back"
