@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { jsPDF } from 'jspdf'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
@@ -272,6 +273,107 @@ function GenerateModal({ cleaners, companyId, onClose, onSaved }: GenerateModalP
   )
 }
 
+// ─── PDF generation ───────────────────────────────────────────────────────────
+
+function generatePayslipPDF(payslip: Payslip) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = doc.internal.pageSize.getWidth()
+
+  // Header band
+  doc.setFillColor(26, 28, 25) // #1A1C19
+  doc.rect(0, 0, W, 38, 'F')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.setTextColor(184, 167, 122) // #B8A77A
+  doc.text('Mr Brush & Co.', 20, 16)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(200, 200, 190)
+  doc.text('Cleaning Operations', 20, 23)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(255, 255, 255)
+  doc.text('PAYSLIP', W - 20, 20, { align: 'right' })
+
+  // Status pill (text)
+  const statusLabel = payslip.status.toUpperCase()
+  doc.setFontSize(8)
+  doc.setTextColor(200, 200, 190)
+  doc.text(statusLabel, W - 20, 28, { align: 'right' })
+
+  // Cleaner + period block
+  doc.setTextColor(55, 55, 55)
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Cleaner', 20, 52)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(14)
+  doc.setTextColor(26, 28, 25)
+  doc.text(payslip.cleanerName, 20, 60)
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(55, 55, 55)
+  doc.text('Pay Period', W / 2, 52)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(11)
+  doc.setTextColor(26, 28, 25)
+  doc.text(fmtPeriod(payslip.periodStart, payslip.periodEnd), W / 2, 60)
+
+  // Divider
+  doc.setDrawColor(208, 207, 202)
+  doc.line(20, 68, W - 20, 68)
+
+  // Summary rows
+  const rows: [string, string][] = [
+    ['Total Shifts',    String(payslip.totalShifts)],
+    ['Total Hours',     payslip.totalHours.toFixed(2)],
+    ['Gross Pay (£)',   `£${payslip.totalGrossPay.toFixed(2)}`],
+  ]
+
+  let y = 82
+  for (const [label, value] of rows) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(115, 120, 116) // #737874
+    doc.text(label, 20, y)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.setTextColor(26, 28, 25)
+    doc.text(value, W - 20, y, { align: 'right' })
+
+    // light separator
+    doc.setDrawColor(230, 230, 225)
+    doc.line(20, y + 5, W - 20, y + 5)
+    y += 18
+  }
+
+  // Gross pay highlighted box
+  doc.setFillColor(237, 228, 206) // warm brass tint
+  doc.roundedRect(20, y + 4, W - 40, 22, 3, 3, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(111, 96, 58)
+  doc.text('Total Gross Pay', 28, y + 18)
+  doc.setFontSize(16)
+  doc.text(`£${payslip.totalGrossPay.toFixed(2)}`, W - 28, y + 18, { align: 'right' })
+
+  // Footer
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(160, 160, 155)
+  const generated = `Generated ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
+  doc.text(generated, 20, 278)
+  doc.text('Mr Brush & Co. — Internal document', W - 20, 278, { align: 'right' })
+
+  const filename = `payslip_${payslip.cleanerName.replace(/\s+/g, '_')}_${payslip.periodStart}_${payslip.periodEnd}.pdf`
+  doc.save(filename)
+}
+
 // ─── Payslip card ─────────────────────────────────────────────────────────────
 
 interface PayslipCardProps {
@@ -313,15 +415,27 @@ function PayslipCard({ payslip, onStatusChange, updating }: PayslipCardProps) {
         ))}
       </div>
 
-      {action && (
+      <div className="flex gap-2">
         <button
-          onClick={() => onStatusChange(payslip.id, action.next)}
-          disabled={updating}
-          className="w-full h-9 rounded-[8px] border border-[#D5D5CF] bg-white font-['Lato',sans-serif] text-[13px] font-semibold text-[#1A1C19] hover:bg-[#F4F4EE] transition-colors disabled:opacity-50"
+          onClick={() => generatePayslipPDF(payslip)}
+          className="flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-[#B8A77A] text-[#B8A77A] font-['Lato',sans-serif] text-[12px] font-semibold hover:bg-[#F4F4EE] transition-colors shrink-0"
         >
-          {action.label}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4 20h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          PDF
         </button>
-      )}
+        {action && (
+          <button
+            onClick={() => onStatusChange(payslip.id, action.next)}
+            disabled={updating}
+            className="flex-1 h-9 rounded-[8px] border border-[#D5D5CF] bg-white font-['Lato',sans-serif] text-[13px] font-semibold text-[#1A1C19] hover:bg-[#F4F4EE] transition-colors disabled:opacity-50"
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
