@@ -284,9 +284,9 @@ export function Evidence() {
 
   if (isDesktop) {
     return (
-      <div ref={pageRef} className="min-h-screen bg-[#F4F4EE]">
+      <div className="min-h-screen bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="history" />
-        <main className="pl-60">
+        <main ref={pageRef} className="pl-60">
           <div className="max-w-4xl mx-auto px-10 py-10">
             <div className="flex items-center gap-4 mb-8">
               <button onClick={() => navigate(-1)} aria-label="Go back"
@@ -312,8 +312,8 @@ export function Evidence() {
   }
 
   return (
-    <div ref={pageRef} className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
-      <div className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
+    <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
+      <div ref={pageRef} className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
         <div className="flex items-center gap-3 pt-10 pb-5">
           <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
