@@ -224,31 +224,34 @@ export function Issues() {
       const filedByIds = [...new Set(rows.map((r) => (r as { filed_by: string }).filed_by))]
       const { data: profileRows } = await supabase
         .from('profiles')
-        .select('id, name')
+        .select('id, full_name')
         .in('id', filedByIds)
 
       const profileMap: Record<string, string> = Object.fromEntries(
         (profileRows ?? []).map((p) => {
-          const row = p as { id: string; name: string }
-          return [row.id, row.name]
+          const row = p as { id: string; full_name: string | null }
+          return [row.id, row.full_name ?? 'Client']
         })
       )
 
       setIssues(rows.map((r) => {
         const row = r as {
           id: string; submitted_at: string; filed_by: string; facility_id: string
-          title: string; description: string; status: string
+          title: string | null; description: string; status: string
           supervisor_note: string | null; photo_urls: string[]
         }
+        // 'open' is a legacy status — treat as 'received'
+        const status: IssueStatus = (['received', 'acknowledged', 'in_progress', 'resolved'] as const)
+          .includes(row.status as IssueStatus) ? row.status as IssueStatus : 'received'
         return {
           id: row.id,
           created_at: row.submitted_at,
           client_name: profileMap[row.filed_by] ?? 'Client',
           facility_name: facilityMap[row.facility_id] ?? 'Site',
-          title: row.title,
+          title: row.title ?? 'Client Complaint',
           description: row.description,
           note: row.supervisor_note,
-          status: row.status as IssueStatus,
+          status,
           photo_urls: row.photo_urls ?? [],
         }
       }))
