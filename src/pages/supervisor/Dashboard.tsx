@@ -80,6 +80,7 @@ function useDashboardData() {
   const [jobs, setJobs] = useState<SiteJob[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [issueCount, setIssueCount] = useState(0)
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (silent = false) => {
@@ -87,19 +88,32 @@ function useDashboardData() {
     const today = new Date().toISOString().slice(0, 10)
     if (!silent) setLoading(true)
 
-    const { data: jobRows } = await supabase
-      .from('jobs')
-      .select(`
-        id, status, facility_id,
-        facilities ( name ),
-        job_zones ( id, status, cleaner_id ),
-        cleaning_logs ( id, status )
-      `)
-      .eq('supervisor_id', user.id)
-      .eq('scheduled_date', today)
+    // Parallel: today's jobs, all supervisor facilities (for complaints), unread notif count
+    const [jobsRes, allJobsRes, notifRes] = await Promise.all([
+      supabase
+        .from('jobs')
+        .select(`
+          id, status, facility_id,
+          facilities ( name ),
+          job_zones ( id, status, cleaner_id ),
+          cleaning_logs ( id, status )
+        `)
+        .eq('supervisor_id', user.id)
+        .eq('scheduled_date', today),
+      supabase
+        .from('jobs')
+        .select('facility_id')
+        .eq('supervisor_id', user.id),
+      supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false),
+    ])
 
-    if (jobRows) {
-      const mapped: SiteJob[] = (jobRows as unknown as {
+    // Today's jobs → site cards + pending evidence count
+    if (jobsRes.data) {
+      const mapped: SiteJob[] = (jobsRes.data as unknown as {
         id: string; facility_id: string; status: string
         facilities: { name: string } | null
         job_zones: ZoneSummary[]
@@ -110,13 +124,26 @@ function useDashboardData() {
         status: r.status,
         facility_name: r.facilities?.name ?? 'Unknown Site',
         zones: (r.job_zones ?? []).filter((z) => z.status !== 'deleted'),
-        pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending_review').length,
+        pending_evidence: (r.cleaning_logs ?? []).filter((l) => l.status === 'pending').length,
       }))
       setJobs(mapped.filter((j) => j.status !== 'completed'))
       setPendingCount(mapped.reduce((sum, j) => sum + j.pending_evidence, 0))
-      setIssueCount(mapped.reduce((sum, j) =>
-        sum + j.zones.filter((z) => z.status === 'flagged_no_photo').length, 0))
     }
+
+    // Unresolved complaints across all supervisor's facilities
+    const facilityIds = [...new Set(
+      (allJobsRes.data ?? []).map((j) => (j as { facility_id: string }).facility_id)
+    )]
+    if (facilityIds.length > 0) {
+      const { count } = await supabase
+        .from('complaints')
+        .select('*', { count: 'exact', head: true })
+        .in('facility_id', facilityIds)
+        .in('status', ['received', 'acknowledged', 'in_progress', 'open'])
+      setIssueCount(count ?? 0)
+    }
+
+    setUnreadNotifCount(notifRes.count ?? 0)
     setLoading(false)
   }, [user])
 
@@ -126,13 +153,15 @@ function useDashboardData() {
     if (!user) return
     const channel = supabase
       .channel('supervisor-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' }, () => load(true))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_logs' }, () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' },      () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cleaning_logs' },  () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'complaints' },     () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' },  () => load(true))
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
   }, [user, load])
 
-  return { jobs, pendingCount, issueCount, loading }
+  return { jobs, pendingCount, issueCount, unreadNotifCount, loading }
 }
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
@@ -248,7 +277,7 @@ function DesktopDashboard() {
   const navigate = useNavigate()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
-  const { jobs, pendingCount, issueCount, loading } = useDashboardData()
+  const { jobs, pendingCount, issueCount, unreadNotifCount, loading } = useDashboardData()
 
   const h = new Date().getHours()
   const greeting = h < 12 ? t('good_morning') : h < 17 ? t('good_afternoon') : t('good_evening')
@@ -286,10 +315,17 @@ function DesktopDashboard() {
               </span>
               <button
                 onClick={() => navigate('/supervisor/notifications')}
-                aria-label="Notifications"
-                className="w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
+                aria-label={`Notifications${unreadNotifCount > 0 ? ` (${unreadNotifCount} unread)` : ''}`}
+                className="relative w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
               >
                 <BellIcon />
+                {unreadNotifCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-[#BA1A1A] flex items-center justify-center px-1">
+                    <span className="font-['Lato',sans-serif] font-bold text-[10px] text-white leading-none">
+                      {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                    </span>
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -378,7 +414,7 @@ function MobileDashboard() {
   const navigate = useNavigate()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
-  const { jobs, pendingCount, issueCount, loading } = useDashboardData()
+  const { jobs, pendingCount, issueCount, unreadNotifCount, loading } = useDashboardData()
   const [showLangSheet, setShowLangSheet] = useState(false)
 
   useGSAP(() => {
@@ -417,10 +453,17 @@ function MobileDashboard() {
             </button>
             <button
               onClick={() => navigate('/supervisor/notifications')}
-              aria-label="Notifications"
-              className="w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
+              aria-label={`Notifications${unreadNotifCount > 0 ? ` (${unreadNotifCount} unread)` : ''}`}
+              className="relative w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center hover:bg-[#F4F4EE] transition-colors"
             >
               <BellIcon />
+              {unreadNotifCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-[#BA1A1A] flex items-center justify-center px-1">
+                  <span className="font-['Lato',sans-serif] font-bold text-[10px] text-white leading-none">
+                    {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                  </span>
+                </span>
+              )}
             </button>
             <SignOutConfirmButton triggerClassName="w-10 h-10 rounded-full bg-white border border-[#D0CFCA] flex items-center justify-center text-[#737874] hover:bg-[#F4F4EE] transition-colors">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
