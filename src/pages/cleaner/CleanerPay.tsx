@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
-import { gsap, useGSAP } from '../../lib/gsap'
+import { gsap } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +32,16 @@ const STATUS_STYLES: Record<PayStatus, string> = {
 const STATUS_LABELS: Record<PayStatus, string> = {
   draft: 'Pending', approved: 'Approved', paid: 'Paid',
 }
+
+// ─── Mock data (preview only) ─────────────────────────────────────────────────
+
+const MOCK_RECORDS: ShiftRecord[] = [
+  { id: 'm1', shiftDate: '2026-06-01', facilityName: 'Riverfront Tower',  hoursWorked: 4.0, hourlyRate: 13.50, grossPay: 54.00,  status: 'paid',     isReplacement: false },
+  { id: 'm2', shiftDate: '2026-05-29', facilityName: 'Skyline Plaza',     hoursWorked: 6.0, hourlyRate: 13.50, grossPay: 81.00,  status: 'approved', isReplacement: false },
+  { id: 'm3', shiftDate: '2026-05-27', facilityName: 'Metro Hub',         hoursWorked: 5.0, hourlyRate: 13.50, grossPay: 67.50,  status: 'approved', isReplacement: true  },
+  { id: 'm4', shiftDate: '2026-05-22', facilityName: 'Riverfront Tower',  hoursWorked: 4.5, hourlyRate: 13.50, grossPay: 60.75,  status: 'draft',    isReplacement: false },
+  { id: 'm5', shiftDate: '2026-05-20', facilityName: 'Citygate Office',   hoursWorked: 8.0, hourlyRate: 13.50, grossPay: 108.00, status: 'draft',    isReplacement: false },
+]
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
 
@@ -169,22 +179,22 @@ function PayContent() {
   const [filterMonth, setFilterMonth] = useState('')
   const { loading, records, totalHours, totalGross } = usePayData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
+  const hasAnimated = useRef(false)
 
-  // One-time entrance: header + filter fade in on mount and never revert
-  useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.timeline({ defaults: { ease: 'power2.out' } })
-        .from('.pay-header', { opacity: 0, y: 14, duration: 0.4 })
-        .from('.pay-filter', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
-    }, containerRef)
-    return () => ctx.revert()
-  }, [])
+  const displayRecords = records.length > 0 ? records : (!loading ? MOCK_RECORDS : [])
+  const displayHours = displayRecords.reduce((s, r) => s + r.hoursWorked, 0)
+  const displayGross = displayRecords.reduce((s, r) => s + r.grossPay, 0)
 
-  // Cards only: animate each time a new set of results arrives
-  useGSAP(() => {
-    if (loading) return
-    gsap.from('.pay-card', { opacity: 0, y: 16, duration: 0.4, stagger: 0.06, ease: 'power2.out' })
-  }, { scope: containerRef, dependencies: [loading] })
+  useEffect(() => {
+    if (loading || hasAnimated.current || !containerRef.current) return
+    hasAnimated.current = true
+    const el = containerRef.current
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from(el.querySelectorAll('.pay-header'),  { opacity: 0, y: 14, duration: 0.4 })
+      .from(el.querySelectorAll('.pay-filter'),  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+      .from(el.querySelectorAll('.pay-summary'), { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+      .from(el.querySelectorAll('.pay-card'),    { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
+  }, [loading])
 
   const currentMonth = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' })
   const filterLabel = filterMonth
@@ -227,20 +237,13 @@ function PayContent() {
           </div>
           {[1, 2, 3].map((i) => <div key={i} className="h-[80px] rounded-[12px] bg-white border border-[#D0CFCA] animate-pulse" />)}
         </div>
-      ) : records.length === 0 ? (
-        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
-          <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#1A1C19]">No pay records yet</p>
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
-            {filterMonth ? 'No records for this month. Try a different period.' : 'Your pay records will appear here once logged by your supervisor.'}
-          </p>
-        </div>
       ) : (
         <>
           <div className="pay-summary">
-            <SummaryCards records={records} totalHours={totalHours} totalGross={totalGross} />
+            <SummaryCards records={displayRecords} totalHours={displayHours} totalGross={displayGross} />
           </div>
           <div className="space-y-3">
-            {records.map((r) => <ShiftCard key={r.id} record={r} />)}
+            {displayRecords.map((r) => <ShiftCard key={r.id} record={r} />)}
           </div>
         </>
       )}
