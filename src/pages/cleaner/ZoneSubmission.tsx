@@ -5,6 +5,7 @@ import { useTranslation } from '../../lib/useTranslation'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { supabase } from '../../lib/supabase'
 import { postZoneSubmission } from '../../lib/webhooks'
+import { enqueueOfflineSubmission } from '../../lib/offlineQueue'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 
@@ -73,7 +74,7 @@ const MAX_PHOTOS = 3
 function useZoneSubmissionState() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
-  const { user } = useApp()
+  const { user, markZoneComplete } = useApp()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [photos, setPhotos] = useState<PhotoEntry[]>([])
   const [note, setNote] = useState('')
@@ -118,6 +119,30 @@ function useZoneSubmissionState() {
     setSubmitting(true)
     setSubmitError(false)
 
+    // Offline: save photos locally and queue for upload on reconnect
+    if (!navigator.onLine) {
+      const photoBase64s = await Promise.all(
+        photos.map(({ file }) => new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        }))
+      )
+      await enqueueOfflineSubmission({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        cleanerId: user.id,
+        companyId: user.company_id,
+        jobId,
+        zoneId,
+        photoBase64s,
+        note: note.trim() || null,
+        timestamp: new Date().toISOString(),
+      })
+      navigate(`/cleaner/offline-queued?jobId=${jobId}&zoneId=${zoneId}`)
+      return
+    }
+
     try {
       // Upload all photos in parallel to Supabase Storage
       const imageUrls = await Promise.all(
@@ -142,6 +167,7 @@ function useZoneSubmissionState() {
         timestamp: new Date().toISOString(),
       })
 
+      markZoneComplete(zoneId) // optimistic update — reflects immediately in ZoneList
       navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
     } catch {
       setSubmitError(true)

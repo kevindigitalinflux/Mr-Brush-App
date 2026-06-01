@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { gsap, useGSAP } from '../../lib/gsap'
-
-const ZONE_NAMES: Record<string, string> = {
-  z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
-  z4: 'Open Plan Desks (N)', z5: 'Break Room / Kitchen', z6: 'Server Room',
-  z7: 'Main Entrance', z8: 'Reception Area', z9: 'Lifts / Elevators',
-  z10: 'Ground Floor WC', z11: 'Lobby Seating Area', z12: 'Security Desk Area',
-}
+import { supabase } from '../../lib/supabase'
 
 const AUTO_REDIRECT_MS = 3000
 
@@ -32,8 +26,20 @@ function VerifiedIcon() {
 export function ZoneSubmissionSuccess() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
-  const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
+  const [zoneName, setZoneName] = useState('Zone')
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!zoneId) return
+    void supabase
+      .from('job_zones')
+      .select('zone_name')
+      .eq('id', zoneId)
+      .single()
+      .then(({ data }) => {
+        if (data) setZoneName((data as { zone_name: string }).zone_name)
+      })
+  }, [zoneId])
 
   const [progress, setProgress] = useState(0)
 

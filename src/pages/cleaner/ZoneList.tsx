@@ -53,7 +53,7 @@ function PriorityIcon() {
 function useZoneListData() {
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
-  const { user } = useApp()
+  const { user, completedZones } = useApp()
   const t = useTranslation()
   const [zones, setZones] = useState<DisplayZone[]>([])
   const [siteName, setSiteName] = useState('')
@@ -109,12 +109,42 @@ function useZoneListData() {
     void load()
   }, [user, jobId])
 
-  const totalZones = zones.length
-  const doneZones = zones.filter((z) => DONE_STATUSES.has(z.status)).length
+  // Realtime: update zone card when n8n writes the status change to the DB
+  useEffect(() => {
+    if (!user || !jobId) return
+    const validStatuses = ['not_started', 'in_progress', 'completed', 'flagged_no_photo'] as const
+    const channel = supabase
+      .channel(`zone-list-${jobId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'job_zones',
+        filter: `job_id=eq.${jobId}`,
+      }, (payload) => {
+        const updated = payload.new as { id: string; status: string }
+        const status: ZoneStatus = validStatuses.includes(updated.status as ZoneStatus)
+          ? (updated.status as ZoneStatus)
+          : 'not_started'
+        setZones((prev) => prev.map((z) => z.id === updated.id ? { ...z, status } : z))
+      })
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [user, jobId])
+
+  // Merge optimistic completions — show zones as completed immediately after submission,
+  // before n8n has processed the webhook and updated the DB
+  const displayZones = zones.map((z) =>
+    completedZones.has(z.id) && !DONE_STATUSES.has(z.status)
+      ? { ...z, status: 'completed' as ZoneStatus }
+      : z
+  )
+
+  const totalZones = displayZones.length
+  const doneZones = displayZones.filter((z) => DONE_STATUSES.has(z.status)).length
   const allDone = totalZones > 0 && doneZones === totalZones
   const progressPct = totalZones > 0 ? (doneZones / totalZones) * 100 : 0
 
-  return { jobId, navigate, zones, totalZones, doneZones, allDone, progressPct, siteName, loading, t }
+  return { jobId, navigate, zones: displayZones, totalZones, doneZones, allDone, progressPct, siteName, loading, t }
 }
 
 // ─── ZoneCard ────────────────────────────────────────────────────────────────

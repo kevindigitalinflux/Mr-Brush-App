@@ -16,6 +16,7 @@ import { ShiftDetail } from './pages/cleaner/ShiftDetail'
 import { Notifications } from './pages/cleaner/Notifications'
 import { NotificationDetail } from './pages/cleaner/NotificationDetail'
 import { CleanerPay } from './pages/cleaner/CleanerPay'
+import { ZoneOfflineQueued } from './pages/cleaner/ZoneOfflineQueued'
 import { Dashboard } from './pages/supervisor/Dashboard'
 import { Jobs } from './pages/supervisor/Jobs'
 import { Workers } from './pages/supervisor/Workers'
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/cleaner/notifications" element={<Notifications />} />
           <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
           <Route path="/cleaner/pay" element={<CleanerPay />} />
+          <Route path="/cleaner/offline-queued" element={<ZoneOfflineQueued />} />
           {/* Supervisor */}
           <Route path="/supervisor/dashboard" element={<Dashboard />} />
           <Route path="/supervisor/jobs" element={<Jobs />} />

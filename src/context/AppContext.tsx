@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Language } from '../lib/i18n'
 import type { UserRole } from '../lib/auth'
+import { flushOfflineQueue } from '../lib/offlineQueue'
 
 interface User {
   id: string
@@ -57,6 +58,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('offline', goOffline)
     }
   }, [])
+
+  // Flush any queued offline submissions when connected and authenticated
+  useEffect(() => {
+    if (!isOnline || !user) return
+    void flushOfflineQueue((zoneId) => {
+      setCompletedZones((prev) => new Set([...prev, zoneId]))
+    })
+  }, [isOnline, user])
 
   function markZoneComplete(zoneId: string) {
     setCompletedZones((prev) => new Set([...prev, zoneId]))
