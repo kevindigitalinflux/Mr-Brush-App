@@ -1,10 +1,7 @@
-Got everything I need. Here's your CLAUDE.md:
-
-```markdown
 # Mr Brush & Co. — Cleaning Operations App
 
 ## What This Is
-An internal field operations app for Mr Brush & Co., a commercial cleaning company. The app enables cleaners (field workers), supervisors, and building managers (clients) to manage and verify cleaning jobs in real time. The first and current build focus is the Proof of Cleaning system — allowing cleaners to upload zone-by-zone photo evidence after completing a clean, which triggers automated workflows via n8n webhooks. The app is role-based: a user's ID prefix (C = cleaner, S = supervisor, M = manager) determines which side of the app they access on login. The cleaner side is the MVP priority. The system is designed so the app never holds automation logic — it sends events to n8n, which handles all processing, database writes, and notifications.
+An internal field operations app for Mr Brush & Co., a commercial cleaning company. The app enables cleaners (field workers), supervisors, and building managers (clients) to manage and verify cleaning jobs in real time. The system is role-based: a user's `display_id` prefix (C = cleaner, S = supervisor, M = manager) determines which portal they access on login. The app never holds automation logic — it sends events to n8n, which handles all processing, database writes, and notifications.
 
 ---
 
@@ -14,7 +11,7 @@ An internal field operations app for Mr Brush & Co., a commercial cleaning compa
 |---|---|
 | Framework | React 18 with TypeScript |
 | Build Tool | Vite (latest) |
-| Styling | Tailwind CSS v3 — utility classes only, no custom CSS unless absolutely necessary |
+| Styling | Tailwind CSS v3 — utility classes only, no custom CSS |
 | Routing | React Router v6 |
 | Database + Auth | Supabase |
 | Hosting | Cloudflare Pages (auto-deploy from GitHub main) |
@@ -22,8 +19,9 @@ An internal field operations app for Mr Brush & Co., a commercial cleaning compa
 | Component Reference | 21st.dev |
 | AI Dev Environment | Claude Code |
 | Automation | n8n (webhook-triggered, self-hosted or cloud) |
-| Translation | Google Translate API (free tier) — for auto-translating cleaner notes into English for supervisor/manager views |
-| Offline Queue | localForage — for queuing submissions when the cleaner has no signal, auto-sending on reconnect |
+| PDF Generation | jsPDF — client-side payslip PDF download |
+| Translation | Google Translate API (free tier) |
+| Offline Queue | localForage — queues submissions when offline, auto-retries on reconnect |
 
 ---
 
@@ -32,9 +30,15 @@ An internal field operations app for Mr Brush & Co., a commercial cleaning compa
 ```
 src/
 ├── components/
-│   └── ui/                  # Base design system components (buttons, cards, inputs, badges)
+│   ├── ImageViewer.tsx              # Lightbox for photo thumbnails
+│   ├── SignOutConfirmButton.tsx
+│   ├── supervisor/
+│   │   ├── SupervisorNav.tsx        # Mobile bottom nav (fixed)
+│   │   ├── SupervisorDesktopSidebar.tsx
+│   │   └── LanguageSheet.tsx
+│   └── ui/                          # Base design system components
 ├── pages/
-│   ├── cleaner/             # All cleaner-side screens
+│   ├── cleaner/                     # All cleaner-side screens — COMPLETE
 │   │   ├── Login.tsx
 │   │   ├── LanguageSelect.tsx
 │   │   ├── Home.tsx
@@ -43,26 +47,38 @@ src/
 │   │   ├── NoPhotoNote.tsx
 │   │   ├── ShiftCompleted.tsx
 │   │   └── ShiftHistory.tsx
-│   ├── supervisor/          # Supervisor screens — NOT started yet
-│   └── manager/             # Manager/client screens — NOT started yet
+│   ├── supervisor/                  # All supervisor-side screens — COMPLETE
+│   │   ├── Dashboard.tsx
+│   │   ├── Jobs.tsx
+│   │   ├── Evidence.tsx
+│   │   ├── History.tsx
+│   │   ├── Workers.tsx
+│   │   ├── CleanerProfile.tsx
+│   │   ├── Issues.tsx
+│   │   ├── SupervisorNotifications.tsx
+│   │   ├── Payslips.tsx
+│   │   ├── PayRecords.tsx
+│   │   ├── Absence.tsx
+│   │   └── Rates.tsx
+│   └── manager/                     # Client/manager portal — NOT YET STARTED
+├── supervisor-preview/              # Standalone phone-frame preview (mock data)
+│   ├── App.tsx
+│   ├── MockAppProvider.tsx
+│   └── PreviewShell.tsx
+├── hooks/
+│   └── useIsDesktop.ts              # Breakpoint hook (≥768px = desktop layout)
 ├── lib/
-│   ├── supabase.ts          # Supabase client init
-│   ├── webhooks.ts          # n8n webhook POST helpers
-│   ├── translate.ts         # Google Translate API helper
-│   ├── offlineQueue.ts      # localForage queue logic for offline submissions
-│   └── auth.ts              # Role detection from ID prefix (C/S/M), login logic
+│   ├── supabase.ts
+│   ├── gsap.ts                      # GSAP + useGSAP re-exports
+│   ├── useTranslation.ts
+│   ├── i18n/index.ts                # All UI strings — en / es / pt
+│   ├── webhooks.ts
+│   ├── translate.ts
+│   ├── offlineQueue.ts
+│   └── auth.ts
 ├── context/
-│   └── AppContext.tsx       # Global state: current user, language, active job
-├── assets/
-│   ├── logo/                # Mr Brush & Co. logo variants (full colour, white, icon only)
-│   └── fonts/               # Poppins + Lato if self-hosted
+│   └── AppContext.tsx               # user, language, active job — global state
 └── main.tsx
-public/
-CLAUDE.md
-.env
-.gitignore
-package.json
-vite.config.ts
 ```
 
 ---
@@ -70,14 +86,13 @@ vite.config.ts
 ## Coding Conventions
 
 - Use **TypeScript strict mode** throughout — no `any`, cast to `unknown` first if needed
-- **Components in PascalCase** (e.g. `ZoneCard.tsx`)
-- **Utility functions in camelCase**
+- **Components in PascalCase**, utility functions in camelCase
 - **Named exports only** — no default exports
 - Style exclusively with **Tailwind utility classes** — no custom CSS or inline styles
 - Every component must handle **loading, error, and empty states**
 - Keep components **under 150 lines** — extract sub-components if needed
-- Add **JSDoc comments** to all exported functions
 - File extensions: `.ts` for logic, `.tsx` for components
+- No JSDoc/comment blocks unless the WHY is genuinely non-obvious
 
 ---
 
@@ -85,168 +100,218 @@ vite.config.ts
 
 | Token | Value |
 |---|---|
-| Primary background | `#F5F4EF` (Soft Ivory) |
-| Primary dark | `#3D3B3A` (Charcoal Black) |
+| Primary background | `#F4F4EE` (Soft Ivory) |
+| Primary dark | `#1A1C19` (Near Black) |
 | Action / highlight | `#B8A77A` (Muted Brass) |
 | Success / completed | `#2F4A3D` (Deep Green) |
-| Secondary text / inactive | `#434B4D` (Slate Grey) |
+| Error / alert | `#BA1A1A` (Deep Red) |
+| Secondary text | `#737874` (Warm Grey) |
 | Card border | `#D0CFCA` |
 | Heading font | Poppins (Bold / SemiBold) |
 | Body font | Lato (Regular / Light) |
 | Border radius (cards) | 12px |
-| Border radius (buttons) | 12px |
-| Button height | 56px |
-| Input height | 52px |
-| Mobile horizontal padding | 24px |
-| Max content width (tablet+) | 480px centred |
+| Border radius (buttons) | 8–12px |
+| Button height | 56px (primary), 40–52px (secondary) |
+| Mobile horizontal padding | 24px (`px-6`) |
+| Content max-width (mobile) | 480px centred |
+| Content max-width (desktop forms) | 672px (`max-w-2xl`) |
+| Content max-width (desktop lists) | 1280px (`max-w-5xl`) |
 
-The design is mobile-first. Tablet and desktop are the same screens with wider margins and the content column centred at 480px max-width on a Soft Ivory full-bleed background. No dark mode.
+Mobile-first. Desktop = same screens with 240px left sidebar (`pl-60`), wider content columns. No dark mode.
 
 ---
 
-## Data Architecture
+## Data Architecture (Live Schema)
 
-### Supabase Tables
+### Key Tables
 
-**users**
-- `id` (uuid)
+**profiles** (extends Supabase auth.users)
+- `id` (uuid) — matches auth.uid()
 - `display_id` (text) — e.g. `C002`, `S001`, `M003`
-- `role` (enum: `cleaner` | `supervisor` | `manager`)
-- `name` (text)
+- `role` (text) — `cleaner` | `supervisor` | `manager`
+- `full_name` (text)
+- `company_id` (uuid → companies)
 - `language` (text) — `en` | `es` | `pt`
-- `password_hash` (text)
+
+**facilities**
+- `id`, `name`, `company_id`
 
 **jobs**
-- `id` (uuid)
-- `site_name` (text)
-- `client_name` (text)
-- `status` (enum: `not_started` | `in_progress` | `completed`)
-- `date` (date)
+- `id`, `supervisor_id`, `facility_id`, `company_id`
+- `scheduled_date` (date), `status` (text)
 
 **job_zones**
-- `id` (uuid)
-- `job_id` (uuid → jobs)
-- `cleaner_id` (uuid → users)
-- `zone_name` (text) — e.g. `Kitchen`, `Desk Zone 01`
-- `status` (enum: `not_started` | `in_progress` | `completed` | `flagged_no_photo`)
+- `id`, `job_id`, `cleaner_id`, `zone_name`
+- `status`: `not_started` | `in_progress` | `completed` | `flagged_no_photo` | `deleted`
 
 **cleaning_logs**
-- `id` (uuid)
-- `job_id` (uuid → jobs)
-- `cleaner_id` (uuid → users)
-- `zone_id` (uuid → job_zones)
-- `image_urls` (text[]) — array, 1–3 photos
-- `note` (text | null) — cleaner's original language
-- `note_translated` (text | null) — auto-translated to English
-- `no_photo_reason` (boolean)
-- `queued` (boolean) — true if submitted offline and pending send
-- `created_at` (timestamptz)
+- `id`, `job_id`, `cleaner_id`, `job_zone_id`, `company_id`
+- `note`, `note_translated`, `created_at`
+- `status`: `pending` | `approved` | `needs_attention` | `reclean_requested`
 
-**cleaner_job_assignments**
-- `id` (uuid)
-- `cleaner_id` (uuid → users)
-- `job_id` (uuid → jobs)
+**evidence_files**
+- `id`, `cleaning_log_id`, `public_url`
 
-> RLS must be enabled on every table. Cleaners can only read/write their own data. Supervisors can read all data for their assigned jobs. Managers can read all data for their assigned sites.
+**feedback_comments**
+- `id`, `cleaning_log_id`, `supervisor_id`, `comment`, `status`, `company_id`
+
+**complaints**
+- `id`, `facility_id`, `filed_by`, `title`, `description`, `photo_urls[]`
+- `status`: `received` | `acknowledged` | `in_progress` | `resolved` (legacy: `open`)
+- `supervisor_note`
+
+**notifications**
+- `id`, `user_id`, `title`, `message`, `is_read`, `created_at`
+
+**pay_records**
+- `id`, `cleaner_id`, `supervisor_id`, `company_id`, `pay_period_start/end`
+- `hours_worked`, `hourly_rate`, `gross_pay` (GENERATED column — never pass in INSERT)
+- `status`: `draft` | `approved` | `paid`
+
+**payslips**
+- `id`, `pay_record_id`, `cleaner_id`, `supervisor_id`, `company_id`
+- `pay_period_start/end`, `hours_worked`, `hourly_rate`, `gross_pay`
+- `status`: `draft` | `sent` | `acknowledged`
+
+**cleaner_ratings** — supervisor ratings for cleaners (1–5 stars + notes + evidence photos)
+
+> RLS enabled on every table. Queries must always scope to `company_id`, `supervisor_id`, or `user_id` as appropriate.
+
+---
+
+## Critical Query Patterns
+
+### Flat sequential queries (NEVER nested joins on ambiguous FKs)
+`cleaning_logs` has FKs to both `jobs` and `job_zones` — nested joins silently return empty arrays. Always query flat and join in JS:
+```typescript
+// Round 1 — parallel, independent
+const [jobsRes, notifRes] = await Promise.all([...])
+// Round 2 — depends on IDs from Round 1
+const [logsRes] = await Promise.all([
+  supabase.from('cleaning_logs').in('job_id', jobIds)...
+])
+```
+
+### Count queries
+```typescript
+supabase.from('table').select('*', { count: 'exact', head: true }).eq(...)
+// result.count gives the number
+```
 
 ---
 
 ## App Data Flow
 
 ```
-Cleaner selects zone → uploads photo(s) →
-App uploads image to Supabase Storage →
-App retrieves public URL →
-App POSTs to n8n webhook:
-  { cleaner_id, job_id, zone_id, image_urls[], note, timestamp } →
-n8n handles:
-  - inserting cleaning_log row
-  - updating job_zone status
-  - triggering supervisor/manager notifications
-App reads updated state from Supabase and reflects it
+Cleaner submits zone → evidence_files uploaded to Supabase Storage →
+App POSTs to n8n webhook: { cleaner_id, job_id, zone_id, image_urls[], note } →
+n8n: inserts cleaning_log, updates job_zone status, sends supervisor notification →
+Supervisor reviews in Evidence screen → inserts feedback_comment, updates cleaning_log.status
 ```
 
-If offline: submission is queued in localForage and retried automatically on reconnect before sending to the webhook.
+The app must **never** write directly to `cleaning_logs` during initial submission or update `job_zone.status` itself during submission. That is n8n's job.
 
 ---
 
 ## Role-Based Routing
 
-Login ID prefix determines the role and routes the user:
-
-| ID Prefix | Role | App Section |
-|---|---|---|
-| `C` | Cleaner | `/cleaner/*` |
-| `S` | Supervisor | `/supervisor/*` — not built yet |
-| `M` | Manager | `/manager/*` — not built yet |
+| ID Prefix | Role | Portal | Status |
+|---|---|---|---|
+| `C` | Cleaner | `/cleaner/*` | Complete |
+| `S` | Supervisor | `/supervisor/*` | Complete |
+| `M` | Manager | `/manager/*` | Not started |
 
 ---
 
-## Cleaner Side — Screen List
+## Supervisor Portal — Screen List
 
 | Screen | Route | Status |
 |---|---|---|
-| Language Select | `/` | Not started |
-| Login | `/login` | Not started |
-| Home (Job List) | `/cleaner/home` | Not started |
-| Zone List | `/cleaner/job/:jobId` | Not started |
-| Zone Submission | `/cleaner/job/:jobId/zone/:zoneId` | Not started |
-| No Photo Note | `/cleaner/job/:jobId/zone/:zoneId/note` | Not started |
-| Zone Success | (inline state on Zone Submission) | Not started |
-| Shift Completed | `/cleaner/job/:jobId/complete` | Not started |
-| Shift History | `/cleaner/history` | Not started |
-| Offline Banner | (persistent overlay component) | Not started |
+| Dashboard | `/supervisor/dashboard` | Complete — live data, realtime, bell badge |
+| Jobs (facility list + zone builder) | `/supervisor/jobs` | Complete |
+| Pending Approvals / Job Evidence | `/supervisor/evidence` + `/supervisor/evidence/:jobId` | Complete — pagination, realtime |
+| Job History | `/supervisor/history` | Complete |
+| Workers | `/supervisor/workers` | Complete |
+| Cleaner Profile + Ratings | `/supervisor/workers/:cleanerId` | Complete |
+| Client Issues | `/supervisor/issues` | Complete — realtime, status workflow |
+| Notifications | `/supervisor/notifications` | Complete — mark read, complaint link |
+| Payslips | `/supervisor/payslips` | Complete — PDF download via jsPDF |
+| Pay Records | `/supervisor/pay-records` | Complete |
+| Absence | `/supervisor/absence` | Complete |
+
+Desktop layout: 240px fixed sidebar + main content area. All screens use `useIsDesktop()` to conditionally render sidebar vs bottom nav.
+
+---
+
+## Cleaner Portal — Screen List
+
+| Screen | Route | Status |
+|---|---|---|
+| Language Select | `/` | Complete |
+| Login | `/login` | Complete — display_id prefix routing |
+| Home (Job List) | `/cleaner/home` | Complete |
+| Zone List | `/cleaner/job/:jobId` | Complete |
+| Zone Submission | `/cleaner/job/:jobId/zone/:zoneId` | Complete |
+| No Photo Note | `/cleaner/job/:jobId/zone/:zoneId/note` | Complete |
+| Shift Completed | `/cleaner/job/:jobId/complete` | Complete |
+| Shift History | `/cleaner/history` | Complete |
+| Offline Banner | (persistent overlay) | Complete |
+
+---
+
+## Client Portal (Manager) — NOT STARTED
+
+Next build phase. Key questions to nail before coding:
+- Can a manager see multiple facilities or just their own?
+- Read-only evidence view, or can they sign off / raise issues?
+- Do they receive notifications when a job is ready for review?
+- Do they need downloadable PDF clean reports?
+- Any KPI dashboard (completion %, average rating)?
+- Same login flow (display_id + password) as other roles?
+
+Route prefix: `/manager/*` — role detected from `M` prefix on login.
+
+---
+
+## Known Patterns & Gotchas
+
+- **CSS containing block**: Any element with a CSS `transform` (including GSAP animations) becomes the containing block for `position: fixed` children. Never apply transform animations to elements that contain fixed-position descendants (e.g. `SupervisorNav`). Keep `pageRef` on inner content wrappers only.
+- **`gross_pay` is GENERATED**: Never include it in INSERT statements on `pay_records`.
+- **Legacy complaint status**: Old data may have `status = 'open'` — treat as `'received'` in the UI.
+- **UUID validation**: UUIDs must be hex-only (0–9, a–f). Characters like `j`, `z` are invalid and will be rejected by Postgres.
+- **Desktop scrollbar pattern**: Use `min-h-screen` + `pl-60` on main content, not `flex h-screen overflow-hidden` + `flex-1 ml-60 overflow-y-auto` (the latter creates a mid-screen trapped scrollbar).
 
 ---
 
 ## Language & Translation
 
-- Supported languages at launch: English (`en`), Spanish (`es`), Portuguese (`pt`)
-- Language is selected by the cleaner on first load (Language Select screen) and stored in app context + Supabase user record
-- All UI strings must be stored in a `/lib/i18n/` dictionary — no hardcoded English strings in components
-- Cleaner notes submitted in any language are passed through Google Translate API on the n8n side, translated to English, and stored in `cleaning_logs.note_translated`
-- Supervisor and manager views always display the translated version
+- Supported: English (`en`), Spanish (`es`), Portuguese (`pt`)
+- All UI strings in `src/lib/i18n/index.ts` — no hardcoded English in components
+- `useTranslation()` hook returns the `t(key)` function scoped to the user's language
+- Cleaner notes translated to English by n8n (Google Translate API) → stored in `cleaning_logs.note_translated`
 
 ---
 
 ## AIXD Engineering Rules
 
 ### Prompting
-- Always break large tasks into smaller focused steps before starting
 - One task per prompt — complete and commit before moving to the next
-- Give full context in every prompt: file path, component name, expected behaviour, screen size if relevant
-- If a prompt was wrong, edit the original — do not send a follow-up correction
+- Give full context: file path, component name, expected behaviour, screen size if relevant
 
 ### Development Loop
-1. Write a focused prompt for one specific task
-2. Let Claude Code build it
-3. Read the diff — understand every change before accepting
-4. Test in the browser at localhost
-5. Commit if it works, revert if it does not
-6. Move to the next task
+1. Focused prompt → Claude Code builds → review the diff → test at localhost → commit
 
 ### Git Discipline
-- Always start from a clean `git status` before new work
-- Commit after every meaningful piece of work — small commits, easy rollbacks
-- Never auto-accept changes without reviewing the diff
+- Always start from a clean `git status`
+- Commit after every meaningful piece of work
 - Commit message format: `feat:`, `fix:`, `refactor:`, `chore:`
 
 ### Security (Non-Negotiable)
-- Secrets live in `.env` only — never in code, never in a chat, never in a document
-- `.env` is in `.gitignore` before the first commit
-- If a secret has been committed, treat it as compromised and rotate immediately
-- Reference env vars as `import.meta.env.VITE_YOUR_KEY_NAME` — never as hardcoded strings
-- RLS is enabled on every Supabase table without exception
-- All Supabase queries that return user data must filter by `auth.uid()` or the cleaner's `display_id`
-- Never use sequential integer IDs in URLs for private resources — use UUIDs
-- CORS whitelisted to your exact domain only — never wildcard `*` in production
-- Rate limiting configured on all auth and form endpoints via Cloudflare
-
-### CLAUDE.md
-- Update this file at the end of every session
-- Document the current state: what works, what doesn't, known issues
-- Record any stack decisions or architectural changes made during the session
-- Prompt to trigger: `Update CLAUDE.md to reflect today's work`
+- Secrets in `.env` only — never in code, chat, or docs
+- RLS enabled on every table without exception
+- Queries scoped to `auth.uid()` or `company_id` — never return data for other companies
+- Never use sequential IDs in URLs for private resources — use UUIDs
+- CORS whitelisted to exact domain only in production
 
 ---
 
@@ -256,27 +321,39 @@ Login ID prefix determines the role and routes the user:
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase → Project Settings → API |
 | `VITE_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
-| `VITE_N8N_WEBHOOK_URL` | n8n → your Proof of Cleaning webhook URL |
+| `VITE_N8N_WEBHOOK_URL` | n8n → Proof of Cleaning webhook URL |
 | `VITE_GOOGLE_TRANSLATE_API_KEY` | Google Cloud Console → Translate API |
 
 ---
 
-## Key Files
-*To be populated as the build progresses.*
+## Current Status (as of 2026-06-01)
 
----
+**Cleaner portal:** Complete. Real Supabase auth, zone-by-zone photo submission, offline queue, multilingual.
 
-## Current Status
-**Working:** Nothing yet — project is being initialised  
-**In progress:** Project setup, Vite scaffold, Tailwind config, Supabase connection, brand tokens  
-**Not yet started:** All cleaner screens, all supervisor screens, all manager screens, n8n webhook integration, offline queue, translation layer  
-**Known issues:** None
+**Supervisor portal:** Complete. All screens built and working with live Supabase data and realtime subscriptions:
+- Dashboard with live pending count, issues count, unread bell badge
+- Jobs — facility list, zone builder, shift management, cleaner grouping
+- Evidence review — pagination (5/page), approve/reject with feedback
+- Client Issues — status workflow (received → acknowledged → in progress → resolved)
+- Notifications — unread badge, mark all read, complaint deep-link
+- Workers + Cleaner profiles + star ratings
+- Payslips with jsPDF download
+- Pay Records, Absence management
+
+**Manager/client portal:** Not started — next build phase.
+
+**Known issues:** None outstanding.
+
+**Mock data seeded for testing:**
+- Supervisor: `S001` (password in `.env` / Supabase auth)
+- Facility: "Riverfront Tower" + "Skyline Plaza" + "Metro Hub"
+- Jobs and cleaning_logs seeded for 2026-05-30 and 2026-06-01
+- Complaints and notifications seeded for realistic supervisor testing
 
 ---
 
 ## Do Not Touch
-- The data flow architecture — app sends events to n8n, n8n writes to Supabase. The app must never write directly to `cleaning_logs` or update `job_zone` status itself. That is n8n's job.
+- Data flow architecture — app sends to n8n, n8n writes to Supabase. No direct `cleaning_logs` writes from the app during submission.
 - Role routing logic in `lib/auth.ts` — the C/S/M prefix system is fixed
 - RLS policies once set — any change requires a full security review
-- Brand colour tokens — do not substitute or approximate, use exact hex values from the brand guidelines
-```
+- Brand colour tokens — exact hex values only
