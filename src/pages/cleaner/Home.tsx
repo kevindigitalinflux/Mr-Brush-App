@@ -205,7 +205,7 @@ function LanguageDropdown() {
   return (
     <div ref={containerRef} className="relative z-50">
       <button onClick={() => setOpen((p) => !p)} aria-label="Change language"
-        className="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] shadow-sm flex items-center justify-center mt-1 cursor-pointer hover:bg-[#F4F4EE] transition-colors">
+        className="w-10 h-10 rounded-full bg-white border border-[#C3C8C2] flex items-center justify-center cursor-pointer hover:bg-[#F4F4EE] transition-colors">
         <GlobeIcon />
       </button>
       {open && (

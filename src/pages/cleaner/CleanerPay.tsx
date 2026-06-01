@@ -215,7 +215,7 @@ function PayContent() {
     <div ref={containerRef} className="max-w-2xl mx-auto px-6 py-10 pb-[120px] md:pb-10">
 
       <div className="pay-header mb-6">
-        <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] md:text-[36px] text-[#1A1C19] leading-tight">Your Pay</h1>
+        <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">Your Pay</h1>
         <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-1">
           {user?.name ? `${user.name} · ` : ''}{filterLabel}
         </p>
