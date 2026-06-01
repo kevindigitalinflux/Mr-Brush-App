@@ -202,7 +202,9 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Supervisor — Evidence
     sv_job_evidence: 'Job Evidence',
+    sv_job_evidence_subtitle: 'Photos and notes uploaded by cleaners for this job.',
     sv_pending_approvals_title: 'Pending Approvals',
+    sv_pending_approvals_subtitle: 'Review and approve evidence submitted by your cleaners.',
     sv_no_submissions: 'No submissions yet',
     sv_no_submissions_body: 'Evidence uploaded by cleaners will appear here for review.',
     sv_cleaner_note_label: 'Cleaner Note',
@@ -489,7 +491,9 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Supervisor — Evidence
     sv_job_evidence: 'Evidencias del trabajo',
+    sv_job_evidence_subtitle: 'Fotos y notas subidas por los limpiadores para este trabajo.',
     sv_pending_approvals_title: 'Aprobaciones pendientes',
+    sv_pending_approvals_subtitle: 'Revisa y aprueba las evidencias enviadas por tus limpiadores.',
     sv_no_submissions: 'Sin envíos aún',
     sv_no_submissions_body: 'Las evidencias subidas por los limpiadores aparecerán aquí.',
     sv_cleaner_note_label: 'Nota del limpiador',
@@ -776,7 +780,9 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Supervisor — Evidence
     sv_job_evidence: 'Evidências do trabalho',
+    sv_job_evidence_subtitle: 'Fotos e notas enviadas pelos limpadores para este trabalho.',
     sv_pending_approvals_title: 'Aprovações pendentes',
+    sv_pending_approvals_subtitle: 'Revise e aprove as evidências enviadas pelos seus limpadores.',
     sv_no_submissions: 'Sem envios ainda',
     sv_no_submissions_body: 'As evidências enviadas pelos limpadores aparecerão aqui.',
     sv_cleaner_note_label: 'Nota do limpador',

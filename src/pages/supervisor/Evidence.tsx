@@ -363,6 +363,9 @@ export function Evidence() {
                 <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">
                   {jobId ? t('sv_job_evidence') : t('sv_pending_approvals_title')}
                 </h1>
+                <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-1">
+                  {jobId ? t('sv_job_evidence_subtitle') : t('sv_pending_approvals_subtitle')}
+                </p>
               </div>
             </div>
             {content}
@@ -376,14 +379,19 @@ export function Evidence() {
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div ref={pageRef} className="w-full max-w-[480px] mx-auto px-6 pb-[100px]">
         <div className="flex items-center gap-3 pt-10 pb-5">
-          <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors">
+          <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M19 12H5M12 19l-7-7 7-7" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <h1 className="font-['Poppins',sans-serif] font-bold text-[24px] text-[#1A1C19] leading-[1.1] tracking-[-0.3px]">
-            {jobId ? t('sv_job_evidence') : t('sv_pending_approvals_title')}
-          </h1>
+          <div>
+            <h1 className="font-['Poppins',sans-serif] font-bold text-[24px] text-[#1A1C19] leading-[1.1] tracking-[-0.3px]">
+              {jobId ? t('sv_job_evidence') : t('sv_pending_approvals_title')}
+            </h1>
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
+              {jobId ? t('sv_job_evidence_subtitle') : t('sv_pending_approvals_subtitle')}
+            </p>
+          </div>
         </div>
         {content}
       </div>
