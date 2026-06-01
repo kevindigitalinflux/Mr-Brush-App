@@ -482,21 +482,51 @@ function MobileDashboard() {
           </div>
         </div>
 
-        <div className="flex gap-3 mb-6">
-          <StatCard
-            label={t('sv_pending_approvals')}
-            value={pendingCount}
-            icon={<CheckCircleIcon />}
-            accent="warning"
-            onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
-          />
-          <StatCard
-            label={t('sv_issues_reported')}
-            value={issueCount}
-            icon={<AlertIcon />}
-            accent={issueCount > 0 ? 'error' : undefined}
-            onClick={() => navigate('/supervisor/issues')}
-          />
+        {/* 4-card swipe carousel — 2 visible, snap-scroll to reveal next pair */}
+        <div className="flex gap-3 mb-6 -mx-6 px-6 scroll-pl-6 overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+          <div className="stat-card snap-start shrink-0 w-[calc(50%-35px)]">
+            <StatCard
+              label={t('sv_pending_approvals')}
+              value={pendingCount}
+              icon={<CheckCircleIcon />}
+              accent="warning"
+              onClick={pendingCount > 0 ? () => navigate('/supervisor/evidence') : undefined}
+            />
+          </div>
+          <div className="stat-card snap-start shrink-0 w-[calc(50%-35px)]">
+            <StatCard
+              label={t('sv_issues_reported')}
+              value={issueCount}
+              icon={<AlertIcon />}
+              accent={issueCount > 0 ? 'error' : undefined}
+              onClick={() => navigate('/supervisor/issues')}
+            />
+          </div>
+          <div className="stat-card snap-start shrink-0 w-[calc(50%-35px)]">
+            <StatCard
+              label={t('sv_todays_sites')}
+              value={jobs.length}
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+                  <path d="M8 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              }
+            />
+          </div>
+          <div className="stat-card snap-start shrink-0 w-[calc(50%-35px)]">
+            <StatCard
+              label={t('sv_workers_on_shift')}
+              value={new Set(jobs.flatMap((j) => j.zones.map((z) => z.cleaner_id)).filter(Boolean)).size}
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
+                  <path d="M2 21v-1a7 7 0 0 1 14 0v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              }
+            />
+          </div>
+          <div className="shrink-0 w-6" aria-hidden="true" />
         </div>
 
         <div className="flex items-center justify-between mb-3">
