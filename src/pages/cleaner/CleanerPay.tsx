@@ -33,10 +33,6 @@ const STATUS_LABELS: Record<PayStatus, string> = {
   draft: 'Pending', approved: 'Approved', paid: 'Paid',
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 // ─── Data hook ────────────────────────────────────────────────────────────────
 
 function usePayData(filterMonth: string) {
@@ -173,13 +169,19 @@ function PayContent() {
   const [filterMonth, setFilterMonth] = useState('')
   const { loading, records, totalHours, totalGross } = usePayData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
+  const headerAnimated = useRef(false)
 
   useGSAP(() => {
     if (loading) return
-    gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.pay-header',  { opacity: 0, y: 14, duration: 0.4 })
-      .from('.pay-summary', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
-      .from('.pay-card',    { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
+    if (!headerAnimated.current) {
+      headerAnimated.current = true
+      gsap.timeline({ defaults: { ease: 'power2.out' } })
+        .from('.pay-header', { opacity: 0, y: 14, duration: 0.4 })
+        .from('.pay-filter', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+        .from('.pay-card',   { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
+    } else {
+      gsap.from('.pay-card', { opacity: 0, y: 16, duration: 0.4, stagger: 0.06, ease: 'power2.out' })
+    }
   }, { scope: containerRef, dependencies: [loading] })
 
   const currentMonth = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' })
@@ -199,7 +201,7 @@ function PayContent() {
       </div>
 
       {/* Month filter */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="pay-filter flex items-center gap-3 mb-6">
         <input
           type="month"
           value={filterMonth}

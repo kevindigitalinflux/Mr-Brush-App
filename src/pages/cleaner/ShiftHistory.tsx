@@ -50,13 +50,9 @@ function ChevronRightIcon() {
 // ─── Shared data hook ─────────────────────────────────────────────────────────
 
 function useShiftHistoryData() {
-  const { user, completedJobs, language } = useApp()
+  const { completedJobs, language } = useApp()
   const navigate = useNavigate()
   const t = useTranslation()
-
-  const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'CL'
 
   const monthLabel = new Date().toLocaleDateString(DATE_LOCALE[language], { month: 'long', year: 'numeric' })
 
@@ -68,7 +64,7 @@ function useShiftHistoryData() {
 
   const allShifts: MockShift[] = [...contextShifts]
 
-  return { navigate, allShifts, initials, monthLabel, t }
+  return { navigate, allShifts, monthLabel, t }
 }
 
 // ─── Mobile card ──────────────────────────────────────────────────────────────
@@ -153,7 +149,7 @@ function ShiftRow({ shift, onPress }: { shift: MockShift; onPress: () => void })
 // ─── Desktop layout ───────────────────────────────────────────────────────────
 
 function DesktopShiftHistory() {
-  const { navigate, allShifts, initials, monthLabel, t } = useShiftHistoryData()
+  const { navigate, allShifts, monthLabel, t } = useShiftHistoryData()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -169,18 +165,13 @@ function DesktopShiftHistory() {
       <main className="flex-1 overflow-y-auto ml-60">
         <div ref={containerRef} className="max-w-4xl mx-auto px-8 py-8 flex flex-col gap-8 pb-12">
 
-          <div className="flex items-end justify-between">
-            <div>
-              <h1 className="dsh-heading font-['Poppins',sans-serif] font-bold text-[48px] text-[#1A1C19] leading-[1.1] tracking-[-0.8px]">
-                {t('shift_history')}
-              </h1>
-              <p className="font-['Lato',sans-serif] text-[15px] text-[#434844] mt-1 leading-[1.65]">
-                {t('shift_history_subtitle')}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-[#B8A77A] flex items-center justify-center shrink-0">
-              <span className="font-['Poppins',sans-serif] font-bold text-base text-white">{initials}</span>
-            </div>
+          <div>
+            <h1 className="dsh-heading font-['Poppins',sans-serif] font-bold text-[48px] text-[#1A1C19] leading-[1.1] tracking-[-0.8px]">
+              {t('shift_history')}
+            </h1>
+            <p className="font-['Lato',sans-serif] text-[15px] text-[#434844] mt-1 leading-[1.65]">
+              {t('shift_history_subtitle')}
+            </p>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -215,7 +206,7 @@ function DesktopShiftHistory() {
 // ─── Mobile layout ────────────────────────────────────────────────────────────
 
 function MobileShiftHistory() {
-  const { navigate, allShifts, initials, monthLabel, t } = useShiftHistoryData()
+  const { navigate, allShifts, monthLabel, t } = useShiftHistoryData()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -240,13 +231,10 @@ function MobileShiftHistory() {
         </div>
 
         <div className="flex flex-col gap-6 px-6">
-          <div className="history-month flex items-center justify-between">
+          <div className="history-month">
             <h2 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.8px] text-[#1A1C19]">
               {monthLabel}
             </h2>
-            <div className="w-10 h-10 rounded-full bg-[#B8A77A] flex items-center justify-center">
-              <span className="font-['Poppins',sans-serif] font-bold text-sm text-white">{initials}</span>
-            </div>
           </div>
 
           <div className="flex flex-col gap-4">
