@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { BottomNav } from '../../components/BottomNav'
@@ -177,34 +177,45 @@ function ShiftCard({ record }: { record: ShiftRecord }) {
 function PayContent() {
   const { user } = useApp()
   const [filterMonth, setFilterMonth] = useState('')
-  const { loading, records, totalHours, totalGross } = usePayData(filterMonth)
+  const { records } = usePayData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
-  const hasAnimated = useRef(false)
+  const isFirstRender = useRef(true)
 
-  const displayRecords = records.length > 0 ? records : (!loading ? MOCK_RECORDS : [])
+  // Client-side filter applied to mock records immediately — no loading gate
+  const filteredMock = filterMonth
+    ? MOCK_RECORDS.filter((r) => r.shiftDate.startsWith(filterMonth))
+    : MOCK_RECORDS
+  const displayRecords = records.length > 0 ? records : filteredMock
   const displayHours = displayRecords.reduce((s, r) => s + r.hoursWorked, 0)
   const displayGross = displayRecords.reduce((s, r) => s + r.grossPay, 0)
 
-  useEffect(() => {
-    if (loading || hasAnimated.current || !containerRef.current) return
-    hasAnimated.current = true
+  // Full page entrance — runs once before first paint
+  useLayoutEffect(() => {
+    if (!containerRef.current) return
     const el = containerRef.current
     gsap.timeline({ defaults: { ease: 'power2.out' } })
       .from(el.querySelectorAll('.pay-header'),  { opacity: 0, y: 14, duration: 0.4 })
       .from(el.querySelectorAll('.pay-filter'),  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
       .from(el.querySelectorAll('.pay-summary'), { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
       .from(el.querySelectorAll('.pay-card'),    { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
-  }, [loading])
+  }, [])
 
-  const currentMonth = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' })
+  // Cards only when the filter changes — everything else stays put
+  useLayoutEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    if (!containerRef.current) return
+    gsap.from(containerRef.current.querySelectorAll('.pay-card'), {
+      opacity: 0, y: 16, duration: 0.4, stagger: 0.06, ease: 'power2.out',
+    })
+  }, [filterMonth])
+
   const filterLabel = filterMonth
     ? new Date(filterMonth + '-01').toLocaleString('en-GB', { month: 'long', year: 'numeric' })
-    : currentMonth
+    : new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' })
 
   return (
     <div ref={containerRef} className="max-w-2xl mx-auto px-6 py-10 pb-[120px] md:pb-10">
 
-      {/* Header */}
       <div className="pay-header mb-6">
         <h1 className="font-['Poppins',sans-serif] font-bold text-[28px] md:text-[36px] text-[#1A1C19] leading-tight">Your Pay</h1>
         <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-1">
@@ -212,7 +223,6 @@ function PayContent() {
         </p>
       </div>
 
-      {/* Month filter */}
       <div className="pay-filter flex items-center gap-3 mb-6">
         <input
           type="month"
@@ -230,12 +240,10 @@ function PayContent() {
         )}
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {[1, 2, 3].map((i) => <div key={i} className="h-[76px] rounded-[12px] bg-white border border-[#D0CFCA] animate-pulse" />)}
-          </div>
-          {[1, 2, 3].map((i) => <div key={i} className="h-[80px] rounded-[12px] bg-white border border-[#D0CFCA] animate-pulse" />)}
+      {displayRecords.length === 0 ? (
+        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
+          <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#1A1C19]">No records for this period</p>
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">Try a different month or clear the filter.</p>
         </div>
       ) : (
         <>
@@ -264,9 +272,9 @@ function MobileCleanerPay() {
 
 function DesktopCleanerPay() {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <DesktopSidebar active="pay" />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="pl-60">
         <PayContent />
       </main>
     </div>
