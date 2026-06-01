@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { BottomNav } from '../../components/BottomNav'
@@ -169,19 +169,21 @@ function PayContent() {
   const [filterMonth, setFilterMonth] = useState('')
   const { loading, records, totalHours, totalGross } = usePayData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
-  const headerAnimated = useRef(false)
 
-  useGSAP(() => {
-    if (loading) return
-    if (!headerAnimated.current) {
-      headerAnimated.current = true
+  // One-time entrance: header + filter fade in on mount and never revert
+  useLayoutEffect(() => {
+    const ctx = gsap.context(() => {
       gsap.timeline({ defaults: { ease: 'power2.out' } })
         .from('.pay-header', { opacity: 0, y: 14, duration: 0.4 })
         .from('.pay-filter', { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
-        .from('.pay-card',   { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
-    } else {
-      gsap.from('.pay-card', { opacity: 0, y: 16, duration: 0.4, stagger: 0.06, ease: 'power2.out' })
-    }
+    }, containerRef)
+    return () => ctx.revert()
+  }, [])
+
+  // Cards only: animate each time a new set of results arrives
+  useGSAP(() => {
+    if (loading) return
+    gsap.from('.pay-card', { opacity: 0, y: 16, duration: 0.4, stagger: 0.06, ease: 'power2.out' })
   }, { scope: containerRef, dependencies: [loading] })
 
   const currentMonth = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' })
