@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
-import { gsap } from '../../lib/gsap'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -189,19 +189,17 @@ function PayContent() {
   const displayHours = displayRecords.reduce((s, r) => s + r.hoursWorked, 0)
   const displayGross = displayRecords.reduce((s, r) => s + r.grossPay, 0)
 
-  // Full page entrance — runs once before first paint
-  useLayoutEffect(() => {
-    if (!containerRef.current) return
-    const el = containerRef.current
+  // One-time page entrance — no deps means runs once on mount, reverts only on unmount
+  useGSAP(() => {
     gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from(el.querySelectorAll('.pay-header'),  { opacity: 0, y: 14, duration: 0.4 })
-      .from(el.querySelectorAll('.pay-filter'),  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
-      .from(el.querySelectorAll('.pay-summary'), { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
-      .from(el.querySelectorAll('.pay-card'),    { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
-  }, [])
+      .from('.pay-header',  { opacity: 0, y: 14, duration: 0.4 })
+      .from('.pay-filter',  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
+      .from('.pay-summary', { opacity: 0, y: 10, duration: 0.35 }, '-=0.15')
+      .from('.pay-card',    { opacity: 0, y: 16, duration: 0.4, stagger: 0.06 }, '-=0.15')
+  }, { scope: containerRef })
 
-  // Cards only when the filter changes — everything else stays put
-  useLayoutEffect(() => {
+  // Cards only on filter change — plain gsap call outside any context, nothing can revert it
+  useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
     if (!containerRef.current) return
     gsap.from(containerRef.current.querySelectorAll('.pay-card'), {
