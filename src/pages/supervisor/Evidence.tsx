@@ -9,6 +9,8 @@ import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { ImageViewer } from '../../components/ImageViewer'
 import { gsap, useGSAP } from '../../lib/gsap'
 
+const PAGE_SIZE = 5
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface EvidenceLog {
@@ -168,6 +170,59 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
   )
 }
 
+// ─── Pager ───────────────────────────────────────────────────────────────────
+
+function Pager({ total, page, onPage }: { total: number; page: number; onPage: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE)
+  if (pages <= 1) return null
+  const from = page * PAGE_SIZE + 1
+  const to   = Math.min((page + 1) * PAGE_SIZE, total)
+
+  return (
+    <div className="flex items-center justify-between pt-5 mt-2 border-t border-[#E3E3DD]">
+      <span className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
+        {from}–{to} of {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPage(page - 1)}
+          disabled={page === 0}
+          aria-label="Previous page"
+          className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#D5D5CF] bg-white disabled:opacity-30 hover:border-[#B8A77A] transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {Array.from({ length: pages }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => onPage(i)}
+            className={[
+              "w-8 h-8 rounded-[6px] font-['Lato',sans-serif] font-bold text-[13px] border transition-colors",
+              i === page
+                ? 'bg-[#1A1C19] border-[#1A1C19] text-white'
+                : 'bg-white border-[#D5D5CF] text-[#1A1C19] hover:border-[#B8A77A]',
+            ].join(' ')}
+          >
+            {i + 1}
+          </button>
+        ))}
+        <button
+          onClick={() => onPage(page + 1)}
+          disabled={page === pages - 1}
+          aria-label="Next page"
+          className="w-8 h-8 flex items-center justify-center rounded-[6px] border border-[#D5D5CF] bg-white disabled:opacity-30 hover:border-[#B8A77A] transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Evidence page ────────────────────────────────────────────────────────────
 
 /** Evidence review page — shows cleaning log tickets for a job or all pending. */
@@ -181,6 +236,9 @@ export function Evidence() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [logs, setLogs] = useState<EvidenceLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+
+  useEffect(() => { setPage(0) }, [logs.length])
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
@@ -256,8 +314,8 @@ export function Evidence() {
 
   useGSAP(() => {
     if (loading) return
-    gsap.from('.evidence-ticket', { opacity: 0, y: 12, duration: 0.28, stagger: 0.05, ease: 'power3.out' })
-  }, { scope: containerRef, dependencies: [loading] })
+    gsap.from('.evidence-ticket', { y: 10, duration: 0.25, stagger: 0.04, ease: 'power3.out' })
+  }, { scope: containerRef, dependencies: [loading, page] })
 
   const content = (
     <div ref={containerRef}>
@@ -273,11 +331,14 @@ export function Evidence() {
           <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('sv_no_submissions_body')}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-5">
-          {logs.map((log) => (
-            <EvidenceTicket key={log.id} log={log} supervisorId={user!.id} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-5">
+            {logs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((log) => (
+              <EvidenceTicket key={log.id} log={log} supervisorId={user!.id} />
+            ))}
+          </div>
+          <Pager total={logs.length} page={page} onPage={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
+        </>
       )}
     </div>
   )
