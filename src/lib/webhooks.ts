@@ -9,8 +9,9 @@ export interface ZoneSubmissionPayload {
   timestamp: string
 }
 
-/** POST a zone submission event to the n8n webhook. */
+/** POST a zone submission event to the n8n webhook. No-ops if the URL is not yet configured. */
 export async function postZoneSubmission(payload: ZoneSubmissionPayload): Promise<void> {
+  if (!N8N_WEBHOOK_URL) return
   const res = await fetch(N8N_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

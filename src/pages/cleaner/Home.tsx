@@ -354,7 +354,7 @@ function MobileHome() {
 
   useGSAP(() => {
     if (loading) return
-    gsap.timeline({ defaults: { ease: 'power2.out' } })
+    gsap.timeline({ defaults: { ease: 'power2.out', clearProps: 'transform,opacity' } })
       .from('.home-greeting', { opacity: 0, y: 14, duration: 0.45 })
       .from('.home-stats',    { opacity: 0, y: 12, scale: 0.97, duration: 0.4 }, '-=0.25')
       .from('.home-heading',  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
