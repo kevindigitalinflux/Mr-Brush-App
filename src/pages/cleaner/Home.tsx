@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
-
+import { supabase } from '../../lib/supabase'
 import { useTranslation } from '../../lib/useTranslation'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
@@ -13,8 +13,12 @@ import type { Language } from '../../lib/i18n'
 type JobStatus = 'not_started' | 'in_progress' | 'completed'
 
 interface DisplayJob {
-  id: string; siteName: string; clientName: string; status: JobStatus
-  timeStart: string; timeEnd: string; zonesTotal: number; zonesDone: number
+  id: string
+  siteName: string
+  address: string
+  status: JobStatus
+  zonesTotal: number
+  zonesDone: number
 }
 
 const LANG_OPTIONS: { code: Language; label: string; flag: string }[] = [
@@ -31,11 +35,11 @@ const STATUS_STYLES: Record<JobStatus, { bg: string; text: string; label: string
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function ClockIcon({ color = '#434844' }: { color?: string }) {
+function LocationIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
-      <path d="M12 6v6l4 2" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#737874" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="12" cy="9" r="2.5" stroke="#737874" strokeWidth="2" />
     </svg>
   )
 }
@@ -55,6 +59,87 @@ function CheckSmall() {
       <path d="M5 12l5 5L20 7" stroke="#B8A77A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
+}
+
+// ─── Live data hook ───────────────────────────────────────────────────────────
+
+function useJobData(userId: string | undefined) {
+  const [jobs, setJobs] = useState<DisplayJob[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!userId) return
+
+    async function load() {
+      setLoading(true)
+      const today = new Date().toISOString().split('T')[0]
+
+      // Round 1: all zones assigned to this cleaner
+      const { data: zoneRows } = await supabase
+        .from('job_zones')
+        .select('id, job_id, status')
+        .eq('cleaner_id', userId)
+
+      const myZones = (zoneRows ?? []) as { id: string; job_id: string; status: string | null }[]
+      if (myZones.length === 0) { setJobs([]); setLoading(false); return }
+
+      const jobIds = [...new Set(myZones.map((z) => z.job_id))]
+
+      // Round 2: jobs scheduled for today
+      const { data: jobRows } = await supabase
+        .from('jobs')
+        .select('id, facility_id, status')
+        .in('id', jobIds)
+        .eq('scheduled_date', today)
+
+      const todayJobs = (jobRows ?? []) as { id: string; facility_id: string; status: string }[]
+      if (todayJobs.length === 0) { setJobs([]); setLoading(false); return }
+
+      // Round 3: facility names and addresses
+      const facilityIds = [...new Set(todayJobs.map((j) => j.facility_id))]
+      const { data: facilityRows } = await supabase
+        .from('facilities')
+        .select('id, name, address')
+        .in('id', facilityIds)
+
+      const facilityMap: Record<string, { name: string; address: string }> = Object.fromEntries(
+        (facilityRows ?? []).map((f) => {
+          const row = f as { id: string; name: string; address: string | null }
+          return [row.id, { name: row.name, address: row.address ?? '' }]
+        })
+      )
+
+      const doneStatuses = new Set(['completed', 'flagged_no_photo'])
+
+      const result: DisplayJob[] = todayJobs.map((j) => {
+        const zones = myZones.filter((z) => z.job_id === j.id)
+        const facility = facilityMap[j.facility_id]
+        const validStatuses = ['not_started', 'in_progress', 'completed'] as const
+        const status: JobStatus = validStatuses.includes(j.status as JobStatus)
+          ? (j.status as JobStatus)
+          : 'not_started'
+        return {
+          id: j.id,
+          siteName: facility?.name ?? 'Site',
+          address: facility?.address ?? '',
+          status,
+          zonesTotal: zones.length,
+          zonesDone: zones.filter((z) => doneStatuses.has(z.status ?? '')).length,
+        }
+      })
+
+      setJobs(result)
+      setLoading(false)
+    }
+
+    void load()
+  }, [userId])
+
+  const totalZones = jobs.reduce((sum, j) => sum + j.zonesTotal, 0)
+  const doneZones = jobs.reduce((sum, j) => sum + j.zonesDone, 0)
+  const allDone = jobs.length > 0 && doneZones === totalZones
+
+  return { jobs, totalZones, doneZones, allDone, loading }
 }
 
 // ─── Mobile-only components ───────────────────────────────────────────────────
@@ -79,18 +164,17 @@ function MobileJobCard({ job, onPress }: { job: DisplayJob; onPress: () => void 
   return (
     <button onClick={onPress} className="job-card w-full bg-white border border-[#C3C8C2] rounded-[12px] p-[21px] flex flex-col gap-4 text-left cursor-pointer hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] leading-tight">{job.siteName}</h3>
-          <span className="font-['Lato',sans-serif] text-base text-[#6B5D36]">{job.clientName}</span>
-        </div>
+        <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] leading-tight">{job.siteName}</h3>
         <span className={`shrink-0 ${s.bg} ${s.text} font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.35px] uppercase px-4 py-1 rounded-full`}>{s.label}</span>
       </div>
-      <div className="border-t border-[#E3E3DD] pt-[9px] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ClockIcon />
-          <span className="font-['Lato',sans-serif] text-sm text-[#434844]">{job.timeStart} – {job.timeEnd}</span>
-        </div>
-        <span className="font-['Lato',sans-serif] font-bold text-sm tracking-[0.7px] text-[#434844] bg-[#F4F4EE] border border-[#C3C8C2] rounded-full px-[13px] py-[7px]">
+      <div className="border-t border-[#E3E3DD] pt-[9px] flex items-center justify-between gap-3">
+        {job.address ? (
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <LocationIcon />
+            <span className="font-['Lato',sans-serif] text-sm text-[#737874] truncate">{job.address}</span>
+          </div>
+        ) : <div className="flex-1" />}
+        <span className="shrink-0 font-['Lato',sans-serif] font-bold text-sm tracking-[0.7px] text-[#434844] bg-[#F4F4EE] border border-[#C3C8C2] rounded-full px-[13px] py-[7px]">
           {job.zonesDone}/{job.zonesTotal} Zones
         </span>
       </div>
@@ -144,12 +228,11 @@ function LanguageDropdown() {
 
 // ─── Desktop-only components ──────────────────────────────────────────────────
 
-function DesktopStatCard({ value, label, sublabel }: { value: string; label: string; sublabel?: string }) {
+function DesktopStatCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="bg-white border border-[#E3E3DD] rounded-[12px] p-7 flex flex-col items-center gap-2 shadow-sm">
       <span className="font-['Poppins',sans-serif] font-bold text-[56px] leading-none text-[#1A1C19]">{value}</span>
       <span className="font-['Lato',sans-serif] text-[13px] tracking-[0.8px] uppercase text-[#737874]">{label}</span>
-      {sublabel && <span className="font-['Lato',sans-serif] text-[12px] text-[#B8A77A]">{sublabel}</span>}
     </div>
   )
 }
@@ -159,18 +242,17 @@ function DesktopJobCard({ job, onPress }: { job: DisplayJob; onPress: () => void
   return (
     <button onClick={onPress} className="desk-job-card w-full bg-white border border-[#E3E3DD] rounded-[12px] p-6 flex flex-col gap-4 text-left cursor-pointer hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-['Poppins',sans-serif] font-semibold text-[22px] text-[#1A1C19] leading-tight">{job.siteName}</h3>
-          <span className="font-['Lato',sans-serif] text-sm text-[#6B5D36] mt-0.5 block">{job.clientName}</span>
-        </div>
+        <h3 className="font-['Poppins',sans-serif] font-semibold text-[22px] text-[#1A1C19] leading-tight">{job.siteName}</h3>
         <span className={`shrink-0 ${s.bg} ${s.text} font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.5px] uppercase px-3 py-1 rounded-full`}>{s.label}</span>
       </div>
-      <div className="border-t border-[#F0EFE8] pt-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ClockIcon color="#737874" />
-          <span className="font-['Lato',sans-serif] text-sm text-[#737874]">{job.timeStart} – {job.timeEnd}</span>
-        </div>
-        <span className="font-['Lato',sans-serif] font-bold text-sm text-[#434844] bg-[#F4F4EE] border border-[#D5D5CF] rounded-full px-3 py-1">
+      <div className="border-t border-[#F0EFE8] pt-4 flex items-center justify-between gap-3">
+        {job.address ? (
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <LocationIcon />
+            <span className="font-['Lato',sans-serif] text-sm text-[#737874] truncate">{job.address}</span>
+          </div>
+        ) : <div className="flex-1" />}
+        <span className="shrink-0 font-['Lato',sans-serif] font-bold text-sm text-[#434844] bg-[#F4F4EE] border border-[#D5D5CF] rounded-full px-3 py-1">
           {job.zonesDone}/{job.zonesTotal} Zones
         </span>
       </div>
@@ -178,36 +260,27 @@ function DesktopJobCard({ job, onPress }: { job: DisplayJob; onPress: () => void
   )
 }
 
-// ─── Shared job data hook ─────────────────────────────────────────────────────
-
-function useJobData() {
-  const jobs: DisplayJob[] = []
-  const totalZones = 0
-  const doneZones = 0
-  const allDone = false
-  return { jobs, totalZones, doneZones, allDone }
-}
-
 // ─── Desktop Home ─────────────────────────────────────────────────────────────
 
 function DesktopHome() {
   const { user } = useApp()
   const navigate = useNavigate()
-  const { jobs, totalZones, doneZones } = useJobData()
+  const { jobs, totalZones, doneZones, loading } = useJobData(user?.id)
   const containerRef = useRef<HTMLDivElement>(null)
+  const t = useTranslation()
 
   const h = new Date().getHours()
   const greetingKey = h < 12 ? 'good_morning' : h < 18 ? 'good_afternoon' : 'good_evening'
-  const t = useTranslation()
   const dateStr = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
 
   useGSAP(() => {
+    if (loading) return
     gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.dh-header',   { opacity: 0, y: 14, duration: 0.4 })
-      .from('.dh-stat',     { opacity: 0, y: 12, scale: 0.97, duration: 0.4, stagger: 0.07 }, '-=0.2')
-      .from('.dh-section',  { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+      .from('.dh-header',     { opacity: 0, y: 14, duration: 0.4 })
+      .from('.dh-stat',       { opacity: 0, y: 12, scale: 0.97, duration: 0.4, stagger: 0.07 }, '-=0.2')
+      .from('.dh-section',    { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
       .from('.desk-job-card', { opacity: 0, y: 14, duration: 0.4, stagger: 0.08 }, '-=0.1')
-  }, { scope: containerRef })
+  }, { scope: containerRef, dependencies: [loading] })
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
@@ -215,7 +288,6 @@ function DesktopHome() {
       <main className="flex-1 overflow-y-auto ml-60">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10 flex flex-col gap-10">
 
-          {/* Header */}
           <div className="dh-header flex items-start justify-between">
             <div>
               <h1 className="font-['Poppins',sans-serif] font-bold text-[44px] text-[#1A1C19] leading-[1.1] tracking-[-1px]">
@@ -226,19 +298,27 @@ function DesktopHome() {
             <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-3">{dateStr}</span>
           </div>
 
-          {/* Stat cards */}
-          <div className="grid grid-cols-3 gap-6">
-            <div className="dh-stat"><DesktopStatCard value={String(jobs.length)} label={t('total_jobs')} /></div>
-            <div className="dh-stat"><DesktopStatCard value={String(doneZones)} label={t('zones_done')} /></div>
-            <div className="dh-stat"><DesktopStatCard value={String(totalZones - doneZones)} label={t('remaining')} /></div>
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => <div key={i} className="h-[140px] bg-white border border-[#E3E3DD] rounded-[12px] animate-pulse" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-6">
+              <div className="dh-stat"><DesktopStatCard value={String(jobs.length)} label={t('total_jobs')} /></div>
+              <div className="dh-stat"><DesktopStatCard value={String(doneZones)} label={t('zones_done')} /></div>
+              <div className="dh-stat"><DesktopStatCard value={String(totalZones - doneZones)} label={t('remaining')} /></div>
+            </div>
+          )}
 
-          {/* Jobs */}
           <div>
             <div className="dh-section flex items-center justify-between mb-5">
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">Active Assignments</h2>
             </div>
-            {jobs.length === 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-2 gap-5">
+                {[1, 2].map((i) => <div key={i} className="h-[140px] bg-white border border-[#E3E3DD] rounded-[12px] animate-pulse" />)}
+              </div>
+            ) : jobs.length === 0 ? (
               <div className="bg-white border border-[#E3E3DD] rounded-[12px] p-12 flex flex-col items-center gap-2 shadow-sm">
                 <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No Jobs Today</p>
                 <p className="font-['Lato',sans-serif] text-base text-[#737874]">You have no jobs assigned for today. Check back later or contact your supervisor.</p>
@@ -263,27 +343,29 @@ function DesktopHome() {
 function MobileHome() {
   const { user } = useApp()
   const navigate = useNavigate()
-  const { jobs, totalZones, doneZones, allDone } = useJobData()
+  const { jobs, totalZones, doneZones, allDone, loading } = useJobData(user?.id)
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
 
   const h = new Date().getHours()
   const greetingKey = h < 12 ? 'good_morning' : h < 18 ? 'good_afternoon' : 'good_evening'
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric' })
-  const zonesRing = doneZones === totalZones ? 'black' : doneZones > 0 ? 'yellow' : 'gray'
+  const zonesRing = doneZones === totalZones && totalZones > 0 ? 'black' : doneZones > 0 ? 'yellow' : 'gray'
 
   useGSAP(() => {
+    if (loading) return
     gsap.timeline({ defaults: { ease: 'power2.out' } })
       .from('.home-greeting', { opacity: 0, y: 14, duration: 0.45 })
       .from('.home-stats',    { opacity: 0, y: 12, scale: 0.97, duration: 0.4 }, '-=0.25')
       .from('.home-heading',  { opacity: 0, y: 10, duration: 0.35 }, '-=0.2')
       .from('.job-card',      { opacity: 0, y: 22, duration: 0.45, stagger: 0.08 }, '-=0.15')
-  }, { scope: containerRef })
+  }, { scope: containerRef, dependencies: [loading] })
 
   return (
     <div className="fixed inset-0 bg-[#F4F4EE] overflow-y-auto">
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto pb-[100px]">
         <div className="flex flex-col gap-4 pt-8">
+
           <div className="home-greeting w-full px-6 flex items-start justify-between">
             <div>
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[32px] tracking-[-0.32px] text-[#1A1C19] leading-[38px]">
@@ -301,19 +383,30 @@ function MobileHome() {
               </SignOutConfirmButton>
             </div>
           </div>
+
           <div className="home-stats w-full px-6">
-            <div className="bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">
-              <StatBubble value={String(jobs.length)} label={t('total_jobs')} ring="black" />
-              <div className="w-px h-8 bg-[#E3E3DD]" />
-              <StatBubble value={`${doneZones}/${totalZones}`} label={t('zones_done')} ring={zonesRing} />
-              <div className="w-px h-8 bg-[#E3E3DD]" />
-              <StatBubble value={allDone ? '0h' : '4.5h'} label={t('remaining')} ring="gray" />
-            </div>
+            {loading ? (
+              <div className="h-[86px] bg-white border border-[#C3C8C2] rounded-[12px] animate-pulse" />
+            ) : (
+              <div className="bg-white border border-[#C3C8C2] rounded-[12px] px-[17px] py-[17px] flex items-center justify-between">
+                <StatBubble value={String(jobs.length)} label={t('total_jobs')} ring="black" />
+                <div className="w-px h-8 bg-[#E3E3DD]" />
+                <StatBubble value={`${doneZones}/${totalZones}`} label={t('zones_done')} ring={zonesRing} />
+                <div className="w-px h-8 bg-[#E3E3DD]" />
+                <StatBubble value={String(totalZones - doneZones)} label={t('remaining')} ring="gray" />
+              </div>
+            )}
           </div>
+
           <div className="home-heading w-full px-6 pt-4">
             <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19]">{t('your_jobs_today')}</h3>
           </div>
-          {jobs.length === 0 ? (
+
+          {loading ? (
+            <div className="w-full px-6 flex flex-col gap-4">
+              {[1, 2].map((i) => <div key={i} className="h-[130px] bg-white border border-[#C3C8C2] rounded-[12px] animate-pulse" />)}
+            </div>
+          ) : jobs.length === 0 ? (
             <div className="w-full px-6">
               <div className="bg-white border border-[#C3C8C2] rounded-[12px] flex flex-col items-center p-[33px]">
                 <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">No Jobs Today</h3>
@@ -338,6 +431,7 @@ function MobileHome() {
               ))}
             </div>
           )}
+
         </div>
       </div>
       <BottomNav active="jobs" />
@@ -347,7 +441,7 @@ function MobileHome() {
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
-/** Home screen — shows today's jobs and shift stats. */
+/** Home screen — shows today's jobs and shift stats fetched live from Supabase. */
 export function Home() {
   const isDesktop = useIsDesktop()
   return isDesktop ? <DesktopHome /> : <MobileHome />

@@ -5,13 +5,14 @@ import { SignOutConfirmButton } from './SignOutConfirmButton'
 import type { Language } from '../lib/i18n'
 import logoSrc from '../assets/logo/logo.png'
 
-type NavKey = 'jobs' | 'history' | 'notifications'
+type NavKey = 'jobs' | 'history' | 'notifications' | 'pay'
 
 interface Props { active: NavKey }
 
 const NAV: { key: NavKey; label: string; path: string; icon: () => React.ReactElement }[] = [
   { key: 'jobs',          label: 'Jobs',          path: '/cleaner/home',          icon: BriefcaseIcon },
   { key: 'history',       label: 'History',       path: '/cleaner/history',       icon: ClockIcon },
+  { key: 'pay',           label: 'Pay',           path: '/cleaner/pay',           icon: PayIcon },
   { key: 'notifications', label: 'Notifications', path: '/cleaner/notifications', icon: BellIcon },
 ]
 
@@ -46,6 +47,16 @@ function BellIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PayIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M2 10h20" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M6 15h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }

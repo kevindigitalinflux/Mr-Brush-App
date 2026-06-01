@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { supabase } from '../../lib/supabase'
+import { postZoneSubmission } from '../../lib/webhooks'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 
@@ -60,14 +62,9 @@ function XIcon() {
   )
 }
 
-// ─── Zone name lookup ─────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const ZONE_NAMES: Record<string, string> = {
-  z1: 'Main Lobby', z2: 'Executive Washrooms', z3: 'Conference Room A',
-  z4: 'Open Plan Desks (N)', z5: 'Break Room / Kitchen', z6: 'Server Room',
-  z7: 'Main Entrance', z8: 'Reception Area', z9: 'Lifts / Elevators',
-  z10: 'Ground Floor WC', z11: 'Lobby Seating Area', z12: 'Security Desk Area',
-}
+interface PhotoEntry { preview: string; file: File }
 
 const MAX_PHOTOS = 3
 
@@ -76,13 +73,27 @@ const MAX_PHOTOS = 3
 function useZoneSubmissionState() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
-  const { markZoneComplete } = useApp()
+  const { user } = useApp()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [photos, setPhotos] = useState<string[]>([])
+  const [photos, setPhotos] = useState<PhotoEntry[]>([])
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(false)
+  const [zoneName, setZoneName] = useState('Zone')
 
-  const zoneName = ZONE_NAMES[zoneId ?? ''] ?? 'Zone'
+  // Fetch zone name from DB
+  useEffect(() => {
+    if (!zoneId) return
+    void (async () => {
+      const { data } = await supabase
+        .from('job_zones')
+        .select('zone_name')
+        .eq('id', zoneId)
+        .single()
+      if (data) setZoneName((data as { zone_name: string }).zone_name)
+    })()
+  }, [zoneId])
+
   const canSubmit = photos.length > 0
 
   function handleAddPhoto() { fileInputRef.current?.click() }
@@ -90,24 +101,55 @@ function useZoneSubmissionState() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
     files.slice(0, MAX_PHOTOS - photos.length).forEach((file) => {
-      setPhotos((prev) => [...prev, URL.createObjectURL(file)])
+      setPhotos((prev) => [...prev, { preview: URL.createObjectURL(file), file }])
     })
     e.target.value = ''
   }
 
   function handleRemovePhoto(idx: number) {
-    setPhotos((prev) => prev.filter((_, i) => i !== idx))
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[idx].preview)
+      return prev.filter((_, i) => i !== idx)
+    })
   }
 
   async function handleSubmit() {
-    if (!canSubmit) return
+    if (!canSubmit || !user || !jobId || !zoneId) return
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 900))
-    markZoneComplete(zoneId!)
-    navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
+    setSubmitError(false)
+
+    try {
+      // Upload all photos in parallel to Supabase Storage
+      const imageUrls = await Promise.all(
+        photos.map(async ({ file }) => {
+          const ext = file.name.split('.').pop() ?? 'jpg'
+          const path = `${user.company_id}/${jobId}/${zoneId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+          const { error: uploadErr } = await supabase.storage
+            .from('evidence-photos')
+            .upload(path, file, { contentType: file.type })
+          if (uploadErr) throw uploadErr
+          return supabase.storage.from('evidence-photos').getPublicUrl(path).data.publicUrl
+        })
+      )
+
+      // Fire n8n webhook — n8n handles DB writes and notifications
+      await postZoneSubmission({
+        cleaner_id: user.id,
+        job_id: jobId,
+        zone_id: zoneId,
+        image_urls: imageUrls,
+        note: note.trim() || null,
+        timestamp: new Date().toISOString(),
+      })
+
+      navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
+    } catch {
+      setSubmitError(true)
+      setSubmitting(false)
+    }
   }
 
-  return { jobId, zoneId, navigate, photos, setPhotos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit }
+  return { jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit }
 }
 
 // ─── Photo slot ───────────────────────────────────────────────────────────────
@@ -146,11 +188,23 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
   )
 }
 
+// ─── Error banner ─────────────────────────────────────────────────────────────
+
+function SubmitError() {
+  return (
+    <div className="rounded-[10px] bg-[#FDECEA] border border-[#BA1A1A]/20 px-4 py-3">
+      <p className="font-['Lato',sans-serif] font-bold text-[13px] text-[#BA1A1A]">
+        Upload failed. Check your connection and try again.
+      </p>
+    </div>
+  )
+}
+
 // ─── Desktop layout ───────────────────────────────────────────────────────────
 
 function DesktopZoneSubmission() {
   const state = useZoneSubmissionState()
-  const { jobId, zoneId, navigate, photos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
+  const { jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
@@ -174,12 +228,11 @@ function DesktopZoneSubmission() {
   }, [photos])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#FAFAF4]">
+    <div className="min-h-screen bg-[#FAFAF4]">
       <DesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="pl-60">
         <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 pb-24 flex flex-col gap-8">
 
-          {/* Header */}
           <div className="dzs-header flex items-center gap-4">
             <button onClick={() => navigate(-1)} aria-label="Go back"
               className="p-2 rounded-full hover:bg-[#E3E3DD] transition-colors cursor-pointer shrink-0">
@@ -190,26 +243,20 @@ function DesktopZoneSubmission() {
             </h1>
           </div>
 
-          {/* Instruction card */}
           <div className="dzs-info bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex gap-4 items-start">
             <div className="w-9 h-9 rounded-full bg-[#D0E8D7] flex items-center justify-center shrink-0">
               <InfoIcon />
             </div>
             <div className="flex flex-col gap-1">
-              <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">
-                {t('take_photo_instruction')}
-              </p>
-              <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">
-                {t('photo_requirements')}
-              </p>
+              <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">{t('take_photo_instruction')}</p>
+              <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">{t('photo_requirements')}</p>
             </div>
           </div>
 
-          {/* Photo grid */}
           <div className="dzs-grid grid grid-cols-3 gap-5">
             {Array.from({ length: MAX_PHOTOS }).map((_, i) => (
               <PhotoSlot key={i} index={i}
-                preview={photos[i] ?? null}
+                preview={photos[i]?.preview ?? null}
                 active={i === photos.length && photos.length < MAX_PHOTOS}
                 onAdd={handleAddPhoto}
                 onRemove={() => handleRemovePhoto(i)}
@@ -220,7 +267,6 @@ function DesktopZoneSubmission() {
           <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
             multiple className="hidden" onChange={handleFileChange} />
 
-          {/* Note */}
           <div className="dzs-note flex flex-col gap-2">
             <label htmlFor="dZoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
               {t('add_note')}
@@ -231,7 +277,8 @@ function DesktopZoneSubmission() {
             />
           </div>
 
-          {/* Footer actions */}
+          {submitError && <div className="dzs-note"><SubmitError /></div>}
+
           <div className="dzs-footer flex items-center justify-between gap-4">
             <button onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
               className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer">
@@ -256,7 +303,7 @@ function DesktopZoneSubmission() {
 // ─── Mobile layout ────────────────────────────────────────────────────────────
 
 function MobileZoneSubmission() {
-  const { jobId, zoneId, navigate, photos, note, setNote, submitting, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
+  const { jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
@@ -282,7 +329,7 @@ function MobileZoneSubmission() {
 
   return (
     <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
-      <div ref={containerRef} className="w-full max-w-[576px] mx-auto pt-8 px-4 pb-36 flex flex-col gap-8">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto pt-8 px-4 pb-36 flex flex-col gap-8">
 
         <div className="zs-header flex items-center relative">
           <button onClick={() => navigate(-1)} aria-label="Go back"
@@ -299,19 +346,15 @@ function MobileZoneSubmission() {
             <InfoIcon />
           </div>
           <div className="flex flex-col gap-1">
-            <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">
-              {t('take_photo_instruction')}
-            </p>
-            <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">
-              {t('photo_requirements')}
-            </p>
+            <p className="font-['Lato',sans-serif] font-bold text-base text-[#1A1C19] leading-[1.5]">{t('take_photo_instruction')}</p>
+            <p className="font-['Lato',sans-serif] text-base text-[#434844] leading-[1.5]">{t('photo_requirements')}</p>
           </div>
         </div>
 
         <div className="zs-grid grid grid-cols-3 gap-4">
           {Array.from({ length: MAX_PHOTOS }).map((_, i) => (
             <PhotoSlot key={i} index={i}
-              preview={photos[i] ?? null}
+              preview={photos[i]?.preview ?? null}
               active={i === photos.length && photos.length < MAX_PHOTOS}
               onAdd={handleAddPhoto}
               onRemove={() => handleRemovePhoto(i)}
@@ -332,6 +375,8 @@ function MobileZoneSubmission() {
           />
         </div>
 
+        {submitError && <div className="zs-note"><SubmitError /></div>}
+
         <div className="zs-nophoto flex justify-center">
           <button onClick={() => navigate(`/cleaner/job/${jobId}/zone/${zoneId}/note`)}
             className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer">
@@ -341,7 +386,7 @@ function MobileZoneSubmission() {
 
       </div>
 
-      <div className="zs-submit fixed bottom-0 left-0 right-0 max-w-[576px] mx-auto bg-gradient-to-t from-[#FAFAF4] via-[#FAFAF4] to-transparent pt-4 pb-8 px-4 z-50">
+      <div className="zs-submit fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-gradient-to-t from-[#FAFAF4] via-[#FAFAF4] to-transparent pt-4 pb-8 px-4 z-50">
         <button onClick={handleSubmit} disabled={!canSubmit || submitting}
           className={[
             'w-full py-4 rounded-[12px] font-["Poppins",sans-serif] font-semibold text-base text-[#F8F8F2] flex items-center justify-center gap-2 shadow-lg transition-colors',
@@ -357,7 +402,7 @@ function MobileZoneSubmission() {
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
-/** Photo upload and submission screen for a single zone. */
+/** Photo upload and submission screen for a single zone — uploads to Supabase Storage and fires n8n webhook. */
 export function ZoneSubmission() {
   const isDesktop = useIsDesktop()
   return isDesktop ? <DesktopZoneSubmission /> : <MobileZoneSubmission />

@@ -140,9 +140,9 @@ function DesktopNoPhotoNote() {
   }, { scope: containerRef })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#FAFAF4]">
+    <div className="min-h-screen bg-[#FAFAF4]">
       <DesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="pl-60">
         <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 flex flex-col gap-6 pb-12">
 
           <div className="dnpn-header flex items-center gap-4">
@@ -205,7 +205,7 @@ function MobileNoPhotoNote() {
 
   return (
     <div className="fixed inset-0 bg-[#FAFAF4] overflow-y-auto">
-      <div ref={containerRef} className="w-full max-w-[672px] mx-auto flex flex-col">
+      <div ref={containerRef} className="w-full max-w-[480px] mx-auto flex flex-col">
 
         <div className="npn-header sticky top-0 bg-[#FAFAF4] z-10 flex items-center h-16 px-8">
           <button onClick={() => navigate(-1)} aria-label="Go back"

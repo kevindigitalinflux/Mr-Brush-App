@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/useTranslation'
 
-export type NavTab = 'jobs' | 'history' | 'notifications'
+export type NavTab = 'jobs' | 'history' | 'notifications' | 'pay'
 
 function BriefcaseIcon({ active }: { active: boolean }) {
   const c = active ? '#F8F8F2' : '#434844'
@@ -34,6 +34,17 @@ function BellIcon({ active }: { active: boolean }) {
   )
 }
 
+function PayIcon({ active }: { active: boolean }) {
+  const c = active ? '#F8F8F2' : '#434844'
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="5" width="20" height="14" rx="2" stroke={c} strokeWidth="2" />
+      <path d="M2 10h20" stroke={c} strokeWidth="2" />
+      <path d="M6 15h4" stroke={c} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function NavItem({
   label, active, icon, onClick,
 }: {
@@ -49,7 +60,7 @@ function NavItem({
     >
       {icon}
       <span className={[
-        "font-['Lato',sans-serif] font-bold text-sm tracking-[0.7px] mt-[3px]",
+        "font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] mt-[3px]",
         active ? 'text-[#F8F8F2]' : 'text-[#434844]',
       ].join(' ')}>
         {label}
@@ -63,7 +74,7 @@ export function BottomNav({ active }: { active: NavTab }) {
   const navigate = useNavigate()
   const t = useTranslation()
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#C3C8C2] flex items-center px-4 pt-[17px] pb-4 z-50">
+    <div className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#C3C8C2] flex items-center px-3 pt-[14px] pb-4 z-50">
       <NavItem
         label={t('nav_jobs')}
         active={active === 'jobs'}
@@ -75,6 +86,12 @@ export function BottomNav({ active }: { active: NavTab }) {
         active={active === 'history'}
         icon={<HistoryIcon active={active === 'history'} />}
         onClick={() => navigate('/cleaner/history')}
+      />
+      <NavItem
+        label="Pay"
+        active={active === 'pay'}
+        icon={<PayIcon active={active === 'pay'} />}
+        onClick={() => navigate('/cleaner/pay')}
       />
       <NavItem
         label={t('nav_notifications')}
