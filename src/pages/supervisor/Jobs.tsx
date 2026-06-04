@@ -87,7 +87,7 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
 
   useEffect(() => {
     if (!user) return
-    const fetches: Promise<unknown>[] = [
+    const fetches: PromiseLike<unknown>[] = [
       supabase.from('profiles').select('id, full_name, display_id')
         .eq('company_id', user.company_id).in('role', ['cleaner'])
         .then(({ data }) => setCleaners((data ?? []) as unknown as Cleaner[])),

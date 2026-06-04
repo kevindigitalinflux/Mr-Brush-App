@@ -36,12 +36,6 @@ const BLANK_FORM: ReportForm = {
   zones: [], loadingZones: false, saving: false, error: null,
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 // ─── Data hook ────────────────────────────────────────────────────────────────
 
 function useAbsenceData() {
