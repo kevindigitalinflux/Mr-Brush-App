@@ -4,6 +4,7 @@ export interface ZoneSubmissionPayload {
   cleaner_id: string
   job_id: string
   zone_id: string
+  company_id: string
   image_urls: string[]
   note: string | null
   timestamp: string

@@ -49,6 +49,7 @@ export async function flushOfflineQueue(
         cleaner_id: entry.cleanerId,
         job_id: entry.jobId,
         zone_id: entry.zoneId,
+        company_id: entry.companyId,
         image_urls: imageUrls,
         note: entry.note,
         timestamp: entry.timestamp,

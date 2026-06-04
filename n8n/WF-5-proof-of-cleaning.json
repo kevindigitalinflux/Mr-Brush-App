@@ -1,0 +1,404 @@
+{
+  "name": "WF-5 — Proof of Cleaning Submission",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## WF-5 — Setup Checklist\n\n**Credentials required in n8n before activating:**\n\n1. `Supabase Mr Brush`\n   - Type: **Supabase API**\n   - Host: https://bstohwxzufebufbybxtd.supabase.co\n   - Service Role: your `service_role` secret key\n\n2. `Google Translate — Mr Brush`\n   - Type: **Google Service Account**\n   - Paste JSON key file contents\n   - Tick: Set up for use in HTTP Request node\n   - Allowed domain: translation.googleapis.com\n\n**After activating:**\n- Copy the **Production** Webhook URL\n- Set as `VITE_N8N_WEBHOOK_URL` in the app `.env`\n- Restart the dev server\n\n**Payload received from app:**\n```\n{\n  cleaner_id, job_id, zone_id,\n  image_urls[], note, timestamp\n}\n```\n\n**What this workflow does:**\n1. Fetches supervisor_id + company_id from jobs table\n2. Inserts cleaning_logs row\n3. Inserts evidence_files (one per photo)\n4. Updates job_zones.status → completed\n5. Inserts supervisor notification\n6. Translates note → note_translated via Google Translate (if note exists)",
+        "height": 500,
+        "width": 460,
+        "color": 3
+      },
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-280, 20]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "proof-of-cleaning",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "00000000-0000-0000-0000-000000000002",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "webhookId": "a0b1c2d3-e4f5-6789-abcd-ef0123456701"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "jobs",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.job_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-0000-0000-000000000003",
+      "name": "Get Job Details",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Mr Brush"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "cleaning_logs",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "job_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.job_id }}"
+            },
+            {
+              "fieldId": "cleaner_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.cleaner_id }}"
+            },
+            {
+              "fieldId": "job_zone_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.zone_id }}"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Get Job Details').item.json.company_id }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "={{ $('Webhook').item.json.body.note }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-0000-0000-000000000004",
+      "name": "Insert Cleaning Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [740, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Mr Brush"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map each image URL into a separate evidence_files row.\n// The Supabase node below runs once per output item.\nconst cleaningLogId = $('Insert Cleaning Log').first().json.id;\nconst imageUrls = $('Webhook').first().json.body.image_urls;\n\nif (!Array.isArray(imageUrls) || imageUrls.length === 0) {\n  return [];\n}\n\nreturn imageUrls.map(url => ({\n  json: {\n    cleaning_log_id: cleaningLogId,\n    public_url: url\n  }\n}));"
+      },
+      "id": "00000000-0000-0000-0000-000000000005",
+      "name": "Build Evidence Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 100]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "evidence_files",
+        "dataToSend": "autoMapInputData",
+        "options": {}
+      },
+      "id": "00000000-0000-0000-0000-000000000006",
+      "name": "Insert Evidence File",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1220, 100],
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Mr Brush"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "job_zones",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook').item.json.body.zone_id }}"
+            }
+          ]
+        },
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "completed"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-0000-0000-000000000007",
+      "name": "Update Zone Completed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [980, 500],
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Mr Brush"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "notifications",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Get Job Details').item.json.supervisor_id }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "New zone evidence submitted"
+            },
+            {
+              "fieldId": "message",
+              "fieldValue": "={{ 'Zone evidence has been submitted for job ' + $('Webhook').item.json.body.job_id }}"
+            },
+            {
+              "fieldId": "is_read",
+              "fieldValue": "=false"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-0000-0000-000000000008",
+      "name": "Insert Supervisor Notification",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1220, 500],
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Mr Brush"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-note-cond-01",
+              "leftValue": "={{ $('Webhook').item.json.body.note }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "00000000-0000-0000-0000-000000000009",
+      "name": "Has Note?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1460, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://translation.googleapis.com/language/translate/v2",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ q: $('Webhook').item.json.body.note, target: 'en', format: 'text' }) }}",
+        "options": {}
+      },
+      "id": "00000000-0000-0000-0000-000000000010",
+      "name": "Translate Note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1700, 380],
+      "credentials": {
+        "googleApi": {
+          "id": "GOOGLE_CREDENTIAL_ID",
+          "name": "Google Translate — Mr Brush"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "cleaning_logs",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Insert Cleaning Log').item.json.id }}"
+            }
+          ]
+        },
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "note_translated",
+              "fieldValue": "={{ $json.data.translations[0].translatedText }}"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-0000-0000-000000000011",
+      "name": "Update Note Translated",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1940, 380],
+      "credentials": {
+        "supabaseApi": {
+          "id": "SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Mr Brush"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Job Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job Details": {
+      "main": [
+        [
+          {
+            "node": "Insert Cleaning Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Cleaning Log": {
+      "main": [
+        [
+          {
+            "node": "Build Evidence Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Zone Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Evidence Items": {
+      "main": [
+        [
+          {
+            "node": "Insert Evidence File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Zone Completed": {
+      "main": [
+        [
+          {
+            "node": "Insert Supervisor Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Supervisor Notification": {
+      "main": [
+        [
+          {
+            "node": "Has Note?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Note?": {
+      "main": [
+        [
+          {
+            "node": "Translate Note",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Translate Note": {
+      "main": [
+        [
+          {
+            "node": "Update Note Translated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "mr-brush"
+    }
+  ]
+}

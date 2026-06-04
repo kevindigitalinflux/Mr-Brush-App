@@ -162,6 +162,7 @@ function useZoneSubmissionState() {
         cleaner_id: user.id,
         job_id: jobId,
         zone_id: zoneId,
+        company_id: user.company_id,
         image_urls: imageUrls,
         note: note.trim() || null,
         timestamp: new Date().toISOString(),
