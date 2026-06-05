@@ -1006,7 +1006,7 @@ function ZoneRow({ zone, facilityId, jobId, hideCleanerName = false }: {
 
 // ─── Cleaner group section ────────────────────────────────────────────────────
 
-function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId, onMarkComplete, onMarkUndone, marking }: {
+function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId, onMarkComplete, onMarkUndone, marking, markedComplete }: {
   cleanerName: string | null
   cleanerId: string | null
   zones: Zone[]
@@ -1015,6 +1015,7 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
   onMarkComplete: (id: string) => void
   onMarkUndone: (id: string) => void
   marking: boolean
+  markedComplete: boolean
 }) {
   const t = useTranslation()
   const doneCount = zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length
@@ -1039,7 +1040,14 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
         </div>
 
         {cleanerId && (
-          allDone ? (
+          markedComplete ? (
+            <span className="flex items-center gap-1 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#2F4A3D] bg-[#D7E6DB] px-2.5 py-1 rounded-full shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Pay logged
+            </span>
+          ) : allDone ? (
             <div className="shrink-0 flex items-center gap-1.5">
               <span className="flex items-center gap-1 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#2F4A3D] bg-[#D7E6DB] px-2.5 py-1 rounded-full">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1053,6 +1061,13 @@ function CleanerGroupSection({ cleanerName, cleanerId, zones, jobId, facilityId,
                 className="h-7 px-2.5 border border-[#D0CFCA] rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[11px] text-[#737874] hover:border-[#B8A77A] hover:text-[#1A1C19] transition-colors disabled:opacity-50"
               >
                 {marking ? '…' : t('sv_undo_mark_complete')}
+              </button>
+              <button
+                onClick={() => onMarkComplete(cleanerId)}
+                disabled={marking}
+                className="shrink-0 h-9 px-4 bg-[#2F4A3D] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-white hover:bg-[#3d6152] transition-colors disabled:opacity-50"
+              >
+                {marking ? '…' : t('sv_mark_cleaner_complete')}
               </button>
             </div>
           ) : (
@@ -1089,6 +1104,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
   const [zones, setZones] = useState<Zone[]>([])
   const [loading, setLoading] = useState(true)
   const [markingCleaners, setMarkingCleaners] = useState<Set<string>>(new Set())
+  const [markedCompleteCleaners, setMarkedCompleteCleaners] = useState<Set<string>>(new Set())
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
@@ -1119,7 +1135,8 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
     }[]
 
     if (jobs.length > 0) {
-      setJobId(jobs[0].id)
+      const currentJobId = jobs[0].id
+      setJobId(currentJobId)
       setZones((jobs[0].job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
         id: z.id,
         zone_name: z.zone_name,
@@ -1128,9 +1145,18 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
         cleaner_name: z.cleaner_id ? (cleanerMap.get(z.cleaner_id) ?? null) : null,
         notes: z.notes,
       })))
+      // Pre-populate which cleaners already have a pay record for this job
+      const { data: payData } = await supabase
+        .from('pay_records')
+        .select('cleaner_id')
+        .eq('job_id', currentJobId)
+      if (payData) {
+        setMarkedCompleteCleaners(new Set((payData as { cleaner_id: string }[]).map((r) => r.cleaner_id)))
+      }
     } else {
       setJobId(null)
       setZones([])
+      setMarkedCompleteCleaners(new Set())
     }
     setLoading(false)
   }, [user, facilityId])
@@ -1142,6 +1168,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
     const channel = supabase
       .channel(`facility-zones-${facilityId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' }, () => load(true))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs' }, () => load(true))
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
   }, [user, facilityId, load])
@@ -1162,8 +1189,11 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
     if (!jobId || !user) return
     setMarkingCleaners((prev) => new Set(prev).add(cleanerId))
     const zoneIds = zones.filter((z) => z.cleaner_id === cleanerId).map((z) => z.id)
-    await supabase.from('job_zones').update({ status: 'completed' }).in('id', zoneIds)
+    if (zoneIds.length > 0) {
+      await supabase.from('job_zones').update({ status: 'completed' }).in('id', zoneIds)
+    }
     void postShiftComplete({ job_id: jobId, cleaner_id: cleanerId, supervisor_id: user.id })
+    setMarkedCompleteCleaners((prev) => new Set(prev).add(cleanerId))
     setMarkingCleaners((prev) => { const s = new Set(prev); s.delete(cleanerId); return s })
     void load(true)
   }
@@ -1295,6 +1325,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
                 onMarkComplete={handleMarkCleanerComplete}
                 onMarkUndone={handleMarkCleanerUndone}
                 marking={cleanerId !== null && markingCleaners.has(cleanerId)}
+                markedComplete={cleanerId !== null && markedCompleteCleaners.has(cleanerId)}
               />
             ))}
           </div>
@@ -1313,8 +1344,9 @@ function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onM
   const total    = job?.zones.length ?? 0
   const done     = job ? job.zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length : 0
   const cleaners = job ? new Set(job.zones.map((z) => z.cleaner_id).filter(Boolean)).size : 0
-  const pct      = total > 0 ? Math.round((done / total) * 100) : 0
-  const isActive = !!job
+  const pct         = total > 0 ? Math.round((done / total) * 100) : 0
+  const isCompleted = job?.status === 'completed'
+  const isActive    = !!job && !isCompleted
 
   return (
     <div className={`facility-card bg-white border rounded-[12px] overflow-hidden transition-[box-shadow,border-color] duration-200 ${selected ? 'border-[#B8A77A] shadow-md' : 'border-[#D0CFCA] hover:shadow-md'}`}>
@@ -1323,9 +1355,9 @@ function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onM
           {facility.name}
         </h3>
         <span className={`shrink-0 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.8px] px-2.5 py-0.5 rounded-full uppercase ${
-          isActive ? 'bg-[#B8A77A] text-[#1A1C19]' : 'bg-white/20 text-white'
+          isCompleted ? 'bg-[#2F4A3D] text-white' : isActive ? 'bg-[#B8A77A] text-[#1A1C19]' : 'bg-white/20 text-white'
         }`}>
-          {isActive ? t('sv_active_pill') : t('sv_scheduled_pill')}
+          {isCompleted ? 'Completed' : isActive ? t('sv_active_pill') : t('sv_scheduled_pill')}
         </span>
       </div>
       <div className="px-5 py-4 flex flex-col gap-3">
@@ -1362,47 +1394,55 @@ function FacilitiesListView() {
   const [items, setItems] = useState<FacilityWithJob[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(async (silent = false) => {
     if (!user) return
     const today = new Date().toISOString().slice(0, 10)
+    if (!silent) setLoading(true)
 
-    async function load() {
-      setLoading(true)
-      const [facilsRes, jobsRes] = await Promise.all([
-        supabase.from('facilities').select('id, name').eq('company_id', user!.company_id),
-        supabase.from('jobs')
-          .select('id, status, facility_id, job_zones ( id, zone_name, status, cleaner_id, notes )')
-          .eq('supervisor_id', user!.id)
-          .eq('scheduled_date', today),
-      ])
+    const [facilsRes, jobsRes] = await Promise.all([
+      supabase.from('facilities').select('id, name').eq('company_id', user.company_id),
+      supabase.from('jobs')
+        .select('id, status, facility_id, job_zones ( id, zone_name, status, cleaner_id, notes )')
+        .eq('supervisor_id', user.id)
+        .eq('scheduled_date', today),
+    ])
 
-      const facilities = (facilsRes.data ?? []) as unknown as Facility[]
-      const jobs = (jobsRes.data ?? []) as unknown as {
-        id: string; status: string; facility_id: string
-        job_zones: { id: string; zone_name: string; status: string; cleaner_id: string | null; notes: string | null }[]
-      }[]
+    const facilities = (facilsRes.data ?? []) as unknown as Facility[]
+    const jobs = (jobsRes.data ?? []) as unknown as {
+      id: string; status: string; facility_id: string
+      job_zones: { id: string; zone_name: string; status: string; cleaner_id: string | null; notes: string | null }[]
+    }[]
 
-      const jobMap = new Map(jobs.map((j) => [j.facility_id, j]))
+    const jobMap = new Map(jobs.map((j) => [j.facility_id, j]))
 
-      setItems(facilities.map((fac) => {
-        const job = jobMap.get(fac.id) ?? null
-        return {
-          facility: fac,
-          job: job ? {
-            id: job.id,
-            status: job.status,
-            zones: (job.job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
-              id: z.id, zone_name: z.zone_name, status: z.status,
-              cleaner_id: z.cleaner_id, cleaner_name: null, notes: z.notes,
-            })),
-          } : null,
-        }
-      }))
-      setLoading(false)
-    }
-
-    load()
+    setItems(facilities.map((fac) => {
+      const job = jobMap.get(fac.id) ?? null
+      return {
+        facility: fac,
+        job: job ? {
+          id: job.id,
+          status: job.status,
+          zones: (job.job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
+            id: z.id, zone_name: z.zone_name, status: z.status,
+            cleaner_id: z.cleaner_id, cleaner_name: null, notes: z.notes,
+          })),
+        } : null,
+      }
+    }))
+    setLoading(false)
   }, [user])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel('facilities-list-jobs')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs' }, () => load(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_zones' }, () => load(true))
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [user, load])
 
   useGSAP(() => {
     if (loading) return
