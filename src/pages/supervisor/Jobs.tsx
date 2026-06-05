@@ -1137,7 +1137,8 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
     }[]
 
     if (jobs.length > 0) {
-      setJobId(jobs[0].id)
+      const currentJobId = jobs[0].id
+      setJobId(currentJobId)
       setZones((jobs[0].job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
         id: z.id,
         zone_name: z.zone_name,
@@ -1146,6 +1147,15 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
         cleaner_name: z.cleaner_id ? (cleanerMap.get(z.cleaner_id) ?? null) : null,
         notes: z.notes,
       })))
+      // Restore "Pay logged" state from pay_records so the button stays
+      // locked after a page reload and can't be accidentally re-fired.
+      const { data: payData } = await supabase
+        .from('pay_records')
+        .select('cleaner_id')
+        .eq('job_id', currentJobId)
+      setMarkedCompleteCleaners(
+        new Set((payData ?? []).map((r) => (r as { cleaner_id: string }).cleaner_id))
+      )
     } else {
       setJobId(null)
       setZones([])
