@@ -1116,7 +1116,9 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
       supabase.from('jobs')
         .select('id, status, job_zones ( id, zone_name, status, cleaner_id, notes )')
         .eq('facility_id', facilityId)
-        .eq('scheduled_date', today),
+        .eq('scheduled_date', today)
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, full_name, display_id')
         .eq('company_id', user.company_id).in('role', ['cleaner']),
     ])
@@ -1135,8 +1137,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
     }[]
 
     if (jobs.length > 0) {
-      const currentJobId = jobs[0].id
-      setJobId(currentJobId)
+      setJobId(jobs[0].id)
       setZones((jobs[0].job_zones ?? []).filter((z) => z.status !== 'deleted').map((z) => ({
         id: z.id,
         zone_name: z.zone_name,
@@ -1145,14 +1146,6 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
         cleaner_name: z.cleaner_id ? (cleanerMap.get(z.cleaner_id) ?? null) : null,
         notes: z.notes,
       })))
-      // Pre-populate which cleaners already have a pay record for this job
-      const { data: payData } = await supabase
-        .from('pay_records')
-        .select('cleaner_id')
-        .eq('job_id', currentJobId)
-      if (payData) {
-        setMarkedCompleteCleaners(new Set((payData as { cleaner_id: string }[]).map((r) => r.cleaner_id)))
-      }
     } else {
       setJobId(null)
       setZones([])
@@ -1345,8 +1338,9 @@ function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onM
   const done     = job ? job.zones.filter((z) => z.status === 'completed' || z.status === 'flagged_no_photo').length : 0
   const cleaners = job ? new Set(job.zones.map((z) => z.cleaner_id).filter(Boolean)).size : 0
   const pct         = total > 0 ? Math.round((done / total) * 100) : 0
+  const hasJob      = !!job
   const isCompleted = job?.status === 'completed'
-  const isActive    = !!job && !isCompleted
+  const isActive    = hasJob && !isCompleted
 
   return (
     <div className={`facility-card bg-white border rounded-[12px] overflow-hidden transition-[box-shadow,border-color] duration-200 ${selected ? 'border-[#B8A77A] shadow-md' : 'border-[#D0CFCA] hover:shadow-md'}`}>
@@ -1363,15 +1357,15 @@ function FacilityCard({ item, onManage, selected }: { item: FacilityWithJob; onM
       <div className="px-5 py-4 flex flex-col gap-3">
         <div className="flex items-center justify-between text-sm">
           <span className="font-['Lato',sans-serif] text-[#737874]">
-            {isActive
+            {hasJob
               ? `${cleaners} cleaner${cleaners !== 1 ? 's' : ''} · ${total} zone${total !== 1 ? 's' : ''}`
               : t('sv_no_job_today')
             }
           </span>
-          {isActive && <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>}
+          {hasJob && <span className="font-['Lato',sans-serif] font-bold text-[#1A1C19]">{done}/{total}</span>}
         </div>
         <div className="w-full h-2 bg-[#E3E3DD] rounded-full overflow-hidden">
-          <div className="h-full bg-[#B8A77A] rounded-full transition-all" style={{ width: isActive ? `${pct}%` : '0%' }} />
+          <div className="h-full bg-[#B8A77A] rounded-full transition-all" style={{ width: hasJob ? `${pct}%` : '0%' }} />
         </div>
         <button
           onClick={onManage}
@@ -1404,7 +1398,9 @@ function FacilitiesListView() {
       supabase.from('jobs')
         .select('id, status, facility_id, job_zones ( id, zone_name, status, cleaner_id, notes )')
         .eq('supervisor_id', user.id)
-        .eq('scheduled_date', today),
+        .eq('scheduled_date', today)
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false }),
     ])
 
     const facilities = (facilsRes.data ?? []) as unknown as Facility[]
@@ -1517,7 +1513,9 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
         supabase.from('jobs')
           .select('id, status, facility_id, job_zones ( id, zone_name, status, cleaner_id, notes )')
           .eq('supervisor_id', user!.id)
-          .eq('scheduled_date', today),
+          .eq('scheduled_date', today)
+          .neq('status', 'cancelled')
+          .order('created_at', { ascending: false }),
       ])
 
       const facilities = (facilsRes.data ?? []) as unknown as Facility[]
