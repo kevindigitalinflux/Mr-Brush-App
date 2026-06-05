@@ -1,404 +1,733 @@
-{
-  "name": "WF-5 — Proof of Cleaning Submission",
-  "nodes": [
-    {
-      "parameters": {
-        "content": "## WF-5 — Setup Checklist\n\n**Credentials required in n8n before activating:**\n\n1. `Supabase Mr Brush`\n   - Type: **Supabase API**\n   - Host: https://bstohwxzufebufbybxtd.supabase.co\n   - Service Role: your `service_role` secret key\n\n2. `Google Translate — Mr Brush`\n   - Type: **Google Service Account**\n   - Paste JSON key file contents\n   - Tick: Set up for use in HTTP Request node\n   - Allowed domain: translation.googleapis.com\n\n**After activating:**\n- Copy the **Production** Webhook URL\n- Set as `VITE_N8N_WEBHOOK_URL` in the app `.env`\n- Restart the dev server\n\n**Payload received from app:**\n```\n{\n  cleaner_id, job_id, zone_id,\n  image_urls[], note, timestamp\n}\n```\n\n**What this workflow does:**\n1. Fetches supervisor_id + company_id from jobs table\n2. Inserts cleaning_logs row\n3. Inserts evidence_files (one per photo)\n4. Updates job_zones.status → completed\n5. Inserts supervisor notification\n6. Translates note → note_translated via Google Translate (if note exists)",
-        "height": 500,
-        "width": 460,
-        "color": 3
-      },
-      "id": "00000000-0000-0000-0000-000000000001",
-      "name": "Setup Notes",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [-280, 20]
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "proof-of-cleaning",
-        "responseMode": "onReceived",
-        "options": {}
-      },
-      "id": "00000000-0000-0000-0000-000000000002",
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [260, 300],
-      "webhookId": "a0b1c2d3-e4f5-6789-abcd-ef0123456701"
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "jobs",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.body.job_id }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "00000000-0000-0000-0000-000000000003",
-      "name": "Get Job Details",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [500, 300],
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase Mr Brush"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "create",
-        "tableId": "cleaning_logs",
-        "dataToSend": "defineBelow",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "job_id",
-              "fieldValue": "={{ $('Webhook').item.json.body.job_id }}"
-            },
-            {
-              "fieldId": "cleaner_id",
-              "fieldValue": "={{ $('Webhook').item.json.body.cleaner_id }}"
-            },
-            {
-              "fieldId": "job_zone_id",
-              "fieldValue": "={{ $('Webhook').item.json.body.zone_id }}"
-            },
-            {
-              "fieldId": "company_id",
-              "fieldValue": "={{ $('Get Job Details').item.json.company_id }}"
-            },
-            {
-              "fieldId": "note",
-              "fieldValue": "={{ $('Webhook').item.json.body.note }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "pending"
-            }
-          ]
-        }
-      },
-      "id": "00000000-0000-0000-0000-000000000004",
-      "name": "Insert Cleaning Log",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [740, 300],
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase Mr Brush"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Map each image URL into a separate evidence_files row.\n// The Supabase node below runs once per output item.\nconst cleaningLogId = $('Insert Cleaning Log').first().json.id;\nconst imageUrls = $('Webhook').first().json.body.image_urls;\n\nif (!Array.isArray(imageUrls) || imageUrls.length === 0) {\n  return [];\n}\n\nreturn imageUrls.map(url => ({\n  json: {\n    cleaning_log_id: cleaningLogId,\n    public_url: url\n  }\n}));"
-      },
-      "id": "00000000-0000-0000-0000-000000000005",
-      "name": "Build Evidence Items",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [980, 100]
-    },
-    {
-      "parameters": {
-        "operation": "create",
-        "tableId": "evidence_files",
-        "dataToSend": "autoMapInputData",
-        "options": {}
-      },
-      "id": "00000000-0000-0000-0000-000000000006",
-      "name": "Insert Evidence File",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1220, 100],
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase Mr Brush"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "job_zones",
-        "filterType": "manual",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Webhook').item.json.body.zone_id }}"
-            }
-          ]
-        },
-        "dataToSend": "defineBelow",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "status",
-              "fieldValue": "completed"
-            }
-          ]
-        }
-      },
-      "id": "00000000-0000-0000-0000-000000000007",
-      "name": "Update Zone Completed",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [980, 500],
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase Mr Brush"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "create",
-        "tableId": "notifications",
-        "dataToSend": "defineBelow",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "user_id",
-              "fieldValue": "={{ $('Get Job Details').item.json.supervisor_id }}"
-            },
-            {
-              "fieldId": "title",
-              "fieldValue": "New zone evidence submitted"
-            },
-            {
-              "fieldId": "message",
-              "fieldValue": "={{ 'Zone evidence has been submitted for job ' + $('Webhook').item.json.body.job_id }}"
-            },
-            {
-              "fieldId": "is_read",
-              "fieldValue": "=false"
-            }
-          ]
-        }
-      },
-      "id": "00000000-0000-0000-0000-000000000008",
-      "name": "Insert Supervisor Notification",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1220, 500],
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase Mr Brush"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": false,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "id": "has-note-cond-01",
-              "leftValue": "={{ $('Webhook').item.json.body.note }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "notEmpty",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        }
-      },
-      "id": "00000000-0000-0000-0000-000000000009",
-      "name": "Has Note?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1460, 500]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://translation.googleapis.com/language/translate/v2",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ q: $('Webhook').item.json.body.note, target: 'en', format: 'text' }) }}",
-        "options": {}
-      },
-      "id": "00000000-0000-0000-0000-000000000010",
-      "name": "Translate Note",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [1700, 380],
-      "credentials": {
-        "googleApi": {
-          "id": "GOOGLE_CREDENTIAL_ID",
-          "name": "Google Translate — Mr Brush"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "cleaning_logs",
-        "filterType": "manual",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Insert Cleaning Log').item.json.id }}"
-            }
-          ]
-        },
-        "dataToSend": "defineBelow",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "note_translated",
-              "fieldValue": "={{ $json.data.translations[0].translatedText }}"
-            }
-          ]
-        }
-      },
-      "id": "00000000-0000-0000-0000-000000000011",
-      "name": "Update Note Translated",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1940, 380],
-      "credentials": {
-        "supabaseApi": {
-          "id": "SUPABASE_CREDENTIAL_ID",
-          "name": "Supabase Mr Brush"
-        }
-      }
-    }
-  ],
-  "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Get Job Details",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Job Details": {
-      "main": [
-        [
-          {
-            "node": "Insert Cleaning Log",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insert Cleaning Log": {
-      "main": [
-        [
-          {
-            "node": "Build Evidence Items",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Update Zone Completed",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Evidence Items": {
-      "main": [
-        [
-          {
-            "node": "Insert Evidence File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update Zone Completed": {
-      "main": [
-        [
-          {
-            "node": "Insert Supervisor Notification",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insert Supervisor Notification": {
-      "main": [
-        [
-          {
-            "node": "Has Note?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Has Note?": {
-      "main": [
-        [
-          {
-            "node": "Translate Note",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Translate Note": {
-      "main": [
-        [
-          {
-            "node": "Update Note Translated",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "tags": [
-    {
-      "name": "mr-brush"
-    }
-  ]
+﻿{
+    "settings":  {
+                     "executionOrder":  "v1"
+                 },
+    "name":  "WF-5 — Proof of Cleaning Submission",
+    "connections":  {
+                        "Webhook":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Get Job Details",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Update Zone Completed":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Insert Supervisor Notification",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Insert Cleaning Log":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Build Evidence Items",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     },
+                                                                     {
+                                                                         "node":  "Update Zone Completed",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Build Evidence Items":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Insert Evidence File",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Insert Flagged Log":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Update Zone Flagged",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    },
+                                                                    {
+                                                                        "node":  "Insert Flag Notification",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Insert Flag Notification":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Has Flag Note?",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "Get Job Details":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Has Photos?",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Has Note?":  {
+                                          "main":  [
+                                                       [
+                                                           {
+                                                               "node":  "Translate Note",
+                                                               "type":  "main",
+                                                               "index":  0
+                                                           }
+                                                       ]
+                                                   ]
+                                      },
+                        "Has Flag Note?":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Translate Flag Note",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ],
+                                                            [
+
+                                                            ]
+                                                        ]
+                                           },
+                        "Translate Note":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Update Note Translated",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "Has Photos?":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Insert Cleaning Log",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ],
+                                                         [
+                                                             {
+                                                                 "node":  "Insert Flagged Log",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ]
+                                                     ]
+                                        },
+                        "Translate Flag Note":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Update Flag Note Translated",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Insert Supervisor Notification":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Has Note?",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           }
+                    },
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "content":  "## WF-5 — Setup Checklist\n\n**Credentials required in n8n before activating:**\n\n1. `Supabase Mr Brush`\n   - Type: **Supabase API**\n   - Host: https://bstohwxzufebufbybxtd.supabase.co\n   - Service Role: your `service_role` secret key\n\n2. `Google Translate — Mr Brush`\n   - Type: **Google Service Account**\n   - Paste JSON key file contents\n   - Tick: Set up for use in HTTP Request node\n   - Allowed domain: translation.googleapis.com\n\n**After activating:**\n- Copy the **Production** Webhook URL\n- Set as `VITE_N8N_WEBHOOK_URL` in the app `.env`\n- Restart the dev server\n\n**Payload received from app:**\n```\n{\n  cleaner_id, job_id, zone_id,\n  image_urls[], note, timestamp\n}\n```\n\n**What this workflow does:**\n1. Fetches supervisor_id + company_id from jobs table\n2. Inserts cleaning_logs row\n3. Inserts evidence_files (one per photo)\n4. Updates job_zones.status → completed\n5. Inserts supervisor notification\n6. Translates note → note_translated via Google Translate (if note exists)",
+                                         "height":  500,
+                                         "width":  508,
+                                         "color":  3
+                                     },
+                      "id":  "a0a3a177-1e3b-4ffd-a2c6-aff734774a4d",
+                      "name":  "Setup Notes",
+                      "type":  "n8n-nodes-base.stickyNote",
+                      "typeVersion":  1,
+                      "position":  [
+                                       128,
+                                       -96
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "proof-of-cleaning",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "bc3b0861-0e7b-4919-949b-63d70b906368",
+                      "name":  "Webhook",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       672,
+                                       192
+                                   ],
+                      "webhookId":  "a0b1c2d3-e4f5-6789-abcd-ef0123456701"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "getAll",
+                                         "tableId":  "jobs",
+                                         "returnAll":  true,
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "id",
+                                                                                "condition":  "eq",
+                                                                                "keyValue":  "={{ $json.body.job_id }}"
+                                                                            }
+                                                                        ]
+                                                     }
+                                     },
+                      "id":  "850225a7-e079-4396-9177-2f281a27120e",
+                      "name":  "Get Job Details",
+                      "type":  "n8n-nodes-base.supabase",
+                      "typeVersion":  1,
+                      "position":  [
+                                       912,
+                                       192
+                                   ],
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "tableId":  "cleaning_logs",
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "job_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.job_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "cleaner_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.cleaner_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "job_zone_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.zone_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "note",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.note }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "status",
+                                                                                  "fieldValue":  "pending"
+                                                                              }
+                                                                          ]
+                                                      }
+                                     },
+                      "id":  "6c1919b3-c1fe-4b27-bcfe-a005220dda52",
+                      "name":  "Insert Cleaning Log",
+                      "type":  "n8n-nodes-base.supabase",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1152,
+                                       192
+                                   ],
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "\nconst cleaningLogId = $(\u0027Insert Cleaning Log\u0027).first().json.id;\nconst imageUrls = $(\u0027Webhook\u0027).first().json.body.image_urls;\n\nif (!Array.isArray(imageUrls) || imageUrls.length === 0) {\n  return [];\n}\n\nconst mimeMap = { jpg: \u0027image/jpeg\u0027, jpeg: \u0027image/jpeg\u0027, png: \u0027image/png\u0027, webp: \u0027image/webp\u0027, heic: \u0027image/heic\u0027, heif: \u0027image/heif\u0027 };\n\nreturn imageUrls.map(url =\u003e {\n  const pathMatch = url.match(/\\/object\\/public\\/evidence-photos\\/(.+)/);\n  const storage_path = pathMatch ? pathMatch[1] : url;\n  const ext = url.split(\u0027.\u0027).pop()?.toLowerCase() ?? \u0027jpg\u0027;\n  const file_type = mimeMap[ext] || \u0027image/jpeg\u0027;\n  return {\n    json: {\n      cleaning_log_id: cleaningLogId,\n      public_url: url,\n      storage_path,\n      file_type\n    }\n  };\n});"
+                                     },
+                      "id":  "4acba4d3-5163-4ade-8063-8007c9446815",
+                      "name":  "Build Evidence Items",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1392,
+                                       -16
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "tableId":  "evidence_files",
+                                         "dataToSend":  "autoMapInputData"
+                                     },
+                      "id":  "9a8e8e22-7c23-40f2-8e06-a4b3ca1dc265",
+                      "name":  "Insert Evidence File",
+                      "type":  "n8n-nodes-base.supabase",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1632,
+                                       -16
+                                   ],
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "update",
+                                         "tableId":  "job_zones",
+                                         "matchType":  "allFilters",
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "id",
+                                                                                "condition":  "eq",
+                                                                                "keyValue":  "={{ $(\u0027Webhook\u0027).item.json.body.zone_id }}"
+                                                                            }
+                                                                        ]
+                                                     },
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "status",
+                                                                                  "fieldValue":  "completed"
+                                                                              }
+                                                                          ]
+                                                      }
+                                     },
+                      "id":  "fa13a9bc-b470-44c4-986d-32f8ac292fc8",
+                      "name":  "Update Zone Completed",
+                      "type":  "n8n-nodes-base.supabase",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1392,
+                                       384
+                                   ],
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "tableId":  "notifications",
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "user_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Get Job Details\u0027).item.json.supervisor_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "title",
+                                                                                  "fieldValue":  "New zone evidence submitted"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "message",
+                                                                                  "fieldValue":  "={{ \u0027Zone evidence has been submitted for job \u0027 + $(\u0027Webhook\u0027).item.json.body.job_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "is_read",
+                                                                                  "fieldValue":  "=false"
+                                                                              }
+                                                                          ]
+                                                      }
+                                     },
+                      "id":  "c5fc2087-d4ac-42a5-a510-8f149524ea38",
+                      "name":  "Insert Supervisor Notification",
+                      "type":  "n8n-nodes-base.supabase",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1632,
+                                       384
+                                   ],
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  false,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "loose",
+                                                                            "version":  1
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "has-note-cond-01",
+                                                                                   "leftValue":  "={{ $(\u0027Webhook\u0027).item.json.body.note }}",
+                                                                                   "rightValue":  "",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "notEmpty",
+                                                                                                    "singleValue":  true
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "b07ff3d3-1c6d-4f85-b794-a619cc268809",
+                      "name":  "Has Note?",
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1872,
+                                       384
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://translation.googleapis.com/language/translate/v2?key=AIzaSyDm9gR19L5-ZKHQqYdTAcbPAyTcgvpf9ZA",
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ q: $(\u0027Webhook\u0027).item.json.body.note, target: \u0027en\u0027, format: \u0027text\u0027 }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "1a4730a3-80f2-4393-86c4-d35fc5b7cc9c",
+                      "name":  "Translate Note",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4,
+                      "position":  [
+                                       2112,
+                                       272
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "update",
+                                         "tableId":  "cleaning_logs",
+                                         "matchType":  "allFilters",
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "id",
+                                                                                "condition":  "eq",
+                                                                                "keyValue":  "={{ $(\u0027Insert Cleaning Log\u0027).item.json.id }}"
+                                                                            }
+                                                                        ]
+                                                     },
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "note_translated",
+                                                                                  "fieldValue":  "={{ $json.data.translations[0].translatedText }}"
+                                                                              }
+                                                                          ]
+                                                      }
+                                     },
+                      "id":  "e0c38720-e124-4879-98bd-2d179a1d6e29",
+                      "name":  "Update Note Translated",
+                      "type":  "n8n-nodes-base.supabase",
+                      "typeVersion":  1,
+                      "position":  [
+                                       2352,
+                                       272
+                                   ],
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "id":  "wf7-n01",
+                      "name":  "Has Photos?",
+                      "parameters":  {
+                                         "options":  {
+
+                                                     },
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "version":  1,
+                                                                            "typeValidation":  "loose",
+                                                                            "leftValue":  "",
+                                                                            "caseSensitive":  false
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "operator":  {
+                                                                                                    "operation":  "gt",
+                                                                                                    "type":  "number"
+                                                                                                },
+                                                                                   "rightValue":  0,
+                                                                                   "id":  "hp01",
+                                                                                   "leftValue":  "={{ $(\u0027Webhook\u0027).item.json.body.image_urls.length }}"
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "position":  [
+                                       1152,
+                                       192
+                                   ],
+                      "typeVersion":  2
+                  },
+                  {
+                      "id":  "wf7-n02",
+                      "name":  "Insert Flagged Log",
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      },
+                      "parameters":  {
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "job_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.job_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "cleaner_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.cleaner_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "job_zone_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.zone_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "note",
+                                                                                  "fieldValue":  "={{ $(\u0027Webhook\u0027).item.json.body.note }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "status",
+                                                                                  "fieldValue":  "needs_attention"
+                                                                              }
+                                                                          ]
+                                                      },
+                                         "tableId":  "cleaning_logs"
+                                     },
+                      "type":  "n8n-nodes-base.supabase",
+                      "position":  [
+                                       1392,
+                                       640
+                                   ],
+                      "typeVersion":  1
+                  },
+                  {
+                      "id":  "wf7-n03",
+                      "name":  "Update Zone Flagged",
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      },
+                      "parameters":  {
+                                         "tableId":  "job_zones",
+                                         "operation":  "update",
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "status",
+                                                                                  "fieldValue":  "flagged_no_photo"
+                                                                              }
+                                                                          ]
+                                                      },
+                                         "matchType":  "allFilters",
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyValue":  "={{ $(\u0027Webhook\u0027).item.json.body.zone_id }}",
+                                                                                "condition":  "eq",
+                                                                                "keyName":  "id"
+                                                                            }
+                                                                        ]
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.supabase",
+                      "position":  [
+                                       1632,
+                                       512
+                                   ],
+                      "typeVersion":  1
+                  },
+                  {
+                      "id":  "wf7-n04",
+                      "name":  "Insert Flag Notification",
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      },
+                      "parameters":  {
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "user_id",
+                                                                                  "fieldValue":  "={{ $(\u0027Get Job Details\u0027).item.json.supervisor_id }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "title",
+                                                                                  "fieldValue":  "Zone flagged — no photo"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "message",
+                                                                                  "fieldValue":  "={{ \u0027A cleaner could not photograph a zone. Reason: \u0027 + ($(\u0027Webhook\u0027).item.json.body.note ?? \u0027No reason given\u0027) }}"
+                                                                              },
+                                                                              {
+                                                                                  "fieldId":  "is_read",
+                                                                                  "fieldValue":  "=false"
+                                                                              }
+                                                                          ]
+                                                      },
+                                         "tableId":  "notifications"
+                                     },
+                      "type":  "n8n-nodes-base.supabase",
+                      "position":  [
+                                       1632,
+                                       768
+                                   ],
+                      "typeVersion":  1
+                  },
+                  {
+                      "id":  "wf7-n05",
+                      "name":  "Has Flag Note?",
+                      "parameters":  {
+                                         "options":  {
+
+                                                     },
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "version":  1,
+                                                                            "typeValidation":  "loose",
+                                                                            "leftValue":  "",
+                                                                            "caseSensitive":  false
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "operator":  {
+                                                                                                    "operation":  "notEmpty",
+                                                                                                    "singleValue":  true,
+                                                                                                    "type":  "string"
+                                                                                                },
+                                                                                   "rightValue":  "",
+                                                                                   "id":  "hfn01",
+                                                                                   "leftValue":  "={{ $(\u0027Webhook\u0027).item.json.body.note }}"
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "position":  [
+                                       1872,
+                                       768
+                                   ],
+                      "typeVersion":  2
+                  },
+                  {
+                      "id":  "wf7-n06",
+                      "name":  "Translate Flag Note",
+                      "parameters":  {
+                                         "specifyBody":  "json",
+                                         "sendBody":  true,
+                                         "method":  "POST",
+                                         "options":  {
+
+                                                     },
+                                         "jsonBody":  "={{ JSON.stringify({ q: $(\u0027Webhook\u0027).item.json.body.note, target: \u0027en\u0027, format: \u0027text\u0027 }) }}",
+                                         "url":  "https://translation.googleapis.com/language/translate/v2?key=AIzaSyDm9gR19L5-ZKHQqYdTAcbPAyTcgvpf9ZA"
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "position":  [
+                                       2112,
+                                       768
+                                   ],
+                      "typeVersion":  4.2
+                  },
+                  {
+                      "id":  "wf7-n07",
+                      "name":  "Update Flag Note Translated",
+                      "credentials":  {
+                                          "supabaseApi":  {
+                                                              "id":  "qqH4brGQ87PpjkK5",
+                                                              "name":  "Supabase account"
+                                                          }
+                                      },
+                      "parameters":  {
+                                         "tableId":  "cleaning_logs",
+                                         "operation":  "update",
+                                         "fieldsUi":  {
+                                                          "fieldValues":  [
+                                                                              {
+                                                                                  "fieldId":  "note_translated",
+                                                                                  "fieldValue":  "={{ $json.data.translations[0].translatedText }}"
+                                                                              }
+                                                                          ]
+                                                      },
+                                         "matchType":  "allFilters",
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyValue":  "={{ $(\u0027Insert Flagged Log\u0027).item.json.id }}",
+                                                                                "condition":  "eq",
+                                                                                "keyName":  "id"
+                                                                            }
+                                                                        ]
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.supabase",
+                      "position":  [
+                                       2352,
+                                       768
+                                   ],
+                      "typeVersion":  1
+                  }
+              ]
 }
