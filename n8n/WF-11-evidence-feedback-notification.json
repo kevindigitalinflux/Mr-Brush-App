@@ -1,0 +1,196 @@
+{
+  "id": "ZkZr8SMRPIjYSbFf",
+  "name": "WF-11 - Evidence Feedback Notification",
+  "nodes": [
+    {
+      "id": "wf11-n01",
+      "name": "Feedback Received",
+      "webhookId": "f1a2b3c4-d5e6-4f7a-b8c9-012345abcdef",
+      "type": "n8n-nodes-base.webhook",
+      "position": [200, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "feedback-received",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "wf11-n02",
+      "name": "Get Cleaning Log",
+      "type": "n8n-nodes-base.supabase",
+      "position": [440, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "cleaning_logs",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.record.cleaning_log_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf11-n03",
+      "name": "Get Zone",
+      "type": "n8n-nodes-base.supabase",
+      "position": [680, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "job_zones",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Cleaning Log').item.json.job_zone_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf11-n04",
+      "name": "Get Job",
+      "type": "n8n-nodes-base.supabase",
+      "position": [920, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "jobs",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Cleaning Log').item.json.job_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf11-n05",
+      "name": "Get Facility",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1160, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "facilities",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Job').item.json.facility_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf11-n08",
+      "name": "Get Cleaner Profile",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1400, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "profiles",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Cleaning Log').item.json.cleaner_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf11-n06",
+      "name": "Build Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [1640, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var lang = $('Get Cleaner Profile').item.json.language_preference || 'en';\nvar status = $('Feedback Received').item.json.body.record.status;\nvar comment = $('Feedback Received').item.json.body.record.comment;\nvar zoneName = $('Get Zone').item.json.zone_name;\nvar facilityName = $('Get Facility').item.json.name;\nvar cleanerId = $('Get Cleaning Log').item.json.cleaner_id;\n\nvar notePrefix = { en: ' Note: ', es: ' Nota: ', pt: ' Nota: ' };\n\nvar title, message;\nif (status === 'approved') {\n  var approvedTitles = { en: 'Zone Approved', es: 'Zona aprobada', pt: 'Zona aprovada' };\n  var approvedMsgs = {\n    en: 'Your work on ' + zoneName + ' at ' + facilityName + ' has been approved.',\n    es: 'Tu trabajo en ' + zoneName + ' en ' + facilityName + ' ha sido aprobado.',\n    pt: 'Seu trabalho em ' + zoneName + ' em ' + facilityName + ' foi aprovado.'\n  };\n  title = approvedTitles[lang] || approvedTitles.en;\n  message = approvedMsgs[lang] || approvedMsgs.en;\n} else if (status === 'not_accepted') {\n  var recleanTitles = { en: 'Reclean Required', es: 'Relimpieza requerida', pt: 'Relimpeza necessária' };\n  var recleanMsgs = {\n    en: 'A reclean has been requested for ' + zoneName + ' at ' + facilityName + '.',\n    es: 'Se ha solicitado una relimpieza para ' + zoneName + ' en ' + facilityName + '.',\n    pt: 'Uma relimpeza foi solicitada para ' + zoneName + ' em ' + facilityName + '.'\n  };\n  title = recleanTitles[lang] || recleanTitles.en;\n  message = (recleanMsgs[lang] || recleanMsgs.en) + (comment ? (notePrefix[lang] || ' Note: ') + comment : '');\n} else {\n  var feedbackTitles = { en: 'Supervisor Feedback', es: 'Comentario del supervisor', pt: 'Comentário do supervisor' };\n  var feedbackMsgs = {\n    en: 'Your supervisor left feedback on ' + zoneName + ' at ' + facilityName + '.',\n    es: 'Tu supervisor dejó comentarios sobre ' + zoneName + ' en ' + facilityName + '.',\n    pt: 'Seu supervisor deixou comentários sobre ' + zoneName + ' em ' + facilityName + '.'\n  };\n  title = feedbackTitles[lang] || feedbackTitles.en;\n  message = (feedbackMsgs[lang] || feedbackMsgs.en) + (comment ? (notePrefix[lang] || ' Note: ') + comment : '');\n}\n\nreturn [{ json: { title: title, message: message, user_id: cleanerId } }];"
+      }
+    },
+    {
+      "id": "wf11-n07",
+      "name": "Insert Cleaner Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1880, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    }
+  ],
+  "connections": {
+    "Feedback Received": {
+      "main": [[{ "node": "Get Cleaning Log", "type": "main", "index": 0 }]]
+    },
+    "Get Cleaning Log": {
+      "main": [[{ "node": "Get Zone", "type": "main", "index": 0 }]]
+    },
+    "Get Zone": {
+      "main": [[{ "node": "Get Job", "type": "main", "index": 0 }]]
+    },
+    "Get Job": {
+      "main": [[{ "node": "Get Facility", "type": "main", "index": 0 }]]
+    },
+    "Get Facility": {
+      "main": [[{ "node": "Get Cleaner Profile", "type": "main", "index": 0 }]]
+    },
+    "Get Cleaner Profile": {
+      "main": [[{ "node": "Build Notification", "type": "main", "index": 0 }]]
+    },
+    "Build Notification": {
+      "main": [[{ "node": "Insert Cleaner Notification", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}

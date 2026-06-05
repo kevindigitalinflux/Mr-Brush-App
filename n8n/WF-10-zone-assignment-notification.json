@@ -1,482 +1,179 @@
-﻿{
-    "updatedAt":  "2026-06-05T20:54:35.751Z",
-    "createdAt":  "2026-06-05T19:50:55.957Z",
-    "id":  "nEuQO7mv7A79yBK5",
-    "name":  "WF-10 - Zone Assignment Notification",
-    "description":  null,
-    "active":  true,
-    "isArchived":  false,
-    "nodes":  [
-                  {
-                      "id":  "wf10-n01",
-                      "name":  "Zone Assigned Webhook",
-                      "webhookId":  "e7f8a9b0-c1d2-4e3f-a5b6-789012cdef01",
-                      "type":  "n8n-nodes-base.webhook",
-                      "position":  [
-                                       200,
-                                       192
-                                   ],
-                      "typeVersion":  2,
-                      "parameters":  {
-                                         "httpMethod":  "POST",
-                                         "path":  "zone-assigned",
-                                         "responseMode":  "onReceived",
-                                         "options":  {
-
-                                                     }
-                                     }
-                  },
-                  {
-                      "id":  "wf10-n02",
-                      "name":  "Has Cleaner?",
-                      "parameters":  {
-                                         "options":  {
-
-                                                     },
-                                         "conditions":  {
-                                                            "options":  {
-                                                                            "version":  1,
-                                                                            "typeValidation":  "loose",
-                                                                            "leftValue":  "",
-                                                                            "caseSensitive":  false
-                                                                        },
-                                                            "conditions":  [
-                                                                               {
-                                                                                   "operator":  {
-                                                                                                    "operation":  "notEmpty",
-                                                                                                    "singleValue":  true,
-                                                                                                    "type":  "string"
-                                                                                                },
-                                                                                   "rightValue":  "",
-                                                                                   "id":  "hc01",
-                                                                                   "leftValue":  "={{ $json.body.record.cleaner_id }}"
-                                                                               }
-                                                                           ],
-                                                            "combinator":  "and"
-                                                        }
-                                     },
-                      "type":  "n8n-nodes-base.if",
-                      "position":  [
-                                       440,
-                                       192
-                                   ],
-                      "typeVersion":  2
-                  },
-                  {
-                      "id":  "wf10-n03",
-                      "name":  "Get Job",
-                      "parameters":  {
-                                         "tableId":  "jobs",
-                                         "operation":  "getAll",
-                                         "returnAll":  true,
-                                         "filters":  {
-                                                         "conditions":  [
-                                                                            {
-                                                                                "keyValue":  "={{ $(\u0027Zone Assigned Webhook\u0027).item.json.body.record.job_id }}",
-                                                                                "condition":  "eq",
-                                                                                "keyName":  "id"
-                                                                            }
-                                                                        ]
-                                                     }
-                                     },
-                      "credentials":  {
-                                          "supabaseApi":  {
-                                                              "id":  "qqH4brGQ87PpjkK5",
-                                                              "name":  "Supabase account"
-                                                          }
-                                      },
-                      "type":  "n8n-nodes-base.supabase",
-                      "position":  [
-                                       680,
-                                       96
-                                   ],
-                      "typeVersion":  1
-                  },
-                  {
-                      "id":  "wf10-n04",
-                      "name":  "Get Facility",
-                      "parameters":  {
-                                         "tableId":  "facilities",
-                                         "operation":  "getAll",
-                                         "returnAll":  true,
-                                         "filters":  {
-                                                         "conditions":  [
-                                                                            {
-                                                                                "keyValue":  "={{ $(\u0027Get Job\u0027).item.json.facility_id }}",
-                                                                                "condition":  "eq",
-                                                                                "keyName":  "id"
-                                                                            }
-                                                                        ]
-                                                     }
-                                     },
-                      "credentials":  {
-                                          "supabaseApi":  {
-                                                              "id":  "qqH4brGQ87PpjkK5",
-                                                              "name":  "Supabase account"
-                                                          }
-                                      },
-                      "type":  "n8n-nodes-base.supabase",
-                      "position":  [
-                                       920,
-                                       96
-                                   ],
-                      "typeVersion":  1
-                  },
-                  {
-                      "id":  "wf10-n05",
-                      "name":  "Insert Cleaner Notification",
-                      "parameters":  {
-                                         "fieldsUi":  {
-                                                          "fieldValues":  [
-                                                                              {
-                                                                                  "fieldId":  "user_id",
-                                                                                  "fieldValue":  "={{ $(\u0027Zone Assigned Webhook\u0027).item.json.body.record.cleaner_id }}"
-                                                                              },
-                                                                              {
-                                                                                  "fieldId":  "title",
-                                                                                  "fieldValue":  "New Zone Assigned"
-                                                                              },
-                                                                              {
-                                                                                  "fieldId":  "message",
-                                                                                  "fieldValue":  "={{ \"You have been assigned \" + $(\u0027Zone Assigned Webhook\u0027).item.json.body.record.zone_name + \" at \" + $(\u0027Get Facility\u0027).item.json.name + \" on \" + $(\u0027Get Job\u0027).item.json.scheduled_date + \".\" }}"
-                                                                              },
-                                                                              {
-                                                                                  "fieldId":  "is_read",
-                                                                                  "fieldValue":  "=false"
-                                                                              }
-                                                                          ]
-                                                      },
-                                         "tableId":  "notifications"
-                                     },
-                      "credentials":  {
-                                          "supabaseApi":  {
-                                                              "id":  "qqH4brGQ87PpjkK5",
-                                                              "name":  "Supabase account"
-                                                          }
-                                      },
-                      "type":  "n8n-nodes-base.supabase",
-                      "position":  [
-                                       1160,
-                                       96
-                                   ],
-                      "typeVersion":  1
-                  }
-              ],
-    "connections":  {
-                        "Has Cleaner?":  {
-                                             "main":  [
-                                                          [
-                                                              {
-                                                                  "node":  "Get Job",
-                                                                  "type":  "main",
-                                                                  "index":  0
-                                                              }
-                                                          ],
-                                                          [
-
-                                                          ]
-                                                      ]
-                                         },
-                        "Get Job":  {
-                                        "main":  [
-                                                     [
-                                                         {
-                                                             "node":  "Get Facility",
-                                                             "type":  "main",
-                                                             "index":  0
-                                                         }
-                                                     ]
-                                                 ]
-                                    },
-                        "Get Facility":  {
-                                             "main":  [
-                                                          [
-                                                              {
-                                                                  "node":  "Insert Cleaner Notification",
-                                                                  "type":  "main",
-                                                                  "index":  0
-                                                              }
-                                                          ]
-                                                      ]
-                                         },
-                        "Zone Assigned Webhook":  {
-                                                      "main":  [
-                                                                   [
-                                                                       {
-                                                                           "node":  "Has Cleaner?",
-                                                                           "type":  "main",
-                                                                           "index":  0
-                                                                       }
-                                                                   ]
-                                                               ]
-                                                  }
-                    },
-    "settings":  {
-                     "executionOrder":  "v1"
-                 },
-    "staticData":  null,
-    "meta":  null,
-    "nodeGroups":  [
-
-                   ],
-    "pinData":  null,
-    "versionId":  "09261f37-a571-4a90-b927-6ff2a8f05365",
-    "activeVersionId":  "09261f37-a571-4a90-b927-6ff2a8f05365",
-    "versionCounter":  2,
-    "triggerCount":  1,
-    "shared":  [
-                   {
-                       "updatedAt":  "2026-06-05T19:50:55.959Z",
-                       "createdAt":  "2026-06-05T19:50:55.959Z",
-                       "role":  "workflow:owner",
-                       "workflowId":  "nEuQO7mv7A79yBK5",
-                       "projectId":  "maW3NuD5SiZNpU5H",
-                       "project":  {
-                                       "updatedAt":  "2026-06-03T12:22:30.235Z",
-                                       "createdAt":  "2026-06-02T20:57:06.515Z",
-                                       "id":  "maW3NuD5SiZNpU5H",
-                                       "name":  "kevin zamora-saenz \u003ckevindigitalinflux@gmail.com\u003e",
-                                       "type":  "personal",
-                                       "icon":  null,
-                                       "description":  null,
-                                       "creatorId":  "c50c4ed5-2ce8-4beb-893e-30ff3fba1e91"
-                                   }
-                   }
-               ],
-    "tags":  [
-                 {
-                     "updatedAt":  "2026-06-04T18:08:40.298Z",
-                     "createdAt":  "2026-06-04T18:08:40.298Z",
-                     "id":  "yiN0hBOlQ3BLNp7z",
-                     "name":  "mr-brush"
-                 }
-             ],
-    "activeVersion":  {
-                          "updatedAt":  "2026-06-05T20:54:35.751Z",
-                          "createdAt":  "2026-06-05T20:54:35.751Z",
-                          "versionId":  "09261f37-a571-4a90-b927-6ff2a8f05365",
-                          "workflowId":  "nEuQO7mv7A79yBK5",
-                          "nodes":  [
-                                        {
-                                            "id":  "wf10-n01",
-                                            "name":  "Zone Assigned Webhook",
-                                            "webhookId":  "e7f8a9b0-c1d2-4e3f-a5b6-789012cdef01",
-                                            "type":  "n8n-nodes-base.webhook",
-                                            "position":  [
-                                                             200,
-                                                             192
-                                                         ],
-                                            "typeVersion":  2,
-                                            "parameters":  {
-                                                               "httpMethod":  "POST",
-                                                               "path":  "zone-assigned",
-                                                               "responseMode":  "onReceived",
-                                                               "options":  {
-
-                                                                           }
-                                                           }
-                                        },
-                                        {
-                                            "id":  "wf10-n02",
-                                            "name":  "Has Cleaner?",
-                                            "parameters":  {
-                                                               "options":  {
-
-                                                                           },
-                                                               "conditions":  {
-                                                                                  "options":  {
-                                                                                                  "version":  1,
-                                                                                                  "typeValidation":  "loose",
-                                                                                                  "leftValue":  "",
-                                                                                                  "caseSensitive":  false
-                                                                                              },
-                                                                                  "conditions":  [
-                                                                                                     {
-                                                                                                         "operator":  {
-                                                                                                                          "operation":  "notEmpty",
-                                                                                                                          "singleValue":  true,
-                                                                                                                          "type":  "string"
-                                                                                                                      },
-                                                                                                         "rightValue":  "",
-                                                                                                         "id":  "hc01",
-                                                                                                         "leftValue":  "={{ $json.body.record.cleaner_id }}"
-                                                                                                     }
-                                                                                                 ],
-                                                                                  "combinator":  "and"
-                                                                              }
-                                                           },
-                                            "type":  "n8n-nodes-base.if",
-                                            "position":  [
-                                                             440,
-                                                             192
-                                                         ],
-                                            "typeVersion":  2
-                                        },
-                                        {
-                                            "id":  "wf10-n03",
-                                            "name":  "Get Job",
-                                            "parameters":  {
-                                                               "tableId":  "jobs",
-                                                               "operation":  "getAll",
-                                                               "returnAll":  true,
-                                                               "filters":  {
-                                                                               "conditions":  [
-                                                                                                  {
-                                                                                                      "keyValue":  "={{ $(\u0027Zone Assigned Webhook\u0027).item.json.body.record.job_id }}",
-                                                                                                      "condition":  "eq",
-                                                                                                      "keyName":  "id"
-                                                                                                  }
-                                                                                              ]
-                                                                           }
-                                                           },
-                                            "credentials":  {
-                                                                "supabaseApi":  {
-                                                                                    "id":  "qqH4brGQ87PpjkK5",
-                                                                                    "name":  "Supabase account"
-                                                                                }
-                                                            },
-                                            "type":  "n8n-nodes-base.supabase",
-                                            "position":  [
-                                                             680,
-                                                             96
-                                                         ],
-                                            "typeVersion":  1
-                                        },
-                                        {
-                                            "id":  "wf10-n04",
-                                            "name":  "Get Facility",
-                                            "parameters":  {
-                                                               "tableId":  "facilities",
-                                                               "operation":  "getAll",
-                                                               "returnAll":  true,
-                                                               "filters":  {
-                                                                               "conditions":  [
-                                                                                                  {
-                                                                                                      "keyValue":  "={{ $(\u0027Get Job\u0027).item.json.facility_id }}",
-                                                                                                      "condition":  "eq",
-                                                                                                      "keyName":  "id"
-                                                                                                  }
-                                                                                              ]
-                                                                           }
-                                                           },
-                                            "credentials":  {
-                                                                "supabaseApi":  {
-                                                                                    "id":  "qqH4brGQ87PpjkK5",
-                                                                                    "name":  "Supabase account"
-                                                                                }
-                                                            },
-                                            "type":  "n8n-nodes-base.supabase",
-                                            "position":  [
-                                                             920,
-                                                             96
-                                                         ],
-                                            "typeVersion":  1
-                                        },
-                                        {
-                                            "id":  "wf10-n05",
-                                            "name":  "Insert Cleaner Notification",
-                                            "parameters":  {
-                                                               "fieldsUi":  {
-                                                                                "fieldValues":  [
-                                                                                                    {
-                                                                                                        "fieldId":  "user_id",
-                                                                                                        "fieldValue":  "={{ $(\u0027Zone Assigned Webhook\u0027).item.json.body.record.cleaner_id }}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "fieldId":  "title",
-                                                                                                        "fieldValue":  "New Zone Assigned"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "fieldId":  "message",
-                                                                                                        "fieldValue":  "={{ \"You have been assigned \" + $(\u0027Zone Assigned Webhook\u0027).item.json.body.record.zone_name + \" at \" + $(\u0027Get Facility\u0027).item.json.name + \" on \" + $(\u0027Get Job\u0027).item.json.scheduled_date + \".\" }}"
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "fieldId":  "is_read",
-                                                                                                        "fieldValue":  "=false"
-                                                                                                    }
-                                                                                                ]
-                                                                            },
-                                                               "tableId":  "notifications"
-                                                           },
-                                            "credentials":  {
-                                                                "supabaseApi":  {
-                                                                                    "id":  "qqH4brGQ87PpjkK5",
-                                                                                    "name":  "Supabase account"
-                                                                                }
-                                                            },
-                                            "type":  "n8n-nodes-base.supabase",
-                                            "position":  [
-                                                             1160,
-                                                             96
-                                                         ],
-                                            "typeVersion":  1
-                                        }
-                                    ],
-                          "connections":  {
-                                              "Has Cleaner?":  {
-                                                                   "main":  [
-                                                                                [
-                                                                                    {
-                                                                                        "node":  "Get Job",
-                                                                                        "type":  "main",
-                                                                                        "index":  0
-                                                                                    }
-                                                                                ],
-                                                                                [
-
-                                                                                ]
-                                                                            ]
-                                                               },
-                                              "Get Job":  {
-                                                              "main":  [
-                                                                           [
-                                                                               {
-                                                                                   "node":  "Get Facility",
-                                                                                   "type":  "main",
-                                                                                   "index":  0
-                                                                               }
-                                                                           ]
-                                                                       ]
-                                                          },
-                                              "Get Facility":  {
-                                                                   "main":  [
-                                                                                [
-                                                                                    {
-                                                                                        "node":  "Insert Cleaner Notification",
-                                                                                        "type":  "main",
-                                                                                        "index":  0
-                                                                                    }
-                                                                                ]
-                                                                            ]
-                                                               },
-                                              "Zone Assigned Webhook":  {
-                                                                            "main":  [
-                                                                                         [
-                                                                                             {
-                                                                                                 "node":  "Has Cleaner?",
-                                                                                                 "type":  "main",
-                                                                                                 "index":  0
-                                                                                             }
-                                                                                         ]
-                                                                                     ]
-                                                                        }
-                                          },
-                          "nodeGroups":  [
-
-                                         ],
-                          "authors":  "kevin zamora-saenz",
-                          "name":  null,
-                          "description":  null,
-                          "autosaved":  false,
-                          "workflowPublishHistory":  [
-                                                         {
-                                                             "createdAt":  "2026-06-05T20:54:35.928Z",
-                                                             "id":  21,
-                                                             "workflowId":  "nEuQO7mv7A79yBK5",
-                                                             "versionId":  "09261f37-a571-4a90-b927-6ff2a8f05365",
-                                                             "event":  "activated",
-                                                             "userId":  "c50c4ed5-2ce8-4beb-893e-30ff3fba1e91"
-                                                         }
-                                                     ]
-                      }
+{
+  "id": "nEuQO7mv7A79yBK5",
+  "name": "WF-10 - Zone Assignment Notification",
+  "nodes": [
+    {
+      "id": "wf10-n01",
+      "name": "Zone Assigned Webhook",
+      "webhookId": "e7f8a9b0-c1d2-4e3f-a5b6-789012cdef01",
+      "type": "n8n-nodes-base.webhook",
+      "position": [200, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zone-assigned",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "wf10-n02",
+      "name": "Has Cleaner?",
+      "type": "n8n-nodes-base.if",
+      "position": [440, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "typeValidation": "loose",
+            "leftValue": "",
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "operator": {
+                "operation": "notEmpty",
+                "singleValue": true,
+                "type": "string"
+              },
+              "rightValue": "",
+              "id": "hc01",
+              "leftValue": "={{ $json.body.record.cleaner_id }}"
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "wf10-n03",
+      "name": "Get Job",
+      "type": "n8n-nodes-base.supabase",
+      "position": [680, 96],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "jobs",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Zone Assigned Webhook').item.json.body.record.job_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf10-n04",
+      "name": "Get Facility",
+      "type": "n8n-nodes-base.supabase",
+      "position": [920, 96],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "facilities",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Job').item.json.facility_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf10-n06",
+      "name": "Get Cleaner Profile",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1160, 96],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "profiles",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Zone Assigned Webhook').item.json.body.record.cleaner_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf10-n07",
+      "name": "Build Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [1400, 96],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var lang = $('Get Cleaner Profile').item.json.language_preference || 'en';\nvar zoneName = $('Zone Assigned Webhook').item.json.body.record.zone_name;\nvar facilityName = $('Get Facility').item.json.name;\nvar scheduledDate = $('Get Job').item.json.scheduled_date;\nvar cleanerId = $('Zone Assigned Webhook').item.json.body.record.cleaner_id;\n\nvar titles = {\n  en: 'New Zone Assigned',\n  es: 'Nueva zona asignada',\n  pt: 'Nova zona atribuída'\n};\nvar messages = {\n  en: 'You have been assigned ' + zoneName + ' at ' + facilityName + ' on ' + scheduledDate + '.',\n  es: 'Se te ha asignado ' + zoneName + ' en ' + facilityName + ' el ' + scheduledDate + '.',\n  pt: 'Você foi atribuído(a) a ' + zoneName + ' em ' + facilityName + ' no dia ' + scheduledDate + '.'\n};\n\nvar title = titles[lang] || titles.en;\nvar message = messages[lang] || messages.en;\n\nreturn [{ json: { title: title, message: message, user_id: cleanerId } }];"
+      }
+    },
+    {
+      "id": "wf10-n05",
+      "name": "Insert Cleaner Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1640, 96],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    }
+  ],
+  "connections": {
+    "Zone Assigned Webhook": {
+      "main": [[{ "node": "Has Cleaner?", "type": "main", "index": 0 }]]
+    },
+    "Has Cleaner?": {
+      "main": [
+        [{ "node": "Get Job", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Get Job": {
+      "main": [[{ "node": "Get Facility", "type": "main", "index": 0 }]]
+    },
+    "Get Facility": {
+      "main": [[{ "node": "Get Cleaner Profile", "type": "main", "index": 0 }]]
+    },
+    "Get Cleaner Profile": {
+      "main": [[{ "node": "Build Notification", "type": "main", "index": 0 }]]
+    },
+    "Build Notification": {
+      "main": [[{ "node": "Insert Cleaner Notification", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
 }
