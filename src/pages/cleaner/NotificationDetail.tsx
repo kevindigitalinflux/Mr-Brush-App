@@ -15,13 +15,15 @@ interface Notif {
   created_at: string
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, lang: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins}m ago`
+  type L = Record<string, string>
+  if (mins < 1) return ({ en: 'Just now', es: 'Ahora mismo', pt: 'Agora mesmo' } as L)[lang] ?? 'Just now'
+  if (mins < 60) return ({ en: `${mins}m ago`, es: `hace ${mins}m`, pt: `há ${mins}m` } as L)[lang] ?? `${mins}m ago`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
+  if (hrs < 24) return ({ en: `${hrs}h ago`, es: `hace ${hrs}h`, pt: `há ${hrs}h` } as L)[lang] ?? `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return ({ en: `${days}d ago`, es: `hace ${days}d`, pt: `há ${days}d` } as L)[lang] ?? `${days}d ago`
 }
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ function BackIcon() {
 // ─── Detail content ───────────────────────────────────────────────────────────
 
 function NotifDetailContent({ notif }: { notif: Notif }) {
+  const { language } = useApp()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -48,7 +51,7 @@ function NotifDetailContent({ notif }: { notif: Notif }) {
   return (
     <div ref={containerRef} className="px-6 pt-6 pb-8">
       <div className="nd-title mb-6">
-        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mb-2">{timeAgo(notif.created_at)}</p>
+        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mb-2">{timeAgo(notif.created_at, language)}</p>
         <h1 className="font-['Poppins',sans-serif] font-bold text-[26px] text-[#1A1C19] leading-[1.25] tracking-[-0.3px]">
           {notif.title}
         </h1>
@@ -150,11 +153,11 @@ function MobileNotificationDetail() {
           </button>
         </div>
         {loading ? (
-          <p className="p-6 font-['Lato',sans-serif] text-sm text-[#737874]">Loading…</p>
+          <p className="p-6 font-['Lato',sans-serif] text-sm text-[#737874]">{t('loading')}</p>
         ) : notif ? (
           <NotifDetailContent notif={notif} />
         ) : (
-          <p className="p-6 font-['Lato',sans-serif] text-[#434844]">Notification not found.</p>
+          <p className="p-6 font-['Lato',sans-serif] text-[#434844]">{t('notif_not_found')}</p>
         )}
       </div>
     </div>

@@ -16,13 +16,15 @@ interface Notif {
   created_at: string
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, lang: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins}m ago`
+  type L = Record<string, string>
+  if (mins < 1) return ({ en: 'Just now', es: 'Ahora mismo', pt: 'Agora mesmo' } as L)[lang] ?? 'Just now'
+  if (mins < 60) return ({ en: `${mins}m ago`, es: `hace ${mins}m`, pt: `há ${mins}m` } as L)[lang] ?? `${mins}m ago`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
+  if (hrs < 24) return ({ en: `${hrs}h ago`, es: `hace ${hrs}h`, pt: `há ${hrs}h` } as L)[lang] ?? `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return ({ en: `${days}d ago`, es: `hace ${days}d`, pt: `há ${days}d` } as L)[lang] ?? `${days}d ago`
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -57,8 +59,8 @@ function CheckCircleSvg() {
 type IconType = 'alert' | 'approved' | 'default'
 
 function iconTypeFor(title: string): IconType {
-  if (/flag|attention|urgent|reclean|not.accept/i.test(title)) return 'alert'
-  if (/approved|approve/i.test(title)) return 'approved'
+  if (/flag|attention|urgent|reclean|not.accept|relimpieza|relimpeza|requerida|necessária/i.test(title)) return 'alert'
+  if (/approved|approve|aprobad|aprovad/i.test(title)) return 'approved'
   return 'default'
 }
 
@@ -87,6 +89,7 @@ function NotifIcon({ type }: { type: IconType }) {
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 function NotifCard({ notif, onPress, selected = false }: { notif: Notif; onPress: () => void; selected?: boolean }) {
+  const { language } = useApp()
   const isUnread = !notif.is_read
 
   return (
@@ -105,7 +108,7 @@ function NotifCard({ notif, onPress, selected = false }: { notif: Notif; onPress
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {isUnread && <span className="w-2 h-2 rounded-full bg-[#B8A77A] flex-shrink-0" />}
-            <span className="font-['Lato',sans-serif] text-[12px] text-[#737874]">{timeAgo(notif.created_at)}</span>
+            <span className="font-['Lato',sans-serif] text-[12px] text-[#737874]">{timeAgo(notif.created_at, language)}</span>
           </div>
         </div>
         <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-[1.55] overflow-hidden"
@@ -131,7 +134,7 @@ function EmptyState() {
 
 function DesktopNotifications() {
   const t = useTranslation()
-  const { user } = useApp()
+  const { user, language } = useApp()
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -191,7 +194,7 @@ function DesktopNotifications() {
               <span className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">{selected.title}</span>
             </div>
             <div className="p-6">
-              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mb-4">{timeAgo(selected.created_at)}</p>
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mb-4">{timeAgo(selected.created_at, language)}</p>
               <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-5">
                 <p className="font-['Lato',sans-serif] text-[15px] text-[#1A1C19] leading-[1.7]">{selected.message}</p>
               </div>
