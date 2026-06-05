@@ -79,6 +79,7 @@ function useJobData(userId: string | undefined) {
         .from('job_zones')
         .select('id, job_id, status')
         .eq('cleaner_id', userId)
+        .neq('status', 'deleted')
 
       const myZones = (zoneRows ?? []) as { id: string; job_id: string; status: string | null }[]
       if (myZones.length === 0) { setJobs([]); setLoading(false); return }
