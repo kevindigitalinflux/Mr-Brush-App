@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { supabase } from '../../lib/supabase'
+import { useTranslation } from '../../lib/useTranslation'
 
 const AUTO_REDIRECT_MS = 3000
 
@@ -26,6 +27,7 @@ function VerifiedIcon() {
 export function ZoneSubmissionSuccess() {
   const { jobId, zoneId } = useParams<{ jobId: string; zoneId: string }>()
   const navigate = useNavigate()
+  const t = useTranslation()
   const [zoneName, setZoneName] = useState('Zone')
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -88,10 +90,10 @@ export function ZoneSubmissionSuccess() {
         {/* Zone name + status */}
         <div className="zss-heading flex flex-col items-center gap-1">
           <h2 className="font-['Poppins',sans-serif] font-bold text-[32px] tracking-[-0.8px] text-[#496456] text-center leading-10">
-            {zoneName}<br />Completed
+            {zoneName}<br />{t('completed')}
           </h2>
           <p className="font-['Lato',sans-serif] text-lg text-[#605E5D] text-center">
-            Submitted successfully
+            {t('zone_submitted_success')}
           </p>
         </div>
 
@@ -102,7 +104,7 @@ export function ZoneSubmissionSuccess() {
             <div className="bg-[#2F4A3D] flex items-center gap-1 px-2 py-1 rounded-full">
               <VerifiedIcon />
               <span className="font-['Lato',sans-serif] font-bold text-xs text-white">
-                Verified Clean
+                {t('zone_verified_clean')}
               </span>
             </div>
           </div>
@@ -123,7 +125,7 @@ export function ZoneSubmissionSuccess() {
               />
             </div>
             <p className="font-['Lato',sans-serif] font-bold text-[12px] text-[#7C766A] text-center">
-              Redirecting to next task…
+              {t('redirecting')}
             </p>
           </div>
 
@@ -131,7 +133,7 @@ export function ZoneSubmissionSuccess() {
             onClick={handleContinueNow}
             className="w-full h-14 bg-[#B8A77A] rounded-[4px] font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#F8F8F2] text-center cursor-pointer hover:bg-[#a8976a] transition-colors"
           >
-            Continue Now
+            {t('continue_now')}
           </button>
         </div>
 

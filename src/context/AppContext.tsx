@@ -41,9 +41,24 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
+const LANG_KEY = 'mr_brush_lang'
+
+function readStoredLang(): Language {
+  try {
+    const v = localStorage.getItem(LANG_KEY)
+    if (v === 'en' || v === 'es' || v === 'pt') return v
+  } catch { /* ignore */ }
+  return 'en'
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [language, setLanguage] = useState<Language>('en')
+  const [language, setLanguageState] = useState<Language>(readStoredLang)
+
+  function setLanguage(lang: Language) {
+    try { localStorage.setItem(LANG_KEY, lang) } catch { /* ignore */ }
+    setLanguageState(lang)
+  }
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [completedZones, setCompletedZones] = useState<Set<string>>(new Set())

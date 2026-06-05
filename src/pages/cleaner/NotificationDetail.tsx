@@ -114,11 +114,11 @@ function DesktopNotificationDetail() {
         </div>
         <div className="max-w-2xl mx-auto pb-12">
           {loading ? (
-            <p className="p-6 font-['Lato',sans-serif] text-sm text-[#737874]">Loading…</p>
+            <p className="p-6 font-['Lato',sans-serif] text-sm text-[#737874]">{t('loading')}</p>
           ) : notif ? (
             <NotifDetailContent notif={notif} />
           ) : (
-            <p className="p-6 font-['Lato',sans-serif] text-[#434844]">Notification not found.</p>
+            <p className="p-6 font-['Lato',sans-serif] text-[#434844]">{t('notif_not_found')}</p>
           )}
         </div>
       </main>

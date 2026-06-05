@@ -26,9 +26,9 @@ function CheckIcon() {
 }
 
 export function LanguageSelect() {
-  const { setLanguage } = useApp()
+  const { setLanguage, language } = useApp()
   const navigate = useNavigate()
-  const [selected, setSelected] = useState<Language>('en')
+  const [selected, setSelected] = useState<Language>(language)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {

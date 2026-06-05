@@ -294,7 +294,7 @@ function DesktopHome() {
               <h1 className="font-['Poppins',sans-serif] font-bold text-[44px] text-[#1A1C19] leading-[1.1] tracking-[-1px]">
                 {t(greetingKey)}, {user?.name ?? 'Cleaner'}
               </h1>
-              <p className="font-['Lato',sans-serif] text-[#737874] text-lg mt-1">Here is the overview for today's assignments.</p>
+              <p className="font-['Lato',sans-serif] text-[#737874] text-lg mt-1">{t('home_overview')}</p>
             </div>
             <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[1.4px] text-[#737874] mt-3">{dateStr}</span>
           </div>
@@ -313,7 +313,7 @@ function DesktopHome() {
 
           <div>
             <div className="dh-section flex items-center justify-between mb-5">
-              <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">Active Assignments</h2>
+              <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">{t('home_active_assignments')}</h2>
             </div>
             {loading ? (
               <div className="grid grid-cols-2 gap-5">
@@ -321,8 +321,8 @@ function DesktopHome() {
               </div>
             ) : jobs.length === 0 ? (
               <div className="bg-white border border-[#E3E3DD] rounded-[12px] p-12 flex flex-col items-center gap-2 shadow-sm">
-                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No Jobs Today</p>
-                <p className="font-['Lato',sans-serif] text-base text-[#737874]">You have no jobs assigned for today. Check back later or contact your supervisor.</p>
+                <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">{t('home_no_jobs')}</p>
+                <p className="font-['Lato',sans-serif] text-base text-[#737874]">{t('home_no_jobs_body')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-5">
@@ -410,18 +410,18 @@ function MobileHome() {
           ) : jobs.length === 0 ? (
             <div className="w-full px-6">
               <div className="bg-white border border-[#C3C8C2] rounded-[12px] flex flex-col items-center p-[33px]">
-                <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">No Jobs Today</h3>
+                <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">{t('home_no_jobs')}</h3>
                 <p className="font-['Lato',sans-serif] text-base text-[#6B5D36] text-center leading-[1.6]">
-                  You have no jobs assigned for today. Check back later or contact your supervisor.
+                  {t('home_no_jobs_body')}
                 </p>
               </div>
             </div>
           ) : allDone ? (
             <div className="w-full px-6">
               <div className="bg-white border border-[#C3C8C2] rounded-[12px] flex flex-col items-center p-[33px]">
-                <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">All Jobs Completed</h3>
+                <h3 className="font-['Poppins',sans-serif] font-semibold text-2xl text-[#1A1C19] text-center mb-2">{t('home_all_done')}</h3>
                 <p className="font-['Lato',sans-serif] text-base text-[#6B5D36] text-center leading-[1.6]">
-                  You've successfully finished all your scheduled tasks for today. Great work!
+                  {t('home_all_done_body')}
                 </p>
               </div>
             </div>

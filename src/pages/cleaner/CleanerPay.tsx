@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
@@ -29,8 +30,14 @@ const STATUS_STYLES: Record<PayStatus, string> = {
   paid:     'bg-[#D7E6DB] text-[#2F4A3D]',
 }
 
-const STATUS_LABELS: Record<PayStatus, string> = {
-  draft: 'Pending', approved: 'Approved', paid: 'Paid',
+function useStatusLabel(status: PayStatus): string {
+  const t = useTranslation()
+  const map: Record<PayStatus, string> = {
+    draft: t('pay_status_pending'),
+    approved: t('pay_status_approved'),
+    paid: t('pay_status_paid'),
+  }
+  return map[status]
 }
 
 // ─── Mock data (preview only) ─────────────────────────────────────────────────
@@ -115,13 +122,14 @@ function usePayData(filterMonth: string) {
 // ─── Summary cards ────────────────────────────────────────────────────────────
 
 function SummaryCards({ records, totalHours, totalGross }: { records: ShiftRecord[]; totalHours: number; totalGross: number }) {
+  const t = useTranslation()
   if (records.length === 0) return null
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
       {[
-        { label: 'Shifts', value: String(records.length) },
-        { label: 'Hours', value: totalHours.toFixed(1) },
-        { label: 'Expected Pay', value: `£${totalGross.toFixed(2)}` },
+        { label: t('pay_shifts'), value: String(records.length) },
+        { label: t('pay_hours'), value: totalHours.toFixed(1) },
+        { label: t('pay_expected_pay'), value: `£${totalGross.toFixed(2)}` },
       ].map(({ label, value }) => (
         <div key={label} className="bg-white border border-[#D0CFCA] rounded-[12px] px-3 py-4 text-center">
           <p className="font-['Lato',sans-serif] text-[10px] font-bold uppercase tracking-[1px] text-[#737874]">{label}</p>
@@ -135,6 +143,7 @@ function SummaryCards({ records, totalHours, totalGross }: { records: ShiftRecor
 // ─── Shift card ───────────────────────────────────────────────────────────────
 
 function ShiftCard({ record }: { record: ShiftRecord }) {
+  const statusLabel = useStatusLabel(record.status)
   const dayNum = new Date(record.shiftDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric' })
   const monthStr = new Date(record.shiftDate + 'T00:00:00').toLocaleDateString('en-GB', { month: 'short' })
 
@@ -158,7 +167,7 @@ function ShiftCard({ record }: { record: ShiftRecord }) {
           {record.hoursWorked}h × £{record.hourlyRate.toFixed(2)}/hr
         </p>
         <span className={`inline-block mt-1.5 font-['Lato',sans-serif] text-[10px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-full ${STATUS_STYLES[record.status]}`}>
-          {STATUS_LABELS[record.status]}
+          {statusLabel}
         </span>
       </div>
 
@@ -176,6 +185,7 @@ function ShiftCard({ record }: { record: ShiftRecord }) {
 
 function PayContent() {
   const { user } = useApp()
+  const t = useTranslation()
   const [filterMonth, setFilterMonth] = useState('')
   const { records } = usePayData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -215,7 +225,7 @@ function PayContent() {
     <div ref={containerRef} className="max-w-2xl mx-auto px-6 py-10 pb-[120px] md:pb-10">
 
       <div className="pay-header mb-6">
-        <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">Your Pay</h1>
+        <h1 className="font-['Poppins',sans-serif] font-bold text-[42px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">{t('pay_title')}</h1>
         <p className="font-['Lato',sans-serif] text-[14px] text-[#737874] mt-1">
           {user?.name ? `${user.name} · ` : ''}{filterLabel}
         </p>
@@ -233,15 +243,15 @@ function PayContent() {
             onClick={() => setFilterMonth('')}
             className="h-9 px-3 rounded-[8px] border border-[#D0CFCA] bg-white font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors"
           >
-            Clear
+            {t('pay_clear')}
           </button>
         )}
       </div>
 
       {displayRecords.length === 0 ? (
         <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
-          <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#1A1C19]">No records for this period</p>
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">Try a different month or clear the filter.</p>
+          <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#1A1C19]">{t('pay_no_records')}</p>
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">{t('pay_no_records_body')}</p>
         </div>
       ) : (
         <>

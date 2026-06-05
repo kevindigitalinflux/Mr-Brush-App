@@ -151,6 +151,7 @@ function LoginFields({ state }: { state: ReturnType<typeof useLoginForm> }) {
 
 function DesktopLogin() {
   const state = useLoginForm()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -188,8 +189,8 @@ function DesktopLogin() {
           <div className="flex flex-col items-center gap-3">
             <img src={logoSrc} alt="Mr Brush & Co." className="w-16 h-16 object-contain" />
             <div className="text-center">
-              <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] text-[#1A1C19] tracking-[-0.3px]">Welcome back</h1>
-              <p className="font-['Lato',sans-serif] text-[#737874] text-base mt-1">Sign in to your User Portal</p>
+              <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] text-[#1A1C19] tracking-[-0.3px]">{t('welcome_back')}</h1>
+              <p className="font-['Lato',sans-serif] text-[#737874] text-base mt-1">{t('sign_in_subtitle')}</p>
             </div>
           </div>
           <div className="bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-8">
@@ -208,6 +209,7 @@ function DesktopLogin() {
 
 function MobileLogin() {
   const state = useLoginForm()
+  const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
@@ -223,15 +225,15 @@ function MobileLogin() {
         <div className="login-logo flex flex-col items-center gap-4">
           <img src={logoSrc} alt="Mr Brush & Co." className="w-28 h-28 object-contain" />
           <div className="login-title flex flex-col items-center gap-2">
-            <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] leading-[38px] tracking-[-0.32px] text-[#1A1C19] text-center">Welcome back</h1>
-            <p className="font-['Lato',sans-serif] text-base text-[#434844] text-center">Sign in with your User ID</p>
+            <h1 className="font-['Poppins',sans-serif] font-semibold text-[32px] leading-[38px] tracking-[-0.32px] text-[#1A1C19] text-center">{t('welcome_back')}</h1>
+            <p className="font-['Lato',sans-serif] text-base text-[#434844] text-center">{t('sign_in_subtitle')}</p>
           </div>
         </div>
         <div className="login-card bg-white border border-[#C3C8C2] rounded-[12px] shadow-sm p-[25px] flex flex-col gap-6">
           <LoginFields state={state} />
           <div className="flex flex-col items-center">
             <p className="font-['Lato',sans-serif] text-base text-[#1A1C19] text-center underline decoration-[#C3C8C2] leading-[1.6]">
-              Forgotten your User ID?<br />Let your supervisor know
+              {t('forgot_id')}<br />{t('forgot_id_sub')}
             </p>
           </div>
         </div>

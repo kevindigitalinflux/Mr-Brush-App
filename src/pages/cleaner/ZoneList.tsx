@@ -152,8 +152,8 @@ function useZoneListData() {
 function getStatusLabel(status: ZoneStatus, t: (k: string) => string): string {
   if (status === 'completed') return t('completed')
   if (status === 'not_started') return t('not_started')
-  if (status === 'in_progress') return 'In Progress'
-  return 'No Photo Submitted'
+  if (status === 'in_progress') return t('in_progress')
+  return t('no_photo_submitted')
 }
 
 function ZoneCard({ zone, jobId }: { zone: DisplayZone; jobId: string }) {

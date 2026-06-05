@@ -4,11 +4,11 @@ export const strings: Record<Language, Record<string, string>> = {
   en: {
     // Auth
     welcome_back: 'Welcome back',
-    sign_in_subtitle: 'Sign in with your Cleaner ID',
+    sign_in_subtitle: 'Sign in with your User ID',
     cleaner_id: 'Cleaner ID',
     password: 'Password',
     sign_in: 'Sign In',
-    forgot_id: 'Forgotten your Cleaner ID?',
+    forgot_id: 'Forgotten your User ID?',
     forgot_id_sub: 'Let your supervisor know',
     invalid_credentials: 'Incorrect ID or password. Please try again.',
     select_language: 'Choose your language',
@@ -58,6 +58,59 @@ export const strings: Record<Language, Record<string, string>> = {
     nav_history: 'History',
     nav_pay: 'Pay',
     nav_notifications: 'Notifications',
+
+    // Generic states
+    loading: 'Loading…',
+    uploading: 'Uploading…',
+
+    // Home
+    home_overview: "Here is the overview for today's assignments.",
+    home_active_assignments: 'Active Assignments',
+    home_no_jobs: 'No Jobs Today',
+    home_no_jobs_body: 'You have no jobs assigned for today. Check back later or contact your supervisor.',
+    home_all_done: 'All Jobs Completed',
+    home_all_done_body: "You've successfully finished all your scheduled tasks for today. Great work!",
+
+    // Zone list
+    in_progress: 'In Progress',
+    no_photo_submitted: 'No Photo Submitted',
+
+    // Zone submission
+    zone_photo: 'Zone photo',
+    upload_failed: 'Upload failed. Check your connection and try again.',
+
+    // Zone submission success
+    zone_submitted_success: 'Submitted successfully',
+    zone_verified_clean: 'Verified Clean',
+    redirecting: 'Redirecting to next task…',
+    continue_now: 'Continue Now',
+
+    // Zone offline queued
+    offline_saved: 'Submission Saved',
+    offline_saved_body: 'Your photos have been saved to this device. They will upload automatically as soon as you reconnect.',
+    online_uploading_body: "You're back online. Your evidence is uploading now — this only takes a moment.",
+    syncing: 'SYNCING',
+    uploaded: 'Uploaded!',
+    uploaded_body: 'Your evidence has been submitted successfully. Returning to your shift…',
+    back_to_zones: 'Back to zone list',
+
+    // Pay
+    pay_title: 'Your Pay',
+    pay_clear: 'Clear',
+    pay_no_records: 'No records for this period',
+    pay_no_records_body: 'Try a different month or clear the filter.',
+    pay_shifts: 'Shifts',
+    pay_hours: 'Hours',
+    pay_expected_pay: 'Expected Pay',
+    pay_status_pending: 'Pending',
+    pay_status_approved: 'Approved',
+    pay_status_paid: 'Paid',
+
+    // Notifications (cleaner-side)
+    notif_empty: 'No notifications yet',
+    notif_empty_body: 'Messages from your supervisor will appear here.',
+    notif_select_to_read: 'Select a notification to read',
+    notif_not_found: 'Notification not found.',
 
     // Offline
     no_internet: 'No internet connection',
@@ -303,7 +356,7 @@ export const strings: Record<Language, Record<string, string>> = {
   es: {
     // Auth
     welcome_back: 'Bienvenido de nuevo',
-    sign_in_subtitle: 'Inicia sesión con tu ID de limpiador',
+    sign_in_subtitle: 'Inicia sesión con tu ID de usuario',
     cleaner_id: 'ID de limpiador',
     password: 'Contraseña',
     sign_in: 'Iniciar sesión',
@@ -357,6 +410,59 @@ export const strings: Record<Language, Record<string, string>> = {
     nav_history: 'Historial',
     nav_pay: 'Pago',
     nav_notifications: 'Avisos',
+
+    // Generic states
+    loading: 'Cargando…',
+    uploading: 'Subiendo…',
+
+    // Home
+    home_overview: 'Aquí tienes el resumen de las asignaciones de hoy.',
+    home_active_assignments: 'Asignaciones activas',
+    home_no_jobs: 'Sin trabajos hoy',
+    home_no_jobs_body: 'No tienes trabajos asignados para hoy. Vuelve más tarde o contacta a tu supervisor.',
+    home_all_done: 'Todos los trabajos completados',
+    home_all_done_body: 'Has completado correctamente todas las tareas programadas para hoy. ¡Buen trabajo!',
+
+    // Zone list
+    in_progress: 'En progreso',
+    no_photo_submitted: 'Sin foto enviada',
+
+    // Zone submission
+    zone_photo: 'Foto de zona',
+    upload_failed: 'Error al subir. Comprueba tu conexión e inténtalo de nuevo.',
+
+    // Zone submission success
+    zone_submitted_success: 'Enviado correctamente',
+    zone_verified_clean: 'Limpieza verificada',
+    redirecting: 'Redirigiendo a la siguiente tarea…',
+    continue_now: 'Continuar ahora',
+
+    // Zone offline queued
+    offline_saved: 'Envío guardado',
+    offline_saved_body: 'Tus fotos se han guardado en este dispositivo. Se subirán automáticamente cuando te reconectes.',
+    online_uploading_body: 'Estás de vuelta en línea. Tu evidencia se está subiendo ahora — solo tomará un momento.',
+    syncing: 'SINCRONIZANDO',
+    uploaded: '¡Subido!',
+    uploaded_body: 'Tu evidencia ha sido enviada correctamente. Volviendo a tu turno…',
+    back_to_zones: 'Volver a la lista de zonas',
+
+    // Pay
+    pay_title: 'Tu pago',
+    pay_clear: 'Borrar',
+    pay_no_records: 'Sin registros para este período',
+    pay_no_records_body: 'Prueba con otro mes o borra el filtro.',
+    pay_shifts: 'Turnos',
+    pay_hours: 'Horas',
+    pay_expected_pay: 'Pago esperado',
+    pay_status_pending: 'Pendiente',
+    pay_status_approved: 'Aprobado',
+    pay_status_paid: 'Pagado',
+
+    // Notifications (cleaner-side)
+    notif_empty: 'Sin notificaciones aún',
+    notif_empty_body: 'Los mensajes de tu supervisor aparecerán aquí.',
+    notif_select_to_read: 'Selecciona una notificación para leer',
+    notif_not_found: 'Notificación no encontrada.',
 
     // Offline
     no_internet: 'Sin conexión a internet',
@@ -597,7 +703,7 @@ export const strings: Record<Language, Record<string, string>> = {
   pt: {
     // Auth
     welcome_back: 'Bem-vindo de volta',
-    sign_in_subtitle: 'Entre com seu ID de limpador',
+    sign_in_subtitle: 'Entre com seu ID de usuário',
     cleaner_id: 'ID do limpador',
     password: 'Senha',
     sign_in: 'Entrar',
@@ -651,6 +757,59 @@ export const strings: Record<Language, Record<string, string>> = {
     nav_history: 'Histórico',
     nav_pay: 'Pagamento',
     nav_notifications: 'Avisos',
+
+    // Generic states
+    loading: 'Carregando…',
+    uploading: 'Enviando…',
+
+    // Home
+    home_overview: 'Aqui está o resumo das atribuições de hoje.',
+    home_active_assignments: 'Atribuições ativas',
+    home_no_jobs: 'Sem trabalhos hoje',
+    home_no_jobs_body: 'Você não tem trabalhos atribuídos para hoje. Volte mais tarde ou contate seu supervisor.',
+    home_all_done: 'Todos os trabalhos concluídos',
+    home_all_done_body: 'Você concluiu com sucesso todas as tarefas programadas para hoje. Ótimo trabalho!',
+
+    // Zone list
+    in_progress: 'Em andamento',
+    no_photo_submitted: 'Sem foto enviada',
+
+    // Zone submission
+    zone_photo: 'Foto da zona',
+    upload_failed: 'Falha no envio. Verifique sua conexão e tente novamente.',
+
+    // Zone submission success
+    zone_submitted_success: 'Enviado com sucesso',
+    zone_verified_clean: 'Limpeza verificada',
+    redirecting: 'Redirecionando para a próxima tarefa…',
+    continue_now: 'Continuar agora',
+
+    // Zone offline queued
+    offline_saved: 'Envio salvo',
+    offline_saved_body: 'Suas fotos foram salvas neste dispositivo. Elas serão enviadas automaticamente quando você se reconectar.',
+    online_uploading_body: 'Você está de volta online. Sua evidência está sendo enviada agora — isso leva apenas um momento.',
+    syncing: 'SINCRONIZANDO',
+    uploaded: 'Enviado!',
+    uploaded_body: 'Sua evidência foi enviada com sucesso. Voltando ao seu turno…',
+    back_to_zones: 'Voltar à lista de zonas',
+
+    // Pay
+    pay_title: 'Seu pagamento',
+    pay_clear: 'Limpar',
+    pay_no_records: 'Sem registros para este período',
+    pay_no_records_body: 'Tente outro mês ou limpe o filtro.',
+    pay_shifts: 'Turnos',
+    pay_hours: 'Horas',
+    pay_expected_pay: 'Pagamento esperado',
+    pay_status_pending: 'Pendente',
+    pay_status_approved: 'Aprovado',
+    pay_status_paid: 'Pago',
+
+    // Notifications (cleaner-side)
+    notif_empty: 'Sem notificações ainda',
+    notif_empty_body: 'As mensagens do seu supervisor aparecerão aqui.',
+    notif_select_to_read: 'Selecione uma notificação para ler',
+    notif_not_found: 'Notificação não encontrada.',
 
     // Offline
     no_internet: 'Sem conexão à internet',

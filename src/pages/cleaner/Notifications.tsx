@@ -118,10 +118,11 @@ function NotifCard({ notif, onPress, selected = false }: { notif: Notif; onPress
 }
 
 function EmptyState() {
+  const t = useTranslation()
   return (
     <div className="notif-card bg-white border border-[#C3C8C2] rounded-[12px] p-[33px] flex flex-col items-center gap-2">
-      <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No notifications yet</p>
-      <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center leading-[1.6]">Messages from your supervisor will appear here.</p>
+      <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">{t('notif_empty')}</p>
+      <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center leading-[1.6]">{t('notif_empty_body')}</p>
     </div>
   )
 }
@@ -173,7 +174,7 @@ function DesktopNotifications() {
         </div>
         <div className="overflow-y-auto flex-1">
           {loading ? (
-            <p className="p-5 font-['Lato',sans-serif] text-sm text-[#737874]">Loading…</p>
+            <p className="p-5 font-['Lato',sans-serif] text-sm text-[#737874]">{t('loading')}</p>
           ) : notifs.length === 0 ? (
             <div className="p-4"><EmptyState /></div>
           ) : (
@@ -198,7 +199,7 @@ function DesktopNotifications() {
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p className="font-['Lato',sans-serif] text-[#737874]">Select a notification to read</p>
+            <p className="font-['Lato',sans-serif] text-[#737874]">{t('notif_select_to_read')}</p>
           </div>
         )}
       </div>
@@ -255,7 +256,7 @@ function MobileNotifications() {
         <div className="px-6 flex flex-col gap-3">
           {loading ? (
             <div className="notif-card bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex justify-center">
-              <p className="font-['Lato',sans-serif] text-sm text-[#737874]">Loading…</p>
+              <p className="font-['Lato',sans-serif] text-sm text-[#737874]">{t('loading')}</p>
             </div>
           ) : notifs.length === 0 ? (
             <EmptyState />

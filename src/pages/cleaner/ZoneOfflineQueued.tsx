@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 
 function WifiOffIcon() {
   return (
@@ -34,6 +35,7 @@ export function ZoneOfflineQueued() {
   const jobId = params.get('jobId') ?? ''
   const zoneId = params.get('zoneId') ?? ''
   const { isOnline, completedZones } = useApp()
+  const tr = useTranslation()
 
   const [phase, setPhase] = useState<Phase>(() => (isOnline ? 'uploading' : 'offline'))
 
@@ -47,27 +49,27 @@ export function ZoneOfflineQueued() {
   useEffect(() => {
     if (!zoneId || !completedZones.has(zoneId)) return
     setPhase('done')
-    const t = setTimeout(() => navigate(`/cleaner/job/${jobId}`), 1400)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => navigate(`/cleaner/job/${jobId}`), 1400)
+    return () => clearTimeout(timer)
   }, [completedZones, zoneId, jobId, navigate])
 
   const content = {
     offline: {
       icon: <WifiOffIcon />,
       iconBg: 'bg-[#F4F4EE] border border-[#D0CFCA]',
-      title: 'Submission Saved',
-      body: 'Your photos have been saved to this device. They will upload automatically as soon as you reconnect.',
+      title: tr('offline_saved'),
+      body: tr('offline_saved_body'),
       pill: null,
     },
     uploading: {
       icon: <WifiIcon />,
       iconBg: 'bg-[#D0E8D7]',
-      title: 'Uploading…',
-      body: "You're back online. Your evidence is uploading now — this only takes a moment.",
+      title: tr('uploading'),
+      body: tr('online_uploading_body'),
       pill: (
         <div className="flex items-center gap-2 bg-[#F1DEAD] border border-[#D7C596]/30 rounded-full px-3 py-1.5">
           <div className="w-2 h-2 rounded-full bg-[#B8A77A] animate-pulse" />
-          <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.6px] text-[#6F613A]">SYNCING</span>
+          <span className="font-['Lato',sans-serif] font-bold text-[12px] tracking-[0.6px] text-[#6F613A]">{tr('syncing')}</span>
         </div>
       ),
     },
@@ -79,8 +81,8 @@ export function ZoneOfflineQueued() {
         </svg>
       ),
       iconBg: 'bg-[#D0E8D7]',
-      title: 'Uploaded!',
-      body: 'Your evidence has been submitted successfully. Returning to your shift…',
+      title: tr('uploaded'),
+      body: tr('uploaded_body'),
       pill: null,
     },
   }[phase]
@@ -109,7 +111,7 @@ export function ZoneOfflineQueued() {
             onClick={() => navigate(`/cleaner/job/${jobId}`)}
             className="mt-2 font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer"
           >
-            Back to zone list
+            {tr('back_to_zones')}
           </button>
         )}
 

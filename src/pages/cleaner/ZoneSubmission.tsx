@@ -191,7 +191,7 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
   if (preview) {
     return (
       <div data-slot={index} className="relative aspect-square rounded-[12px] overflow-hidden">
-        <img src={preview} alt="Zone photo" className="w-full h-full object-cover" />
+        <img src={preview} alt={t('zone_photo')} className="w-full h-full object-cover" />
         <button onClick={onRemove} aria-label="Remove photo"
           className="absolute top-1.5 right-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center cursor-pointer">
           <XIcon />
@@ -218,10 +218,11 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
 // ─── Error banner ─────────────────────────────────────────────────────────────
 
 function SubmitError() {
+  const t = useTranslation()
   return (
     <div className="rounded-[10px] bg-[#FDECEA] border border-[#BA1A1A]/20 px-4 py-3">
       <p className="font-['Lato',sans-serif] font-bold text-[13px] text-[#BA1A1A]">
-        Upload failed. Check your connection and try again.
+        {t('upload_failed')}
       </p>
     </div>
   )
