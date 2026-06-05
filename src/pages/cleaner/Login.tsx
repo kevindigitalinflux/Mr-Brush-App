@@ -79,7 +79,7 @@ function useLoginForm() {
     const lang = language
     setLanguage(lang)
     if (profile.language_preference !== lang) {
-      void supabase.from('profiles').update({ language_preference: lang }).eq('id', data.user.id)
+      await supabase.from('profiles').update({ language_preference: lang }).eq('id', data.user.id)
     }
     setUser({
       id: data.user.id,
