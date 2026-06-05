@@ -56,6 +56,7 @@ export const strings: Record<Language, Record<string, string>> = {
     // Bottom nav
     nav_jobs: 'Jobs',
     nav_history: 'History',
+    nav_pay: 'Pay',
     nav_notifications: 'Notifications',
 
     // Offline
@@ -114,6 +115,10 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_en: 'English',
     lang_es: 'Español',
     lang_pt: 'Português',
+
+    // Cleaner — Desktop sidebar
+    cleaner_portal_label: 'Cleaner Portal',
+    user_id_label: 'User ID',
 
     // Supervisor — Desktop sidebar
     sv_portal_label: 'Supervisor Portal',
@@ -350,6 +355,7 @@ export const strings: Record<Language, Record<string, string>> = {
     // Bottom nav
     nav_jobs: 'Trabajos',
     nav_history: 'Historial',
+    nav_pay: 'Pago',
     nav_notifications: 'Avisos',
 
     // Offline
@@ -408,6 +414,10 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_en: 'English',
     lang_es: 'Español',
     lang_pt: 'Português',
+
+    // Cleaner — Desktop sidebar
+    cleaner_portal_label: 'Portal del Limpiador',
+    user_id_label: 'ID de usuario',
 
     // Supervisor — Desktop sidebar
     sv_portal_label: 'Portal de Supervisor',
@@ -639,6 +649,7 @@ export const strings: Record<Language, Record<string, string>> = {
     // Bottom nav
     nav_jobs: 'Trabalhos',
     nav_history: 'Histórico',
+    nav_pay: 'Pagamento',
     nav_notifications: 'Avisos',
 
     // Offline
@@ -697,6 +708,10 @@ export const strings: Record<Language, Record<string, string>> = {
     lang_en: 'English',
     lang_es: 'Español',
     lang_pt: 'Português',
+
+    // Cleaner — Desktop sidebar
+    cleaner_portal_label: 'Portal do Limpador',
+    user_id_label: 'ID do usuário',
 
     // Supervisor — Desktop sidebar
     sv_portal_label: 'Portal do Supervisor',

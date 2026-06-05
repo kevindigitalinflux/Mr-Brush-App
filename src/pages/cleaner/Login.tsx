@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
+import { useTranslation } from '../../lib/useTranslation'
 import { parseDisplayId, getRouteForRole } from '../../lib/auth'
 import type { UserRole } from '../../lib/auth'
 import type { Language } from '../../lib/i18n'
@@ -73,8 +74,14 @@ function useLoginForm() {
 
     if (profileError || !profile) { setError(true); setLoading(false); return }
 
-    const lang = (profile.language_preference as Language) ?? language
+    // Use the language the user selected on LanguageSelect — never let the DB
+    // default ('en') override an explicit choice. Save it back so returning
+    // users get their preferred language pre-applied on the next session.
+    const lang = language
     setLanguage(lang)
+    if (profile.language_preference !== lang) {
+      void supabase.from('profiles').update({ language_preference: lang }).eq('id', data.user.id)
+    }
     setUser({
       id: data.user.id,
       display_id: profile.display_id,
@@ -93,13 +100,14 @@ function useLoginForm() {
 
 function LoginFields({ state }: { state: ReturnType<typeof useLoginForm> }) {
   const { cleanerId, setCleanerId, password, setPassword, showPassword, setShowPassword, error, setError, loading, handleSubmit } = state
+  const t = useTranslation()
   const passwordHasError = error && password.length > 0
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <label htmlFor="userId" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
-          User ID
+          {t('user_id_label')}
         </label>
         <input
           id="userId" type="text" value={cleanerId} placeholder="e.g. C002, S001" autoComplete="username"
@@ -109,7 +117,7 @@ function LoginFields({ state }: { state: ReturnType<typeof useLoginForm> }) {
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor="password" className={['font-[\'Lato\',sans-serif] font-bold text-[14px] tracking-[0.7px] ml-1', passwordHasError ? 'text-[#BA1A1A]' : 'text-[#434844]'].join(' ')}>
-          Password
+          {t('password')}
         </label>
         <div className="relative">
           <input
@@ -126,14 +134,14 @@ function LoginFields({ state }: { state: ReturnType<typeof useLoginForm> }) {
           <div className="flex items-start gap-2 pl-1 pt-0.5">
             <ErrorIcon />
             <p className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#BA1A1A] leading-[1.2]">
-              Incorrect ID or password. Please try again.
+              {t('invalid_credentials')}
             </p>
           </div>
         )}
       </div>
       <button type="submit" disabled={loading}
         className="w-full h-[56px] bg-[#B8A77A] rounded-[4px] font-['Poppins',sans-serif] font-semibold text-base text-[#F8F8F2] cursor-pointer hover:bg-[#a8976a] transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2">
-        {loading ? 'Signing in…' : 'Sign In'}
+        {loading ? t('submitting') : t('sign_in')}
       </button>
     </form>
   )

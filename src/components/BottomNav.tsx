@@ -90,7 +90,7 @@ export function BottomNav({ active }: { active: NavTab }) {
         onClick={() => navigate('/cleaner/history')}
       />
       <NavItem
-        label="Pay"
+        label={t('nav_pay')}
         active={active === 'pay'}
         icon={<PayIcon active={active === 'pay'} />}
         onClick={() => navigate('/cleaner/pay')}

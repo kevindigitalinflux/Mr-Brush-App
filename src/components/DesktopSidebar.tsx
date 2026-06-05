@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { useTranslation } from '../lib/useTranslation'
 import { SignOutConfirmButton } from './SignOutConfirmButton'
 import type { Language } from '../lib/i18n'
 import logoSrc from '../assets/logo/logo.png'
@@ -10,11 +11,11 @@ type NavKey = 'jobs' | 'history' | 'notifications' | 'pay'
 
 interface Props { active: NavKey }
 
-const NAV: { key: NavKey; label: string; path: string; icon: () => React.ReactElement }[] = [
-  { key: 'jobs',          label: 'Jobs',          path: '/cleaner/home',          icon: BriefcaseIcon },
-  { key: 'history',       label: 'History',       path: '/cleaner/history',       icon: ClockIcon },
-  { key: 'pay',           label: 'Pay',           path: '/cleaner/pay',           icon: PayIcon },
-  { key: 'notifications', label: 'Notifications', path: '/cleaner/notifications', icon: BellIcon },
+const NAV: { key: NavKey; labelKey: string; path: string; icon: () => React.ReactElement }[] = [
+  { key: 'jobs',          labelKey: 'nav_jobs',          path: '/cleaner/home',          icon: BriefcaseIcon },
+  { key: 'history',       labelKey: 'nav_history',       path: '/cleaner/history',       icon: ClockIcon },
+  { key: 'pay',           labelKey: 'nav_pay',           path: '/cleaner/pay',           icon: PayIcon },
+  { key: 'notifications', labelKey: 'nav_notifications', path: '/cleaner/notifications', icon: BellIcon },
 ]
 
 const LANGS: { code: Language; label: string; flag: string }[] = [
@@ -102,6 +103,7 @@ function CheckIcon() {
 export function DesktopSidebar({ active }: Props) {
   const { user, language, setLanguage } = useApp()
   const navigate = useNavigate()
+  const t = useTranslation()
   const unreadCount = useUnreadNotifCount()
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
@@ -141,7 +143,7 @@ export function DesktopSidebar({ active }: Props) {
             {user?.name ?? 'Cleaner'}
           </span>
           <span className="font-['Lato',sans-serif] text-[11px] text-[#737874] tracking-[0.5px]">
-            Cleaner Portal
+            {t('cleaner_portal_label')}
           </span>
         </div>
       </div>
@@ -150,7 +152,7 @@ export function DesktopSidebar({ active }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-0.5 px-3 pt-1">
-        {NAV.map(({ key, label, path, icon: Icon }) => {
+        {NAV.map(({ key, labelKey, path, icon: Icon }) => {
           const isActive = active === key
           const showDot = key === 'notifications' && unreadCount > 0 && !isActive
           return (
@@ -168,7 +170,7 @@ export function DesktopSidebar({ active }: Props) {
                 <Icon />
                 {showDot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#BA1A1A]" />}
               </div>
-              <span className="font-['Poppins',sans-serif] font-semibold text-[14px]">{label}</span>
+              <span className="font-['Poppins',sans-serif] font-semibold text-[14px]">{t(labelKey)}</span>
             </button>
           )
         })}
