@@ -40,21 +40,32 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
     : null
   )
   const [comment, setComment] = useState(log.existing_feedback?.comment ?? '')
-  const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(!!log.existing_feedback)
-  const [lightbox, setLightbox] = useState<string | null>(null)
+  const [submitting, setSubmitting]   = useState(false)
+  const [submitted, setSubmitted]     = useState(!!log.existing_feedback)
+  const [submitErr, setSubmitErr]     = useState('')
+  const [lightbox, setLightbox]       = useState<string | null>(null)
 
   async function handleSubmit() {
     if (!decision) return
     setSubmitting(true)
-    await supabase.from('feedback_comments').insert({
+    setSubmitErr('')
+
+    // feedback_comments uses 'not_accepted'; cleaning_logs uses 'reclean_requested'
+    const fbStatus  = decision === 'rejected' ? 'not_accepted'      : decision
+    const logStatus = decision === 'rejected' ? 'reclean_requested' : decision
+
+    const { error: fbErr } = await supabase.from('feedback_comments').insert({
       cleaning_log_id: log.id,
       supervisor_id: supervisorId,
       comment: comment.trim() || null,
-      status: decision,
+      status: fbStatus,
       company_id: log.company_id,
     })
-    await supabase.from('cleaning_logs').update({ status: decision }).eq('id', log.id)
+    if (fbErr) { setSubmitErr('Could not save feedback. Try again.'); setSubmitting(false); return }
+
+    const { error: logErr } = await supabase.from('cleaning_logs').update({ status: logStatus }).eq('id', log.id)
+    if (logErr) { setSubmitErr('Feedback saved but zone status update failed.'); setSubmitting(false); return }
+
     setSubmitted(true)
     setSubmitting(false)
   }
@@ -155,6 +166,9 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
               {t('sv_not_accepted')}
             </button>
           </div>
+          {submitErr && (
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{submitErr}</p>
+          )}
           <button
             onClick={handleSubmit}
             disabled={!decision || submitting}

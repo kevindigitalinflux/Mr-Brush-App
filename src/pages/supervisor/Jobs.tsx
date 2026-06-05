@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
+import { postShiftComplete } from '../../lib/webhooks'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -1158,10 +1159,11 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
   }
 
   async function handleMarkCleanerComplete(cleanerId: string) {
-    if (!jobId) return
+    if (!jobId || !user) return
     setMarkingCleaners((prev) => new Set(prev).add(cleanerId))
     const zoneIds = zones.filter((z) => z.cleaner_id === cleanerId).map((z) => z.id)
     await supabase.from('job_zones').update({ status: 'completed' }).in('id', zoneIds)
+    void postShiftComplete({ job_id: jobId, cleaner_id: cleanerId, supervisor_id: user.id })
     setMarkingCleaners((prev) => { const s = new Set(prev); s.delete(cleanerId); return s })
     void load(true)
   }

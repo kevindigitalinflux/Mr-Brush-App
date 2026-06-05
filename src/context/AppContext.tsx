@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Language } from '../lib/i18n'
 import type { UserRole } from '../lib/auth'
 import { flushOfflineQueue } from '../lib/offlineQueue'
+import { supabase } from '../lib/supabase'
 
 interface User {
   id: string
@@ -57,6 +58,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('online', goOnline)
       window.removeEventListener('offline', goOffline)
     }
+  }, [])
+
+  // Clear app state when the Supabase session is signed out or replaced by a
+  // different user (e.g. a cleaner logging in on another tab).
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        return
+      }
+      setUser(prev => {
+        if (!prev) return prev
+        if (session?.user.id && session.user.id !== prev.id) return null
+        return prev
+      })
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   // Flush any queued offline submissions when connected and authenticated
