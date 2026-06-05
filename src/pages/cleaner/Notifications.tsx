@@ -25,38 +25,61 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
-function BriefcaseSvg() {
+function BriefcaseLineSvg() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="2" y="7" width="20" height="14" rx="2" stroke="#F5F0E3" strokeWidth="2" />
-      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" stroke="#F5F0E3" strokeWidth="2" />
+      <rect x="2" y="7" width="20" height="14" rx="2" stroke="#737874" strokeWidth="1.8" />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" stroke="#737874" strokeWidth="1.8" />
     </svg>
   )
 }
 
-function AlertSvg() {
+function AlertTriangleSvg() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 2L14.5 9.5H22L16 14L18.5 21.5L12 17L5.5 21.5L8 14L2 9.5H9.5Z"
-        stroke="#BA1A1A" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#BA1A1A" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M12 9v4M12 17h.01" stroke="#BA1A1A" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }
 
-function NotifAvatar({ title, isUnread }: { title: string; isUnread: boolean }) {
-  const isAlert = /flag|attention|urgent/i.test(title)
-  if (isAlert) {
+function CheckCircleSvg() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="#2F4A3D" strokeWidth="1.8" />
+      <path d="M8 12l3 3 5-5" stroke="#2F4A3D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+type IconType = 'alert' | 'approved' | 'default'
+
+function iconTypeFor(title: string): IconType {
+  if (/flag|attention|urgent|reclean|not.accept/i.test(title)) return 'alert'
+  if (/approved|approve/i.test(title)) return 'approved'
+  return 'default'
+}
+
+function NotifIcon({ type }: { type: IconType }) {
+  if (type === 'alert') {
     return (
-      <div className="w-10 h-10 rounded-full bg-[#FDECEA] border border-[#F5C6C6] flex items-center justify-center flex-shrink-0">
-        <AlertSvg />
+      <div className="w-10 h-10 rounded-[8px] bg-[#FFF0F0] border border-[#FECDCD] flex items-center justify-center flex-shrink-0">
+        <AlertTriangleSvg />
+      </div>
+    )
+  }
+  if (type === 'approved') {
+    return (
+      <div className="w-10 h-10 rounded-[8px] bg-[#F0FAF5] border border-[#A8D5B8] flex items-center justify-center flex-shrink-0">
+        <CheckCircleSvg />
       </div>
     )
   }
   return (
-    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isUnread ? 'bg-[#1A1C19]' : 'bg-[#434B4D]'}`}>
-      <BriefcaseSvg />
+    <div className="w-10 h-10 rounded-[8px] bg-[#F4F4EE] border border-[#E3E3DD] flex items-center justify-center flex-shrink-0">
+      <BriefcaseLineSvg />
     </div>
   )
 }
@@ -64,46 +87,41 @@ function NotifAvatar({ title, isUnread }: { title: string; isUnread: boolean }) 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 function NotifCard({ notif, onPress, selected = false }: { notif: Notif; onPress: () => void; selected?: boolean }) {
-  const cardClass = notif.is_read
-    ? 'bg-white border border-[#D0CFCA]'
-    : 'bg-[#F1DEAD] border border-[#D7C596]/60'
+  const isUnread = !notif.is_read
 
   return (
     <button
       onClick={onPress}
       className={[
-        'notif-card w-full rounded-[12px] p-4 flex flex-col gap-2 text-left cursor-pointer transition-shadow',
-        selected ? 'shadow-[0_0_0_2px_#B8A77A]' : 'hover:shadow-sm',
-        cardClass,
+        'notif-card w-full bg-white border border-[#C3C8C2] rounded-[12px] p-4 flex gap-3 text-left cursor-pointer transition-shadow',
+        selected ? 'shadow-[0_0_0_2px_#B8A77A]' : 'hover:shadow-md',
       ].join(' ')}
     >
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <NotifAvatar title={notif.title} isUnread={!notif.is_read} />
-          {!notif.is_read && (
-            <span className="absolute -top-0.5 -right-0.5 w-[10px] h-[10px] bg-[#BA1A1A] rounded-full border-2 border-[#F1DEAD]" />
-          )}
-        </div>
-        <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
-          <span className={`font-['Poppins',sans-serif] font-semibold text-[15px] truncate ${!notif.is_read ? 'text-[#6F613A]' : 'text-[#1A1C19]'}`}>
+      <NotifIcon type={iconTypeFor(notif.title)} />
+      <div className="flex-1 flex flex-col gap-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`font-['Poppins',sans-serif] text-[14px] leading-tight truncate ${isUnread ? 'font-semibold text-[#1A1C19]' : 'font-medium text-[#434844]'}`}>
             {notif.title}
           </span>
-          <span className="font-['Lato',sans-serif] text-[13px] text-[#8A8A8A] flex-shrink-0">{timeAgo(notif.created_at)}</span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isUnread && <span className="w-2 h-2 rounded-full bg-[#B8A77A] flex-shrink-0" />}
+            <span className="font-['Lato',sans-serif] text-[12px] text-[#737874]">{timeAgo(notif.created_at)}</span>
+          </div>
         </div>
+        <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] leading-[1.55] overflow-hidden"
+          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          {notif.message}
+        </p>
       </div>
-      <p className="font-['Lato',sans-serif] text-sm text-[#434844] leading-[1.6] overflow-hidden"
-        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-        {notif.message}
-      </p>
     </button>
   )
 }
 
 function EmptyState() {
   return (
-    <div className="notif-card bg-white border border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-2">
-      <p className="font-['Poppins',sans-serif] font-semibold text-base text-[#1A1C19]">No notifications yet</p>
-      <p className="font-['Lato',sans-serif] text-sm text-[#737874] text-center">Messages from your supervisor will appear here.</p>
+    <div className="notif-card bg-white border border-[#C3C8C2] rounded-[12px] p-[33px] flex flex-col items-center gap-2">
+      <p className="font-['Poppins',sans-serif] font-semibold text-xl text-[#1A1C19]">No notifications yet</p>
+      <p className="font-['Lato',sans-serif] text-base text-[#737874] text-center leading-[1.6]">Messages from your supervisor will appear here.</p>
     </div>
   )
 }
