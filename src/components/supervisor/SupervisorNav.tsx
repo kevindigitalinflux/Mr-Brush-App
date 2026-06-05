@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useUnreadNotifCount } from '../../hooks/useUnreadNotifCount'
 
 export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history' | 'rates'
 
@@ -68,11 +69,13 @@ const TABS: { id: SupervisorTab; label: string; route: string }[] = [
 /** Bottom navigation bar for the supervisor portal. */
 export function SupervisorNav({ active }: { active: SupervisorTab }) {
   const navigate = useNavigate()
+  const unreadCount = useUnreadNotifCount()
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E3E3DD] flex items-center justify-around h-[72px] px-2 safe-bottom">
       {TABS.map(({ id, label, route }) => {
         const isActive = active === id
+        const showDot = id === 'dashboard' && unreadCount > 0 && !isActive
         return (
           <button
             key={id}
@@ -80,15 +83,18 @@ export function SupervisorNav({ active }: { active: SupervisorTab }) {
             aria-current={isActive ? 'page' : undefined}
             className="flex flex-col items-center gap-1 flex-1 py-2"
           >
-            <div className={[
-              'w-12 h-8 rounded-full flex items-center justify-center transition-colors',
-              isActive ? 'bg-[#B8A77A]' : 'bg-transparent',
-            ].join(' ')}>
-              {id === 'dashboard' && <DashboardIcon active={isActive} />}
-              {id === 'jobs'      && <JobsIcon active={isActive} />}
-              {id === 'workers'   && <WorkersIcon active={isActive} />}
-              {id === 'history'   && <HistoryIcon active={isActive} />}
-              {id === 'rates'     && <RatesIcon active={isActive} />}
+            <div className="relative">
+              <div className={[
+                'w-12 h-8 rounded-full flex items-center justify-center transition-colors',
+                isActive ? 'bg-[#B8A77A]' : 'bg-transparent',
+              ].join(' ')}>
+                {id === 'dashboard' && <DashboardIcon active={isActive} />}
+                {id === 'jobs'      && <JobsIcon active={isActive} />}
+                {id === 'workers'   && <WorkersIcon active={isActive} />}
+                {id === 'history'   && <HistoryIcon active={isActive} />}
+                {id === 'rates'     && <RatesIcon active={isActive} />}
+              </div>
+              {showDot && <span className="absolute top-0 right-1 w-2 h-2 rounded-full bg-[#BA1A1A]" />}
             </div>
             <span className={[
               "font-['Lato',sans-serif] text-[11px] tracking-[0.3px]",

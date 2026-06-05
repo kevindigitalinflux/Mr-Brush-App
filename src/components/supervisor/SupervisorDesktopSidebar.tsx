@@ -6,6 +6,7 @@ import { useTranslation } from '../../lib/useTranslation'
 import type { Language } from '../../lib/i18n'
 import logoSrc from '../../assets/logo/logo.png'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { useUnreadNotifCount } from '../../hooks/useUnreadNotifCount'
 
 export type SupervisorTab = 'dashboard' | 'jobs' | 'workers' | 'history' | 'rates'
 
@@ -118,6 +119,7 @@ export function SupervisorDesktopSidebar({ active }: Props) {
   const { user, language, setLanguage } = useApp()
   const navigate = useNavigate()
   const t = useTranslation()
+  const unreadCount = useUnreadNotifCount()
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
@@ -172,6 +174,7 @@ export function SupervisorDesktopSidebar({ active }: Props) {
       <nav className="flex-1 flex flex-col gap-0.5 px-3 pt-1">
         {NAV.map(({ key, labelKey, path, icon: Icon }) => {
           const isActive = active === key
+          const showDot = key === 'dashboard' && unreadCount > 0 && !isActive
           return (
             <button
               key={key}
@@ -183,7 +186,10 @@ export function SupervisorDesktopSidebar({ active }: Props) {
                   : 'text-[#434844] hover:bg-[#E5E5DF] hover:text-[#1A1C19]',
               ].join(' ')}
             >
-              <Icon />
+              <div className="relative flex-shrink-0">
+                <Icon />
+                {showDot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#BA1A1A]" />}
+              </div>
               <span className="font-['Poppins',sans-serif] font-semibold text-[14px]">{t(labelKey)}</span>
             </button>
           )

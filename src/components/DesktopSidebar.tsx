@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import { SignOutConfirmButton } from './SignOutConfirmButton'
 import type { Language } from '../lib/i18n'
 import logoSrc from '../assets/logo/logo.png'
+import { useUnreadNotifCount } from '../hooks/useUnreadNotifCount'
 
 type NavKey = 'jobs' | 'history' | 'notifications' | 'pay'
 
@@ -101,6 +102,7 @@ function CheckIcon() {
 export function DesktopSidebar({ active }: Props) {
   const { user, language, setLanguage } = useApp()
   const navigate = useNavigate()
+  const unreadCount = useUnreadNotifCount()
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
 
@@ -150,6 +152,7 @@ export function DesktopSidebar({ active }: Props) {
       <nav className="flex-1 flex flex-col gap-0.5 px-3 pt-1">
         {NAV.map(({ key, label, path, icon: Icon }) => {
           const isActive = active === key
+          const showDot = key === 'notifications' && unreadCount > 0 && !isActive
           return (
             <button
               key={key}
@@ -161,7 +164,10 @@ export function DesktopSidebar({ active }: Props) {
                   : 'text-[#434844] hover:bg-[#E5E5DF] hover:text-[#1A1C19]',
               ].join(' ')}
             >
-              <Icon />
+              <div className="relative flex-shrink-0">
+                <Icon />
+                {showDot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#BA1A1A]" />}
+              </div>
               <span className="font-['Poppins',sans-serif] font-semibold text-[14px]">{label}</span>
             </button>
           )

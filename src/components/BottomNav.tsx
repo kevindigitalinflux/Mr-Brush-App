@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../lib/useTranslation'
+import { useUnreadNotifCount } from '../hooks/useUnreadNotifCount'
 
 export type NavTab = 'jobs' | 'history' | 'notifications' | 'pay'
 
@@ -73,6 +74,7 @@ function NavItem({
 export function BottomNav({ active }: { active: NavTab }) {
   const navigate = useNavigate()
   const t = useTranslation()
+  const unreadCount = useUnreadNotifCount()
   return (
     <div className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#C3C8C2] flex items-center px-3 pt-[14px] pb-4 z-50">
       <NavItem
@@ -96,7 +98,14 @@ export function BottomNav({ active }: { active: NavTab }) {
       <NavItem
         label={t('nav_notifications')}
         active={active === 'notifications'}
-        icon={<BellIcon active={active === 'notifications'} />}
+        icon={
+          <div className="relative">
+            <BellIcon active={active === 'notifications'} />
+            {unreadCount > 0 && active !== 'notifications' && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#BA1A1A]" />
+            )}
+          </div>
+        }
         onClick={() => navigate('/cleaner/notifications')}
       />
     </div>
