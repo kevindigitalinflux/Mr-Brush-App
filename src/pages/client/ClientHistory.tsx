@@ -90,37 +90,27 @@ function useHistoryData(month: Date): HistoryState & { reload: () => void } {
 
     const jobIds = jobRows.map((j) => j.id as string)
 
-    // Zone counts and cleaner names per job (flat queries — nested joins fail on non-standard FKs)
+    // Fetch zones + cleaner names in one query via FK join
     const { data: zoneRows } = await supabase
       .from('job_zones')
-      .select('job_id, status, cleaner_id')
+      .select('job_id, status, cleaner_id, profiles(id, name)')
       .in('job_id', jobIds)
 
-    const allCleanerIds = [...new Set(
-      (zoneRows ?? [])
-        .map((z) => (z as { cleaner_id: string | null }).cleaner_id)
-        .filter((id): id is string => !!id)
-    )]
+    type ZoneRow = { job_id: string; status: string; cleaner_id: string | null; profiles: { id: string; name: string }[] }
 
-    let cleanerNameMap: Record<string, string> = {}
-    if (allCleanerIds.length > 0) {
-      const { data: profileRows } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .in('id', allCleanerIds)
-      cleanerNameMap = Object.fromEntries(
-        (profileRows ?? []).map((p) => {
-          const row = p as { id: string; name: string }
-          return [row.id, row.name]
-        })
-      )
+    const cleanerNameMap: Record<string, string> = {}
+    for (const z of (zoneRows ?? [])) {
+      const zr = z as unknown as ZoneRow
+      if (zr.cleaner_id && zr.profiles?.[0]?.name) {
+        cleanerNameMap[zr.cleaner_id] = zr.profiles[0].name
+      }
     }
 
     const zoneCounts: Record<string, { total: number; done: number; cleaners: Set<string> }> = {}
     for (const id of jobIds) zoneCounts[id] = { total: 0, done: 0, cleaners: new Set() }
 
     for (const z of (zoneRows ?? [])) {
-      const zr = z as { job_id: string; status: string; cleaner_id: string | null }
+      const zr = z as unknown as ZoneRow
       const entry = zoneCounts[zr.job_id]
       if (!entry) continue
       entry.total += 1

@@ -100,8 +100,8 @@ function formatResolved(isoStr: string | null): string {
   if (!isoStr) return 'None'
   const days = Math.floor((Date.now() - new Date(isoStr).getTime()) / 86_400_000)
   if (days === 0) return 'Today'
-  if (days === 1) return '1d ago'
-  if (days < 30) return `${days}d ago`
+  if (days === 1) return '1d'
+  if (days < 30) return `${days}d`
   return new Date(isoStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
