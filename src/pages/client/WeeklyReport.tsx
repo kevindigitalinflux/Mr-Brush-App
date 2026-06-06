@@ -105,34 +105,9 @@ export function WeeklyReport() {
   const content = (
     <div ref={containerRef} className="max-w-[640px] mx-auto px-6 pt-10 pb-[100px] md:pb-10">
 
-      {/* Back + header */}
-      <div className="wr-heading flex items-center gap-3 mb-7">
-        <button
-          onClick={() => navigate('/client/overview')}
-          aria-label="Back to overview"
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors md:hidden"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M19 12H5M12 19l-7-7 7-7" stroke="#3D3B3A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <div>
-          <p className="font-['Lato',sans-serif] text-[12px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-0.5">
-            Weekly Report
-          </p>
-          <h1 className="font-['Poppins',sans-serif] font-bold text-[26px] text-[#3D3B3A] leading-tight">
-            {loading ? 'Loading…' : report?.facility_name ?? 'Report'}
-          </h1>
-          {report && (
-            <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-0.5">
-              {formatDateRange(report.week_start, report.week_end)}
-            </p>
-          )}
-        </div>
-      </div>
-
       {loading ? (
         <div className="flex flex-col gap-4">
+          <div className="h-16 bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-[88px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
           ))}
@@ -146,6 +121,31 @@ export function WeeklyReport() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+
+          {/* Header — only rendered after load so GSAP fades it in clean */}
+          <div className="wr-heading flex items-center gap-3 mb-3">
+            <button
+              onClick={() => navigate('/client/overview')}
+              aria-label="Back to overview"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#E3E3DD] transition-colors md:hidden"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" stroke="#3D3B3A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <div>
+              <p className="font-['Lato',sans-serif] text-[12px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-0.5">
+                Weekly Report
+              </p>
+              <h1 className="font-['Poppins',sans-serif] font-bold text-[26px] text-[#3D3B3A] leading-tight">
+                {report.facility_name}
+              </h1>
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-0.5">
+                {formatDateRange(report.week_start, report.week_end)}
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <StatTile value={report.report_data?.jobs_completed ?? 0} label="Jobs completed" accent="brass" className="wr-stat" />
             <StatTile value={report.total_zones_completed} label="Zones cleaned" accent="green" className="wr-stat" />
@@ -154,7 +154,7 @@ export function WeeklyReport() {
           </div>
 
           {report.avg_rating !== null && (
-            <div className="bg-white border border-[#D0CFCA] rounded-[12px] px-5 py-5 flex items-center justify-between">
+            <div className="wr-stat bg-white border border-[#D0CFCA] rounded-[12px] px-5 py-5 flex items-center justify-between">
               <span className="font-['Lato',sans-serif] text-[14px] text-[#3D3B3A]">Average cleaner rating</span>
               <span className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#B8A77A]">
                 {Number(report.avg_rating).toFixed(1)} / 5
