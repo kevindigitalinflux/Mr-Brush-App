@@ -12,6 +12,14 @@ Strike through an item when done. Add the date completed.
 - [ ] **Client portal / supervisor mobile fix #3** — *Kevin to confirm — may have been resolved*
 - [ ] **Client portal / supervisor mobile fix #4** — *Kevin to confirm — may have been resolved*
 - [ ] **Mobile device testing** — test all recent fixes (overview overflow, history load, animations) on a real device once available. Also confirm fixes #3 and #4 are still needed or already resolved.
+- [ ] **Page refresh — blank content bug** — when a logged-in user refreshes their page (any portal), content sometimes appears blank. Likely a race condition between auth session rehydration and the data fetch firing before the user object is available. Needs investigation and fix.
+
+---
+
+## Security
+
+- [ ] **Route protection — unauthenticated URL access** — anyone who pastes a portal URL directly should be blocked and redirected to login, not shown a blank or broken screen. Verify all routes (`/cleaner/*`, `/supervisor/*`, `/client/*`) are properly guarded by an auth check. Unauthenticated users must never see portal content.
+- [ ] **SEO & security headers audit** — run a full SEO audit and review HTTP security headers (CSP, X-Frame-Options, HSTS, etc.) before the app goes live with real clients. Cloudflare Pages supports header rules via `_headers` file.
 
 ---
 
@@ -20,6 +28,7 @@ Strike through an item when done. Add the date completed.
 - [x] ~~**WF-15 evidence_photos count** — was counting cleaning_log rows, not actual evidence_files. Fixed: node 7 now selects `evidence_files(id)` nested, node 8 reduces over the array. Deployed 2026-06-06.~~
 - [x] ~~**weekly_reports duplicate rows** — duplicate test rows deleted, UNIQUE constraint `(facility_id, week_start)` added, WF-15 node 10 switched to upsert (`Prefer: resolution=merge-duplicates`). Re-runs now update in place. Done 2026-06-06.~~
 - [ ] **WF-15 verification** — confirm `evidence_photos` count is accurate on next real weekly run (first Sunday after real cleaning data exists for a full week).
+- [ ] **WF-8 real data test** — WF-8 built and deployed (n8n ID: `9fL3t334AwDqmFJi`, active). To test: mark at least one pay_record as `approved` in the supervisor portal, then manually trigger. Currently all test data is `draft` so the workflow exits early with no output.
 
 ---
 
@@ -31,4 +40,3 @@ Strike through an item when done. Add the date completed.
 
 ## Notes
 - WF-A/B/C (WhatsApp absence flows) need rewiring from Google Sheets → Supabase — already built, just need node swap. Tracked separately in AUTOMATIONS.md.
-- WF-8 (Monthly Payslip Roll-up) not yet built — separate build task, not a polish item.
