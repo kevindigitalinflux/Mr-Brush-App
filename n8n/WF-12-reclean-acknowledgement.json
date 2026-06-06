@@ -1,0 +1,119 @@
+{
+  "name": "WF-12 - Reclean Acknowledgement",
+  "nodes": [
+    {
+      "id": "wf12-n01",
+      "name": "Reclean Acknowledged",
+      "webhookId": "a1b2c3d4-e5f6-4a7b-8c9d-abcdef012345",
+      "type": "n8n-nodes-base.webhook",
+      "position": [200, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reclean-acknowledged",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "wf12-n02",
+      "name": "Update Feedback Comment",
+      "type": "n8n-nodes-base.supabase",
+      "position": [440, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "operation": "update",
+        "tableId": "feedback_comments",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.feedback_comment_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "cleaner_ack_note",  "fieldValue": "={{ $json.body.cleaner_note }}" },
+            { "fieldId": "acknowledged_at",    "fieldValue": "={{ new Date().toISOString() }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf12-n03",
+      "name": "Get Cleaner Profile",
+      "type": "n8n-nodes-base.supabase",
+      "position": [680, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "profiles",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Reclean Acknowledged').item.json.body.cleaner_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf12-n04",
+      "name": "Build Supervisor Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [920, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var cleanerName = $('Get Cleaner Profile').item.json.full_name || 'A cleaner';\nvar zoneName = $('Reclean Acknowledged').item.json.body.zone_name;\nvar facilityName = $('Reclean Acknowledged').item.json.body.facility_name;\nvar cleanerNote = $('Reclean Acknowledged').item.json.body.cleaner_note;\nvar supervisorId = $('Reclean Acknowledged').item.json.body.supervisor_id;\n\nvar title = 'Reclean Acknowledged';\nvar message = cleanerName + ' has acknowledged the reclean request for ' + zoneName + ' at ' + facilityName + '.';\nif (cleanerNote) { message += ' Note: ' + cleanerNote; }\n\nreturn [{ json: { title: title, message: message, user_id: supervisorId } }];"
+      }
+    },
+    {
+      "id": "wf12-n05",
+      "name": "Insert Supervisor Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1160, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    }
+  ],
+  "connections": {
+    "Reclean Acknowledged": {
+      "main": [[{ "node": "Update Feedback Comment", "type": "main", "index": 0 }]]
+    },
+    "Update Feedback Comment": {
+      "main": [[{ "node": "Get Cleaner Profile", "type": "main", "index": 0 }]]
+    },
+    "Get Cleaner Profile": {
+      "main": [[{ "node": "Build Supervisor Notification", "type": "main", "index": 0 }]]
+    },
+    "Build Supervisor Notification": {
+      "main": [[{ "node": "Insert Supervisor Notification", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}

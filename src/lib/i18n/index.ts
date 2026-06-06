@@ -345,6 +345,15 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_success_body: "Today's zones have been reassigned to the replacement.",
     sv_absence_error: 'Could not submit. Try again.',
 
+    // Reclean acknowledgement
+    reclean_ack_heading: 'Acknowledge Reclean',
+    reclean_ack_body: 'Confirm you\'ve received this request. Your supervisor will be notified.',
+    reclean_ack_note_placeholder: 'Add a note for your supervisor (optional)…',
+    reclean_ack_btn: 'Acknowledge',
+    reclean_ack_submitting: 'Sending…',
+    reclean_ack_done: 'Acknowledged',
+    reclean_ack_done_body: 'Your supervisor has been notified.',
+
     // Client — Navigation
     cl_portal_label: 'Client Portal',
     cl_nav_overview: 'Overview',
@@ -692,6 +701,15 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_success_body: 'Las zonas de hoy han sido reasignadas al sustituto.',
     sv_absence_error: 'No se pudo enviar. Inténtalo de nuevo.',
 
+    // Reclean acknowledgement
+    reclean_ack_heading: 'Confirmar Relimpieza',
+    reclean_ack_body: 'Confirma que has recibido esta solicitud. Tu supervisor será notificado.',
+    reclean_ack_note_placeholder: 'Añade una nota para tu supervisor (opcional)…',
+    reclean_ack_btn: 'Confirmar',
+    reclean_ack_submitting: 'Enviando…',
+    reclean_ack_done: 'Confirmado',
+    reclean_ack_done_body: 'Tu supervisor ha sido notificado.',
+
     // Client — Navigation
     cl_portal_label: 'Portal del Cliente',
     cl_nav_overview: 'Resumen',
@@ -1038,6 +1056,15 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_absence_success: 'Ausência relatada',
     sv_absence_success_body: 'As zonas de hoje foram reatribuídas ao substituto.',
     sv_absence_error: 'Não foi possível enviar. Tente novamente.',
+
+    // Reclean acknowledgement
+    reclean_ack_heading: 'Confirmar Relimpeza',
+    reclean_ack_body: 'Confirme que recebeu esta solicitação. Seu supervisor será notificado.',
+    reclean_ack_note_placeholder: 'Adicione uma nota para seu supervisor (opcional)…',
+    reclean_ack_btn: 'Confirmar',
+    reclean_ack_submitting: 'Enviando…',
+    reclean_ack_done: 'Confirmado',
+    reclean_ack_done_body: 'Seu supervisor foi notificado.',
 
     // Client — Navigation
     cl_portal_label: 'Portal do Cliente',
