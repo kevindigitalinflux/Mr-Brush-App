@@ -136,7 +136,7 @@
         "nodeCredentialType": "supabaseApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ facility_id: $('Build Reports').item.json.facility_id, company_id: $('Build Reports').item.json.company_id, week_start: $('Build Reports').item.json.week_start, week_end: $('Build Reports').item.json.week_end, jobs_completed: $('Build Reports').item.json.jobs_completed, zones_completed: $('Build Reports').item.json.zones_completed, zones_flagged: $('Build Reports').item.json.zones_flagged, evidence_photos: $('Build Reports').item.json.evidence_photos }) }}",
+        "jsonBody": "={{ JSON.stringify({ facility_id: $('Build Reports').item.json.facility_id, week_start: $('Build Reports').item.json.week_start, week_end: $('Build Reports').item.json.week_end, total_zones_completed: $('Build Reports').item.json.zones_completed, total_zones_flagged: $('Build Reports').item.json.zones_flagged, report_data: { jobs_completed: $('Build Reports').item.json.jobs_completed, evidence_photos: $('Build Reports').item.json.evidence_photos, company_id: $('Build Reports').item.json.company_id } }) }}",
         "options": {}
       },
       "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
