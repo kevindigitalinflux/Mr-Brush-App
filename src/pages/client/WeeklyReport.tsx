@@ -62,13 +62,13 @@ export function WeeklyReport() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
-    if (loading) return
+    if (!report) return
     gsap.set(['.wr-heading', '.wr-stat', '.wr-footer'], { clearProps: 'all' })
     gsap.timeline({ defaults: { ease: 'power2.out' } })
       .from('.wr-heading', { opacity: 0, y: 14, duration: 0.4 })
       .from('.wr-stat', { opacity: 0, y: 12, duration: 0.35, stagger: 0.06 }, '-=0.15')
       .from('.wr-footer', { opacity: 0, y: 8, duration: 0.25 }, '-=0.1')
-  }, { scope: containerRef, dependencies: [loading] })
+  }, { scope: containerRef, dependencies: [report] })
 
   useEffect(() => {
     if (!reportId) { setLoading(false); return }
@@ -150,7 +150,7 @@ export function WeeklyReport() {
             <StatTile value={report.report_data?.jobs_completed ?? 0} label="Jobs completed" accent="brass" className="wr-stat" />
             <StatTile value={report.total_zones_completed} label="Zones cleaned" accent="green" className="wr-stat" />
             <StatTile value={report.total_zones_flagged} label="Zones flagged" accent={report.total_zones_flagged > 0 ? 'red' : 'brass'} className="wr-stat" />
-            <StatTile value={report.report_data?.evidence_photos ?? 0} label="Evidence photos" accent="brass" className="wr-stat" />
+            <StatTile value={report.report_data?.evidence_photos ?? 0} label="Zone submissions" accent="brass" className="wr-stat" />
           </div>
 
           {report.avg_rating !== null && (
