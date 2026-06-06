@@ -1,0 +1,209 @@
+{
+  "name": "WF-15 - Weekly Report Compilation",
+  "nodes": [
+    {
+      "id": "wf15-n01",
+      "name": "Sunday 22:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [200, 300],
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 22 * * 0" }]
+        }
+      }
+    },
+    {
+      "id": "wf15-n02",
+      "name": "Set Date Range",
+      "type": "n8n-nodes-base.code",
+      "position": [440, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const now = new Date();\nconst weekEnd = new Date(now);\nweekEnd.setHours(0,0,0,0);\nconst weekStart = new Date(weekEnd);\nweekStart.setDate(weekEnd.getDate() - 6);\nreturn [{ json: { week_start: weekStart.toISOString().split('T')[0], week_end: weekEnd.toISOString().split('T')[0] } }];"
+      }
+    },
+    {
+      "id": "wf15-n03",
+      "name": "Get Completed Jobs",
+      "type": "n8n-nodes-base.supabase",
+      "position": [680, 300],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "jobs",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            { "keyName": "scheduled_date", "condition": "gte", "keyValue": "={{ $json.week_start }}" },
+            { "keyName": "scheduled_date", "condition": "lte", "keyValue": "={{ $json.week_end }}" },
+            { "keyName": "status", "condition": "eq", "keyValue": "completed" }
+          ]
+        }
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf15-n04",
+      "name": "Collect Job IDs",
+      "type": "n8n-nodes-base.code",
+      "position": [920, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const jobs = $input.all();\nif (jobs.length === 0) return [];\n\nconst byFacility = {};\njobs.forEach(item => {\n  const j = item.json;\n  if (!byFacility[j.facility_id]) {\n    byFacility[j.facility_id] = { facility_id: j.facility_id, company_id: j.company_id, job_ids: [], jobs_completed: 0 };\n  }\n  byFacility[j.facility_id].job_ids.push(j.id);\n  byFacility[j.facility_id].jobs_completed++;\n});\n\nconst allJobIds = jobs.map(i => i.json.id).join(',');\nreturn [{ json: { jobs_by_facility: byFacility, all_job_ids: allJobIds, week_start: $('Set Date Range').item.json.week_start, week_end: $('Set Date Range').item.json.week_end } }];"
+      }
+    },
+    {
+      "id": "wf15-n05",
+      "name": "Get All Job Zones",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1160, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/job_zones?job_id=in.({{ $json.all_job_ids }})&select=id,job_id,status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf15-n06",
+      "name": "Aggregate Zones",
+      "type": "n8n-nodes-base.code",
+      "position": [1400, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const zones = $input.all();\nconst jobsByFacility = $('Collect Job IDs').item.json.jobs_by_facility;\n\nconst zonesByFacility = {};\nObject.entries(jobsByFacility).forEach(([facilityId, data]) => {\n  const jobIds = data.job_ids;\n  const fZones = zones.filter(z => jobIds.includes(z.json.job_id));\n  zonesByFacility[facilityId] = {\n    zones_completed: fZones.filter(z => z.json.status === 'completed').length,\n    zones_flagged: fZones.filter(z => z.json.status === 'flagged_no_photo').length\n  };\n});\n\nreturn [{ json: { zones_by_facility: zonesByFacility } }];"
+      }
+    },
+    {
+      "id": "wf15-n07",
+      "name": "Get All Cleaning Logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1640, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/cleaning_logs?job_id=in.({{ $('Collect Job IDs').item.json.all_job_ids }})&select=id,job_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf15-n08",
+      "name": "Build Reports",
+      "type": "n8n-nodes-base.code",
+      "position": [1880, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const logs = $input.all();\nconst jobsByFacility = $('Collect Job IDs').item.json.jobs_by_facility;\nconst zonesByFacility = $('Aggregate Zones').item.json.zones_by_facility;\nconst weekStart = $('Collect Job IDs').item.json.week_start;\nconst weekEnd = $('Collect Job IDs').item.json.week_end;\n\nreturn Object.entries(jobsByFacility).map(([facilityId, data]) => {\n  const jobIds = data.job_ids;\n  const evidence_photos = logs.filter(l => jobIds.includes(l.json.job_id)).length;\n  const zones = zonesByFacility[facilityId] || { zones_completed: 0, zones_flagged: 0 };\n  return { json: {\n    facility_id: facilityId,\n    company_id: data.company_id,\n    jobs_completed: data.jobs_completed,\n    zones_completed: zones.zones_completed,\n    zones_flagged: zones.zones_flagged,\n    evidence_photos: evidence_photos,\n    week_start: weekStart,\n    week_end: weekEnd\n  }};\n});"
+      }
+    },
+    {
+      "id": "wf15-n09",
+      "name": "Get Facility",
+      "type": "n8n-nodes-base.supabase",
+      "position": [2120, 300],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "facilities",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [{ "keyName": "id", "condition": "eq", "keyValue": "={{ $json.facility_id }}" }]
+        }
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf15-n10",
+      "name": "Insert Weekly Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2360, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://bstohwxzufebufbybxtd.supabase.co/rest/v1/weekly_reports",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ facility_id: $('Build Reports').item.json.facility_id, company_id: $('Build Reports').item.json.company_id, week_start: $('Build Reports').item.json.week_start, week_end: $('Build Reports').item.json.week_end, jobs_completed: $('Build Reports').item.json.jobs_completed, zones_completed: $('Build Reports').item.json.zones_completed, zones_flagged: $('Build Reports').item.json.zones_flagged, evidence_photos: $('Build Reports').item.json.evidence_photos }) }}",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf15-n11",
+      "name": "Get Manager",
+      "type": "n8n-nodes-base.supabase",
+      "position": [2600, 300],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "profiles",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            { "keyName": "company_id", "condition": "eq", "keyValue": "={{ $('Build Reports').item.json.company_id }}" },
+            { "keyName": "role", "condition": "eq", "keyValue": "manager" }
+          ]
+        }
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf15-n12",
+      "name": "Build Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [2840, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var facilityName = $('Get Facility').item.json.name || 'your facility';\nvar managerId = $json.id;\nvar report = $('Build Reports').item.json;\n\nvar title = 'Weekly Cleaning Report Ready';\nvar message = 'Your weekly report for ' + facilityName + ' (' + report.week_start + ' – ' + report.week_end + ') is ready: ' + report.jobs_completed + ' jobs completed, ' + report.zones_completed + ' zones cleaned, ' + report.evidence_photos + ' photos logged.';\n\nreturn [{ json: { user_id: managerId, title: title, message: message } }];"
+      }
+    },
+    {
+      "id": "wf15-n13",
+      "name": "Insert Client Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [3080, 300],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    }
+  ],
+  "connections": {
+    "Sunday 22:00":         { "main": [[{ "node": "Set Date Range",          "type": "main", "index": 0 }]] },
+    "Set Date Range":       { "main": [[{ "node": "Get Completed Jobs",       "type": "main", "index": 0 }]] },
+    "Get Completed Jobs":   { "main": [[{ "node": "Collect Job IDs",          "type": "main", "index": 0 }]] },
+    "Collect Job IDs":      { "main": [[{ "node": "Get All Job Zones",        "type": "main", "index": 0 }]] },
+    "Get All Job Zones":    { "main": [[{ "node": "Aggregate Zones",          "type": "main", "index": 0 }]] },
+    "Aggregate Zones":      { "main": [[{ "node": "Get All Cleaning Logs",    "type": "main", "index": 0 }]] },
+    "Get All Cleaning Logs":{ "main": [[{ "node": "Build Reports",            "type": "main", "index": 0 }]] },
+    "Build Reports":        { "main": [[{ "node": "Get Facility",             "type": "main", "index": 0 }]] },
+    "Get Facility":         { "main": [[{ "node": "Insert Weekly Report",     "type": "main", "index": 0 }]] },
+    "Insert Weekly Report": { "main": [[{ "node": "Get Manager",              "type": "main", "index": 0 }]] },
+    "Get Manager":          { "main": [[{ "node": "Build Notification",       "type": "main", "index": 0 }]] },
+    "Build Notification":   { "main": [[{ "node": "Insert Client Notification","type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}

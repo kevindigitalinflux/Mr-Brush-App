@@ -1,0 +1,93 @@
+{
+  "name": "WF-13 - Complaint Resolved Notification",
+  "nodes": [
+    {
+      "id": "wf13-n01",
+      "name": "Complaint Resolved",
+      "type": "n8n-nodes-base.webhook",
+      "position": [200, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "complaint-resolved",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "wf13-n02",
+      "name": "Is Newly Resolved?",
+      "type": "n8n-nodes-base.if",
+      "position": [440, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-01",
+              "leftValue": "={{ $json.body.record.status }}",
+              "rightValue": "resolved",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "cond-02",
+              "leftValue": "={{ $json.body.old_record.status }}",
+              "rightValue": "resolved",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf13-n03",
+      "name": "Build Client Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [680, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var title = $('Complaint Resolved').item.json.body.record.title;\nvar supervisorNote = $('Complaint Resolved').item.json.body.record.supervisor_note;\nvar clientId = $('Complaint Resolved').item.json.body.record.filed_by;\n\nvar notifTitle = 'Issue Resolved';\nvar message = \"Your complaint '\" + title + \"' has been resolved.\";\nif (supervisorNote) { message += ' Note: ' + supervisorNote; }\n\nreturn [{ json: { title: notifTitle, message: message, user_id: clientId } }];"
+      }
+    },
+    {
+      "id": "wf13-n04",
+      "name": "Insert Client Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [920, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    }
+  ],
+  "connections": {
+    "Complaint Resolved": {
+      "main": [[{ "node": "Is Newly Resolved?", "type": "main", "index": 0 }]]
+    },
+    "Is Newly Resolved?": {
+      "main": [
+        [{ "node": "Build Client Notification", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Build Client Notification": {
+      "main": [[{ "node": "Insert Client Notification", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}

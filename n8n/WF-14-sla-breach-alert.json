@@ -1,0 +1,130 @@
+{
+  "name": "WF-14 - SLA Breach Alert",
+  "nodes": [
+    {
+      "id": "wf14-n01",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [200, 192],
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 30 }]
+        }
+      }
+    },
+    {
+      "id": "wf14-n02",
+      "name": "Get Today's Active Jobs",
+      "type": "n8n-nodes-base.supabase",
+      "position": [440, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "jobs",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "scheduled_date",
+              "condition": "eq",
+              "keyValue": "={{ new Date().toISOString().split('T')[0] }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "neq",
+              "keyValue": "completed"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf14-n03",
+      "name": "Filter Past SLA",
+      "type": "n8n-nodes-base.code",
+      "position": [680, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "// Flag jobs not completed 18 hours after midnight of their scheduled date (6 PM UTC)\nconst SLA_HOURS = 18;\nconst now = Date.now();\nconst jobs = $input.all();\n\nconst overdue = jobs.filter(item => {\n  const deadline = new Date(item.json.scheduled_date).getTime() + (SLA_HOURS * 60 * 60 * 1000);\n  return now > deadline;\n});\n\nif (overdue.length === 0) return [];\n\nreturn overdue.map(item => ({\n  json: {\n    job_id: item.json.id,\n    supervisor_id: item.json.supervisor_id,\n    facility_id: item.json.facility_id,\n    scheduled_date: item.json.scheduled_date\n  }\n}));"
+      }
+    },
+    {
+      "id": "wf14-n04",
+      "name": "Get Facility",
+      "type": "n8n-nodes-base.supabase",
+      "position": [920, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "facilities",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.facility_id }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "wf14-n05",
+      "name": "Build Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [1160, 192],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var facilityName = $('Get Facility').item.json.name || 'Unknown facility';\nvar supervisorId = $('Filter Past SLA').item.json.supervisor_id;\nvar scheduledDate = $('Filter Past SLA').item.json.scheduled_date;\n\nvar title = 'SLA Breach Alert';\nvar message = 'The job at ' + facilityName + ' scheduled for ' + scheduledDate + ' has not been completed.';\n\nreturn [{ json: { title: title, message: message, user_id: supervisorId } }];"
+      }
+    },
+    {
+      "id": "wf14-n06",
+      "name": "Insert Supervisor Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [1400, 192],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" }
+      }
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [[{ "node": "Get Today's Active Jobs", "type": "main", "index": 0 }]]
+    },
+    "Get Today's Active Jobs": {
+      "main": [[{ "node": "Filter Past SLA", "type": "main", "index": 0 }]]
+    },
+    "Filter Past SLA": {
+      "main": [[{ "node": "Get Facility", "type": "main", "index": 0 }]]
+    },
+    "Get Facility": {
+      "main": [[{ "node": "Build Notification", "type": "main", "index": 0 }]]
+    },
+    "Build Notification": {
+      "main": [[{ "node": "Insert Supervisor Notification", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}
