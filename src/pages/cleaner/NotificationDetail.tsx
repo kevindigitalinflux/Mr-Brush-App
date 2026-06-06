@@ -156,10 +156,15 @@ function useFetchNotif(id: string | undefined) {
       .eq('user_id', user.id)
       .single()
       .then(({ data }) => {
-        const n = data as Notif | null
+        if (!data) { setLoading(false); return }
+        const raw = data as Record<string, unknown>
+        const metadata = typeof raw.metadata === 'string'
+          ? JSON.parse(raw.metadata) as NotifMetadata
+          : raw.metadata as NotifMetadata | null
+        const n: Notif = { ...(raw as unknown as Omit<Notif, 'metadata'>), metadata }
         setNotif(n)
         setLoading(false)
-        if (n && !n.is_read) {
+        if (!n.is_read) {
           void supabase.from('notifications').update({ is_read: true }).eq('id', id)
         }
       })
