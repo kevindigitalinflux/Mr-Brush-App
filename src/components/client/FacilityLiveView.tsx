@@ -11,6 +11,27 @@ interface ZoneLiveRow {
   completedAt: string | null
 }
 
+// ─── Weekly report hook ───────────────────────────────────────────────────────
+
+function useLatestWeeklyReport(facilityId: string): { reportId: string | null } {
+  const [reportId, setReportId] = useState<string | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase
+        .from('weekly_reports')
+        .select('id')
+        .eq('facility_id', facilityId)
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      setReportId((data as { id: string } | null)?.id ?? null)
+    })()
+  }, [facilityId])
+
+  return { reportId }
+}
+
 // ─── Data hook ────────────────────────────────────────────────────────────────
 
 function useFacilityZones(facilityId: string) {
@@ -123,7 +144,7 @@ function ZoneRow({ zone }: { zone: ZoneLiveRow }) {
 export function FacilityLiveView({ facilityId }: { facilityId: string }) {
   const navigate = useNavigate()
   const { zones, loading } = useFacilityZones(facilityId)
-  const hasEvidence = zones.some((z) => z.status === 'completed')
+  const { reportId } = useLatestWeeklyReport(facilityId)
 
   if (loading) {
     return (
@@ -151,14 +172,14 @@ export function FacilityLiveView({ facilityId }: { facilityId: string }) {
       <div className="flex flex-col">
         {zones.map((zone) => <ZoneRow key={zone.id} zone={zone} />)}
       </div>
-      {hasEvidence && (
+      {reportId && (
         <div className="flex items-center gap-3 pt-3 mt-2 border-t border-[#F0EFEA]">
           <div className="w-5 h-5 flex items-center justify-center text-[#9A9A94] shrink-0">
             <DocumentIcon />
           </div>
           <span className="flex-1 font-['Lato',sans-serif] text-[13px] text-[#434B4D]">Weekly Report Ready</span>
           <button
-            onClick={() => navigate('/client/evidence?filter=week')}
+            onClick={() => navigate(`/client/reports/${reportId}`)}
             className="font-['Lato',sans-serif] text-[12px] font-bold text-[#B8A77A] hover:text-[#a8976a] transition-colors"
           >
             View →

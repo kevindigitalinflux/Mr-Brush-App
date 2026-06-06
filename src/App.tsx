@@ -34,6 +34,7 @@ import { EvidenceFeed } from './pages/client/EvidenceFeed'
 import { Complaints } from './pages/client/Complaints'
 import { ClientHistory } from './pages/client/ClientHistory'
 import { ClientNotifications } from './pages/client/ClientNotifications'
+import { WeeklyReport } from './pages/client/WeeklyReport'
 
 export default function App() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/client/history"        element={<ClientHistory />}        />
           <Route path="/client/notifications"  element={<ClientNotifications />}  />
           <Route path="/client/home"           element={<Overview />}             />
+          <Route path="/client/reports/:reportId" element={<WeeklyReport />}      />
         </Routes>
       </BrowserRouter>
     </AppProvider>
