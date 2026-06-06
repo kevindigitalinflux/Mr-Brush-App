@@ -1,0 +1,145 @@
+{
+  "name": "WF-8 - Monthly Payslip Roll-up",
+  "nodes": [
+    {
+      "id": "wf8-n01",
+      "name": "1st of Month 06:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [200, 300],
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 6 1 * *" }]
+        }
+      }
+    },
+    {
+      "id": "wf8-n02",
+      "name": "Set Date Range",
+      "type": "n8n-nodes-base.code",
+      "position": [440, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const now = new Date();\nconst periodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];\nconst periodEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];\nreturn [{ json: { period_start: periodStart, period_end: periodEnd } }];"
+      }
+    },
+    {
+      "id": "wf8-n03",
+      "name": "Get Pay Records",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/pay_records?shift_date=gte.{{ $json.period_start }}&shift_date=lte.{{ $json.period_end }}&status=in.(approved,paid)&select=cleaner_id,company_id,hours_worked,gross_pay",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf8-n04",
+      "name": "Group by Cleaner",
+      "type": "n8n-nodes-base.code",
+      "position": [920, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const records = $input.all();\nif (records.length === 0) return [];\n\nconst periodStart = $('Set Date Range').item.json.period_start;\nconst periodEnd = $('Set Date Range').item.json.period_end;\n\nconst byCleaner = {};\nfor (const item of records) {\n  const r = item.json;\n  if (!byCleaner[r.cleaner_id]) {\n    byCleaner[r.cleaner_id] = {\n      cleaner_id: r.cleaner_id,\n      company_id: r.company_id,\n      total_shifts: 0,\n      total_hours: 0,\n      total_gross_pay: 0,\n      period_start: periodStart,\n      period_end: periodEnd,\n    };\n  }\n  byCleaner[r.cleaner_id].total_shifts += 1;\n  byCleaner[r.cleaner_id].total_hours += Number(r.hours_worked);\n  byCleaner[r.cleaner_id].total_gross_pay += Number(r.gross_pay);\n}\n\nreturn Object.values(byCleaner).map(d => ({ json: d }));"
+      }
+    },
+    {
+      "id": "wf8-n05",
+      "name": "Upsert Payslip",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1160, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://bstohwxzufebufbybxtd.supabase.co/rest/v1/payslips?on_conflict=cleaner_id,period_start",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ cleaner_id: $json.cleaner_id, company_id: $json.company_id, period_start: $json.period_start, period_end: $json.period_end, total_shifts: $json.total_shifts, total_hours: $json.total_hours, total_gross_pay: $json.total_gross_pay, status: 'draft' }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Prefer", "value": "resolution=merge-duplicates" }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf8-n06",
+      "name": "Collect Companies",
+      "type": "n8n-nodes-base.code",
+      "position": [1400, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const allCleaners = $('Group by Cleaner').all();\nif (allCleaners.length === 0) return [];\nconst companyIds = [...new Set(allCleaners.map(i => i.json.company_id))].join(',');\nconst periodStart = $('Set Date Range').item.json.period_start;\nreturn [{ json: { company_ids: companyIds, period_start: periodStart } }];"
+      }
+    },
+    {
+      "id": "wf8-n07",
+      "name": "Get Supervisors",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1640, 300],
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/profiles?role=eq.supervisor&company_id=in.({{ $json.company_ids }})&select=id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    },
+    {
+      "id": "wf8-n08",
+      "name": "Build Notification",
+      "type": "n8n-nodes-base.code",
+      "position": [1880, 300],
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "var periodStart = $('Set Date Range').item.json.period_start;\nvar monthLabel = new Date(periodStart + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });\nreturn [{ json: {\n  user_id: $json.id,\n  title: 'Payslips Ready for Review',\n  message: 'Monthly payslips for ' + monthLabel + ' have been generated. Please review and approve in the Payslips screen.'\n} }];"
+      }
+    },
+    {
+      "id": "wf8-n09",
+      "name": "Insert Notification",
+      "type": "n8n-nodes-base.supabase",
+      "position": [2120, 300],
+      "typeVersion": 1,
+      "parameters": {
+        "tableId": "notifications",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "user_id",  "fieldValue": "={{ $json.user_id }}" },
+            { "fieldId": "title",    "fieldValue": "={{ $json.title }}" },
+            { "fieldId": "message",  "fieldValue": "={{ $json.message }}" },
+            { "fieldId": "is_read",  "fieldValue": "=false" }
+          ]
+        }
+      },
+      "credentials": { "supabaseApi": { "id": "qqH4brGQ87PpjkK5", "name": "Supabase account" } }
+    }
+  ],
+  "connections": {
+    "1st of Month 06:00": { "main": [[{ "node": "Set Date Range",      "type": "main", "index": 0 }]] },
+    "Set Date Range":      { "main": [[{ "node": "Get Pay Records",     "type": "main", "index": 0 }]] },
+    "Get Pay Records":     { "main": [[{ "node": "Group by Cleaner",    "type": "main", "index": 0 }]] },
+    "Group by Cleaner":    { "main": [[{ "node": "Upsert Payslip",      "type": "main", "index": 0 }]] },
+    "Upsert Payslip":      { "main": [[{ "node": "Collect Companies",   "type": "main", "index": 0 }]] },
+    "Collect Companies":   { "main": [[{ "node": "Get Supervisors",     "type": "main", "index": 0 }]] },
+    "Get Supervisors":     { "main": [[{ "node": "Build Notification",  "type": "main", "index": 0 }]] },
+    "Build Notification":  { "main": [[{ "node": "Insert Notification", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null
+}
