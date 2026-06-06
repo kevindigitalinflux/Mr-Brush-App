@@ -597,14 +597,17 @@ export function Complaints() {
   const progressCount = complaints.filter((c) => c.status !== 'received').length
 
   useGSAP(() => {
-    if (!containerRef.current || loading || complaints.length === 0) return
-    gsap.from('.cl-cmp-card', { opacity: 0, y: 16, duration: 0.4, stagger: 0.07, ease: 'power2.out', clearProps: 'all' })
+    if (!containerRef.current || loading) return
+    gsap.set(['.cmp-heading', '.cl-cmp-card'], { clearProps: 'all' })
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.cmp-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.cl-cmp-card', { opacity: 0, y: 12, duration: 0.35, stagger: 0.07 }, '-=0.1')
   }, { scope: containerRef, dependencies: [loading] })
 
   const content = (
     <div ref={containerRef} className="max-w-[900px] mx-auto px-6 py-8 pb-[88px] md:pb-8">
       {/* Header */}
-      <div className="flex items-end justify-between mb-6">
+      <div className="cmp-heading flex items-end justify-between mb-6">
         <div>
           <p className="font-['Lato'] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
             Issues & Resolutions

@@ -373,11 +373,22 @@ function MobileEvidenceFeed() {
 
   const zoneNames = [...new Set(logs.map((l) => l.zoneName))].sort()
   const filtered = applyFilter(logs, mode, activeZone)
+  const firstLoad = useRef(true)
+
+  useGSAP(() => {
+    if (loading) return
+    gsap.set(['.ef-heading', '.ef-filters'], { clearProps: 'all' })
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.ef-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.ef-filters', { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+  }, { scope: containerRef, dependencies: [loading] })
 
   useGSAP(() => {
     if (loading) return
     gsap.set('.ev-card', { clearProps: 'all' })
-    gsap.from('.ev-card', { opacity: 0, y: 16, duration: 0.35, stagger: 0.07, ease: 'power2.out' })
+    const delay = firstLoad.current ? 0.35 : 0
+    firstLoad.current = false
+    gsap.from('.ev-card', { opacity: 0, y: 16, duration: 0.35, stagger: 0.07, ease: 'power2.out', delay })
   }, { scope: containerRef, dependencies: [loading, mode, activeZone] })
 
   function handleRated(jobZoneId: string) {
@@ -389,7 +400,7 @@ function MobileEvidenceFeed() {
       <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-8 pb-[100px]">
 
         {/* Header */}
-        <div className="mb-5">
+        <div className="ef-heading mb-5">
           <p className="font-['Lato',sans-serif] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
             Proof of Cleaning
           </p>
@@ -399,7 +410,7 @@ function MobileEvidenceFeed() {
         </div>
 
         {/* Filters */}
-        <div className="mb-5">
+        <div className="ef-filters mb-5">
           <FilterChips
             mode={mode} onMode={setMode}
             zoneNames={zoneNames} activeZone={activeZone} onZone={setActiveZone}
@@ -457,6 +468,7 @@ function DesktopEvidenceFeed() {
 
   const zoneNames = [...new Set(logs.map((l) => l.zoneName))].sort()
   const filtered = applyFilter(logs, mode, activeZone)
+  const firstLoad = useRef(true)
 
   function handleRated(jobZoneId: string) {
     setLocalRatedIds((s) => new Set([...s, jobZoneId]))
@@ -464,8 +476,18 @@ function DesktopEvidenceFeed() {
 
   useGSAP(() => {
     if (loading) return
+    gsap.set(['.ef-heading', '.ef-filters'], { clearProps: 'all' })
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.ef-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.ef-filters', { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+  }, { scope: containerRef, dependencies: [loading] })
+
+  useGSAP(() => {
+    if (loading) return
     gsap.set('.ev-card', { clearProps: 'all' })
-    gsap.from('.ev-card', { opacity: 0, y: 14, duration: 0.32, stagger: 0.06, ease: 'power2.out' })
+    const delay = firstLoad.current ? 0.35 : 0
+    firstLoad.current = false
+    gsap.from('.ev-card', { opacity: 0, y: 14, duration: 0.32, stagger: 0.06, ease: 'power2.out', delay })
   }, { scope: containerRef, dependencies: [loading, mode, activeZone] })
 
   return (
@@ -475,7 +497,7 @@ function DesktopEvidenceFeed() {
         <div ref={containerRef} className="max-w-4xl mx-auto px-10 py-10">
 
           {/* Header */}
-          <div className="mb-7">
+          <div className="ef-heading mb-7">
             <p className="font-['Lato',sans-serif] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
               Proof of Cleaning
             </p>
@@ -485,7 +507,7 @@ function DesktopEvidenceFeed() {
           </div>
 
           {/* Filters */}
-          <div className="mb-7">
+          <div className="ef-filters mb-7">
             <FilterChips
               mode={mode} onMode={setMode}
               zoneNames={zoneNames} activeZone={activeZone} onZone={setActiveZone}

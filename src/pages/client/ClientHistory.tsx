@@ -262,14 +262,23 @@ export function ClientHistory() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
+    if (loading) return
+    gsap.set(['.hist-heading', '.hist-picker'], { clearProps: 'all' })
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.hist-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.hist-picker', { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+  }, { scope: containerRef, dependencies: [loading] })
+
+  useGSAP(() => {
     if (!containerRef.current || loading || shifts.length === 0) return
-    gsap.from('.cl-hist-card', { opacity: 0, y: 14, duration: 0.35, stagger: 0.06, ease: 'power2.out', clearProps: 'all' })
+    gsap.set('.cl-hist-card', { clearProps: 'all' })
+    gsap.from('.cl-hist-card', { opacity: 0, y: 14, duration: 0.35, stagger: 0.06, ease: 'power2.out' })
   }, { scope: containerRef, dependencies: [loading, month] })
 
   const content = (
     <div ref={containerRef} className="max-w-[900px] mx-auto px-6 py-8 pb-[88px] md:pb-8">
       {/* Header */}
-      <div className="mb-6">
+      <div className="hist-heading mb-6">
         <p className="font-['Lato'] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
           Visit Records
         </p>
@@ -277,7 +286,7 @@ export function ClientHistory() {
       </div>
 
       {/* Month picker */}
-      <div className="mb-5">
+      <div className="hist-picker mb-5">
         <MonthPicker month={month} onChange={setMonth} />
       </div>
 

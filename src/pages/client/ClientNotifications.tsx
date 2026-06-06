@@ -88,13 +88,16 @@ export function ClientNotifications() {
 
   useGSAP(() => {
     if (loading) return
-    gsap.from('.cl-notif-card', { opacity: 0, y: 12, duration: 0.35, stagger: 0.07, ease: 'power2.out' })
+    gsap.set(['.notif-heading', '.cl-notif-card'], { clearProps: 'all' })
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.notif-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.cl-notif-card', { opacity: 0, y: 12, duration: 0.35, stagger: 0.07 }, '-=0.15')
   }, { scope: containerRef, dependencies: [loading] })
 
   const content = (
     <div ref={containerRef} className="max-w-[640px] mx-auto px-6 pt-10 pb-[100px] md:pb-10">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-7">
+      <div className="notif-heading flex items-center gap-3 mb-7">
         <button
           onClick={() => navigate(-1)}
           aria-label="Go back"

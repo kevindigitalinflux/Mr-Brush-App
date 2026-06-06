@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
+import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,14 +34,15 @@ function formatDateRange(start: string, end: string): string {
 
 // ─── Stat tile ────────────────────────────────────────────────────────────────
 
-function StatTile({ value, label, accent = 'brass' }: {
+function StatTile({ value, label, accent = 'brass', className = '' }: {
   value: string | number
   label: string
   accent?: 'brass' | 'green' | 'red'
+  className?: string
 }) {
   const colour = accent === 'green' ? 'text-[#2F4A3D]' : accent === 'red' ? 'text-red-500' : 'text-[#B8A77A]'
   return (
-    <div className="bg-white border border-[#D0CFCA] rounded-[12px] px-5 py-5 flex flex-col gap-1">
+    <div className={`bg-white border border-[#D0CFCA] rounded-[12px] px-5 py-5 flex flex-col gap-1 ${className}`}>
       <span className={`font-['Poppins',sans-serif] font-bold text-[32px] leading-none ${colour}`}>
         {value}
       </span>
@@ -57,6 +59,16 @@ export function WeeklyReport() {
   const navigate = useNavigate()
   const [report, setReport] = useState<WeeklyReportRow | null>(null)
   const [loading, setLoading] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (loading) return
+    gsap.set(['.wr-heading', '.wr-stat', '.wr-footer'], { clearProps: 'all' })
+    gsap.timeline({ defaults: { ease: 'power2.out' } })
+      .from('.wr-heading', { opacity: 0, y: 14, duration: 0.4 })
+      .from('.wr-stat', { opacity: 0, y: 12, duration: 0.35, stagger: 0.06 }, '-=0.15')
+      .from('.wr-footer', { opacity: 0, y: 8, duration: 0.25 }, '-=0.1')
+  }, { scope: containerRef, dependencies: [loading] })
 
   useEffect(() => {
     if (!reportId) { setLoading(false); return }
@@ -91,10 +103,10 @@ export function WeeklyReport() {
   }, [reportId])
 
   const content = (
-    <div className="max-w-[640px] mx-auto px-6 pt-10 pb-[100px] md:pb-10">
+    <div ref={containerRef} className="max-w-[640px] mx-auto px-6 pt-10 pb-[100px] md:pb-10">
 
       {/* Back + header */}
-      <div className="flex items-center gap-3 mb-7">
+      <div className="wr-heading flex items-center gap-3 mb-7">
         <button
           onClick={() => navigate('/client/overview')}
           aria-label="Back to overview"
@@ -135,10 +147,10 @@ export function WeeklyReport() {
       ) : (
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
-            <StatTile value={report.report_data?.jobs_completed ?? 0} label="Jobs completed" accent="brass" />
-            <StatTile value={report.total_zones_completed} label="Zones cleaned" accent="green" />
-            <StatTile value={report.total_zones_flagged} label="Zones flagged" accent={report.total_zones_flagged > 0 ? 'red' : 'brass'} />
-            <StatTile value={report.report_data?.evidence_photos ?? 0} label="Evidence photos" accent="brass" />
+            <StatTile value={report.report_data?.jobs_completed ?? 0} label="Jobs completed" accent="brass" className="wr-stat" />
+            <StatTile value={report.total_zones_completed} label="Zones cleaned" accent="green" className="wr-stat" />
+            <StatTile value={report.total_zones_flagged} label="Zones flagged" accent={report.total_zones_flagged > 0 ? 'red' : 'brass'} className="wr-stat" />
+            <StatTile value={report.report_data?.evidence_photos ?? 0} label="Evidence photos" accent="brass" className="wr-stat" />
           </div>
 
           {report.avg_rating !== null && (
@@ -150,7 +162,7 @@ export function WeeklyReport() {
             </div>
           )}
 
-          <div className="bg-[#F5F4EF] border border-[#D0CFCA] rounded-[12px] px-5 py-4">
+          <div className="wr-footer bg-[#F5F4EF] border border-[#D0CFCA] rounded-[12px] px-5 py-4">
             <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
               This report was automatically compiled from all cleaning activity at{' '}
               <span className="font-bold text-[#3D3B3A]">{report.facility_name}</span>{' '}
