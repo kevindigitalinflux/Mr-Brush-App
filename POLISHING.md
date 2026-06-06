@@ -7,10 +7,10 @@ Strike through an item when done. Add the date completed.
 
 ## App / UI
 
-- [ ] **Client portal / supervisor mobile fix #1** — *Kevin to confirm exact item*
-- [ ] **Client portal / supervisor mobile fix #2** — *Kevin to confirm exact item*
-- [ ] **Client portal / supervisor mobile fix #3** — *Kevin to confirm exact item*
-- [ ] **Client portal / supervisor mobile fix #4** — *Kevin to confirm exact item*
+- [x] ~~**Client portal — Overview "10 d ago" overflow** — dropped " ago" suffix from formatResolved (now "10d" not "10d ago"). Done 2026-06-06.~~
+- [x] ~~**Client portal — History screen slow** — combined job_zones + profiles into one nested Supabase select, cutting sequential query chain from 5 to 4 round trips. Done 2026-06-06.~~
+- [ ] **Client portal / supervisor mobile fix #3** — *Kevin to confirm — may have been resolved*
+- [ ] **Client portal / supervisor mobile fix #4** — *Kevin to confirm — may have been resolved*
 
 ---
 
