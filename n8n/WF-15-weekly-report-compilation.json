@@ -89,7 +89,7 @@
       "typeVersion": 4.2,
       "parameters": {
         "method": "GET",
-        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/cleaning_logs?job_id=in.({{ $('Collect Job IDs').item.json.all_job_ids }})&select=id,job_id",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/cleaning_logs?job_id=in.({{ $('Collect Job IDs').item.json.all_job_ids }})&select=id,job_id,evidence_files(id)",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
         "options": {}
@@ -104,7 +104,7 @@
       "typeVersion": 2,
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const logs = $input.all();\nconst jobsByFacility = $('Collect Job IDs').item.json.jobs_by_facility;\nconst zonesByFacility = $('Aggregate Zones').item.json.zones_by_facility;\nconst weekStart = $('Collect Job IDs').item.json.week_start;\nconst weekEnd = $('Collect Job IDs').item.json.week_end;\n\nreturn Object.entries(jobsByFacility).map(([facilityId, data]) => {\n  const jobIds = data.job_ids;\n  const evidence_photos = logs.filter(l => jobIds.includes(l.json.job_id)).length;\n  const zones = zonesByFacility[facilityId] || { zones_completed: 0, zones_flagged: 0 };\n  return { json: {\n    facility_id: facilityId,\n    company_id: data.company_id,\n    jobs_completed: data.jobs_completed,\n    zones_completed: zones.zones_completed,\n    zones_flagged: zones.zones_flagged,\n    evidence_photos: evidence_photos,\n    week_start: weekStart,\n    week_end: weekEnd\n  }};\n});"
+        "jsCode": "const logs = $input.all();\nconst jobsByFacility = $('Collect Job IDs').item.json.jobs_by_facility;\nconst zonesByFacility = $('Aggregate Zones').item.json.zones_by_facility;\nconst weekStart = $('Collect Job IDs').item.json.week_start;\nconst weekEnd = $('Collect Job IDs').item.json.week_end;\n\nreturn Object.entries(jobsByFacility).map(([facilityId, data]) => {\n  const jobIds = data.job_ids;\n  const evidence_photos = logs.filter(l => jobIds.includes(l.json.job_id)).reduce((sum, l) => sum + (Array.isArray(l.json.evidence_files) ? l.json.evidence_files.length : 0), 0);\n  const zones = zonesByFacility[facilityId] || { zones_completed: 0, zones_flagged: 0 };\n  return { json: {\n    facility_id: facilityId,\n    company_id: data.company_id,\n    jobs_completed: data.jobs_completed,\n    zones_completed: zones.zones_completed,\n    zones_flagged: zones.zones_flagged,\n    evidence_photos: evidence_photos,\n    week_start: weekStart,\n    week_end: weekEnd\n  }};\n});"
       }
     },
     {

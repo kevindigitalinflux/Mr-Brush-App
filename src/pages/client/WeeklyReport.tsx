@@ -62,13 +62,13 @@ export function WeeklyReport() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
-    if (!report) return
+    if (loading) return
     gsap.set(['.wr-heading', '.wr-stat', '.wr-footer'], { clearProps: 'all' })
     gsap.timeline({ defaults: { ease: 'power2.out' } })
       .from('.wr-heading', { opacity: 0, y: 14, duration: 0.4 })
       .from('.wr-stat', { opacity: 0, y: 12, duration: 0.35, stagger: 0.06 }, '-=0.15')
       .from('.wr-footer', { opacity: 0, y: 8, duration: 0.25 }, '-=0.1')
-  }, { scope: containerRef, dependencies: [report] })
+  }, { scope: containerRef, dependencies: [loading] })
 
   useEffect(() => {
     if (!reportId) { setLoading(false); return }
@@ -102,28 +102,17 @@ export function WeeklyReport() {
     })()
   }, [reportId])
 
-  const content = (
-    <div ref={containerRef} className="max-w-[640px] mx-auto px-6 pt-10 pb-[100px] md:pb-10">
+  return (
+    <>
+      <div className="hidden md:block">
+        <ClientSidebar active="overview" complaintsCount={0} />
+      </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-4">
-          <div className="h-16 bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-[88px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
-          ))}
-        </div>
-      ) : !report ? (
-        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
-          <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#3D3B3A]">Report not found</p>
-          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
-            This report may have been removed or the link is invalid.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
+      <div className="md:pl-60 min-h-screen bg-[#F5F4EF]">
+        <div ref={containerRef} className="max-w-[640px] mx-auto px-6 pt-10 pb-[100px] md:pb-10">
 
-          {/* Header — only rendered after load so GSAP fades it in clean */}
-          <div className="wr-heading flex items-center gap-3 mb-3">
+          {/* Heading — always in DOM so GSAP fades it in from opacity:0 before first paint */}
+          <div className="wr-heading flex items-center gap-3 mb-7">
             <button
               onClick={() => navigate('/client/overview')}
               aria-label="Back to overview"
@@ -138,50 +127,59 @@ export function WeeklyReport() {
                 Weekly Report
               </p>
               <h1 className="font-['Poppins',sans-serif] font-bold text-[26px] text-[#3D3B3A] leading-tight">
-                {report.facility_name}
+                {loading ? ' ' : (report?.facility_name ?? 'Report')}
               </h1>
-              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-0.5">
-                {formatDateRange(report.week_start, report.week_end)}
+              {!loading && report && (
+                <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-0.5">
+                  {formatDateRange(report.week_start, report.week_end)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-[88px] bg-white border border-[#D0CFCA] rounded-[12px] animate-pulse" />
+              ))}
+            </div>
+          ) : !report ? (
+            <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
+              <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#3D3B3A]">Report not found</p>
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#737874] mt-1">
+                This report may have been removed or the link is invalid.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <StatTile value={report.report_data?.jobs_completed ?? 0} label="Jobs completed" accent="brass" className="wr-stat" />
+                <StatTile value={report.total_zones_completed} label="Zones cleaned" accent="green" className="wr-stat" />
+                <StatTile value={report.total_zones_flagged} label="Zones flagged" accent={report.total_zones_flagged > 0 ? 'red' : 'brass'} className="wr-stat" />
+                <StatTile value={report.report_data?.evidence_photos ?? 0} label="Evidence photos" accent="brass" className="wr-stat" />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <StatTile value={report.report_data?.jobs_completed ?? 0} label="Jobs completed" accent="brass" className="wr-stat" />
-            <StatTile value={report.total_zones_completed} label="Zones cleaned" accent="green" className="wr-stat" />
-            <StatTile value={report.total_zones_flagged} label="Zones flagged" accent={report.total_zones_flagged > 0 ? 'red' : 'brass'} className="wr-stat" />
-            <StatTile value={report.report_data?.evidence_photos ?? 0} label="Zone submissions" accent="brass" className="wr-stat" />
-          </div>
+              {report.avg_rating !== null && (
+                <div className="wr-stat bg-white border border-[#D0CFCA] rounded-[12px] px-5 py-5 flex items-center justify-between">
+                  <span className="font-['Lato',sans-serif] text-[14px] text-[#3D3B3A]">Average cleaner rating</span>
+                  <span className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#B8A77A]">
+                    {Number(report.avg_rating).toFixed(1)} / 5
+                  </span>
+                </div>
+              )}
 
-          {report.avg_rating !== null && (
-            <div className="wr-stat bg-white border border-[#D0CFCA] rounded-[12px] px-5 py-5 flex items-center justify-between">
-              <span className="font-['Lato',sans-serif] text-[14px] text-[#3D3B3A]">Average cleaner rating</span>
-              <span className="font-['Poppins',sans-serif] font-bold text-[20px] text-[#B8A77A]">
-                {Number(report.avg_rating).toFixed(1)} / 5
-              </span>
+              <div className="wr-footer bg-[#F5F4EF] border border-[#D0CFCA] rounded-[12px] px-5 py-4">
+                <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
+                  This report was automatically compiled from all cleaning activity at{' '}
+                  <span className="font-bold text-[#3D3B3A]">{report.facility_name}</span>{' '}
+                  during the week of {formatDateRange(report.week_start, report.week_end)}.
+                </p>
+              </div>
             </div>
           )}
-
-          <div className="wr-footer bg-[#F5F4EF] border border-[#D0CFCA] rounded-[12px] px-5 py-4">
-            <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">
-              This report was automatically compiled from all cleaning activity at{' '}
-              <span className="font-bold text-[#3D3B3A]">{report.facility_name}</span>{' '}
-              during the week of {formatDateRange(report.week_start, report.week_end)}.
-            </p>
-          </div>
         </div>
-      )}
-    </div>
-  )
+      </div>
 
-  return (
-    <>
-      <div className="hidden md:block">
-        <ClientSidebar active="overview" complaintsCount={0} />
-      </div>
-      <div className="md:pl-60 min-h-screen bg-[#F5F4EF]">
-        {content}
-      </div>
       <div className="md:hidden">
         <ClientNav active="overview" complaintsCount={0} />
       </div>
