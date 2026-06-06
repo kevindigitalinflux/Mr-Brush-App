@@ -11,6 +11,7 @@ Strike through an item when done. Add the date completed.
 - [x] ~~**Client portal — History screen slow** — combined job_zones + profiles into one nested Supabase select, cutting sequential query chain from 5 to 4 round trips. Done 2026-06-06.~~
 - [ ] **Client portal / supervisor mobile fix #3** — *Kevin to confirm — may have been resolved*
 - [ ] **Client portal / supervisor mobile fix #4** — *Kevin to confirm — may have been resolved*
+- [ ] **Mobile device testing** — test all recent fixes (overview overflow, history load, animations) on a real device once available. Also confirm fixes #3 and #4 are still needed or already resolved.
 
 ---
 
