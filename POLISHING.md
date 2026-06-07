@@ -12,9 +12,9 @@ Strike through an item when done. Add the date completed.
 - [x] ~~**Client portal — History screen cleaner names missing** — `ClientHistory.tsx` queried `profiles(id, name)` but column is `full_name`. Cleaners never appeared on History shift cards. Fixed to `profiles(id, full_name)`. Done 2026-06-07.~~
 - [x] ~~**Desktop scrollbar — cleaner portal** — 5 cleaner desktop screens (`Home`, `ShiftHistory`, `ShiftDetail`, `ZoneList`, `NotificationDetail`) used `flex h-screen overflow-hidden` + `flex-1 overflow-y-auto ml-60`, causing a trapped mid-screen scrollbar. Fixed all to `min-h-screen` + `pl-60`. Done 2026-06-07.~~
 - [x] ~~**Desktop scrollbar — supervisor portal (Workers, CleanerProfile)** — same `flex h-screen overflow-hidden` pattern was missed in the previous supervisor fix pass. Fixed both screens to `min-h-screen` + `pl-60`. Done 2026-06-07.~~
-- [ ] **Client portal / supervisor mobile fix #3** — *Kevin to confirm — may have been resolved by above fixes*
-- [ ] **Client portal / supervisor mobile fix #4** — *Kevin to confirm — may have been resolved by above fixes*
-- [ ] **Mobile device testing** — test all recent fixes on a real device once available. Check cleaner desktop, supervisor Workers/CleanerProfile, and confirm fixes #3 and #4 are resolved.
+- [x] ~~**Client portal / supervisor mobile fix #3** — Confirmed resolved on mobile. Done 2026-06-07.~~
+- [x] ~~**Client portal / supervisor mobile fix #4** — Confirmed resolved on mobile. Done 2026-06-07.~~
+- [x] ~~**Mobile device testing** — All recent fixes verified on real device. Done 2026-06-07.~~
 - [x] ~~**Page refresh — blank content bug** — added `supabase.auth.getSession()` call on mount in AppContext so existing sessions are rehydrated into React state. Previously `onAuthStateChange` didn't fire for the initial session, leaving `user` as null permanently. Done 2026-06-07.~~
 
 ---
