@@ -260,9 +260,9 @@ function DesktopWorkers() {
   }, { scope: containerRef, dependencies: [loading] })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <SupervisorDesktopSidebar active="workers" />
-      <main className="flex-1 ml-60 bg-[#F4F4EE] scrollbar-stable">
+      <main className="pl-60 bg-[#F4F4EE]">
         <div ref={containerRef} className="max-w-5xl mx-auto px-10 py-10">
           <div className="dw-heading flex items-start justify-between gap-4 mb-8">
             <h1 className="font-['Poppins',sans-serif] font-bold text-[32px] text-[#1A1C19] leading-[1.1] tracking-[-0.5px]">

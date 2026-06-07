@@ -230,9 +230,9 @@ function DesktopZoneList() {
   }, { scope: containerRef, dependencies: [loading] })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <DesktopSidebar active="jobs" />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="pl-60">
         <div ref={containerRef} className="max-w-5xl mx-auto px-8 py-8 flex flex-col gap-8">
 
           <div className="flex flex-col gap-5">

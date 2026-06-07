@@ -741,9 +741,9 @@ export function CleanerProfile() {
 
   if (isDesktop) {
     return (
-      <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+      <div className="min-h-screen bg-[#F4F4EE]">
         <SupervisorDesktopSidebar active="workers" />
-        <main className="flex-1 overflow-y-auto ml-60">
+        <main className="pl-60">
           <CleanerProfileContent
             cleanerId={cleanerId}
             onBack={() => navigate('/supervisor/workers')}

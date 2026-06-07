@@ -93,16 +93,16 @@ function useHistoryData(month: Date): HistoryState & { reload: () => void } {
     // Fetch zones + cleaner names in one query via FK join
     const { data: zoneRows } = await supabase
       .from('job_zones')
-      .select('job_id, status, cleaner_id, profiles(id, name)')
+      .select('job_id, status, cleaner_id, profiles(id, full_name)')
       .in('job_id', jobIds)
 
-    type ZoneRow = { job_id: string; status: string; cleaner_id: string | null; profiles: { id: string; name: string }[] }
+    type ZoneRow = { job_id: string; status: string; cleaner_id: string | null; profiles: { id: string; full_name: string }[] }
 
     const cleanerNameMap: Record<string, string> = {}
     for (const z of (zoneRows ?? [])) {
       const zr = z as unknown as ZoneRow
-      if (zr.cleaner_id && zr.profiles?.[0]?.name) {
-        cleanerNameMap[zr.cleaner_id] = zr.profiles[0].name
+      if (zr.cleaner_id && zr.profiles?.[0]?.full_name) {
+        cleanerNameMap[zr.cleaner_id] = zr.profiles[0].full_name
       }
     }
 

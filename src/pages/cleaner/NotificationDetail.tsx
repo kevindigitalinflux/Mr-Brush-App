@@ -182,9 +182,9 @@ function DesktopNotificationDetail() {
   const { notif, loading } = useFetchNotif(id)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F4F4EE]">
+    <div className="min-h-screen bg-[#F4F4EE]">
       <DesktopSidebar active="notifications" />
-      <main className="flex-1 overflow-y-auto ml-60">
+      <main className="pl-60">
         <div className="sticky top-0 z-10 bg-[#F4F4EE]/95 backdrop-blur-sm border-b border-[#E3E3DD] flex items-center px-8 h-16">
           <button
             onClick={() => navigate('/cleaner/notifications')}
