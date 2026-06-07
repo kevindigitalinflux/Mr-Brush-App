@@ -897,7 +897,7 @@ function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
 
   const filtered = search
     ? cleaners.filter((c) =>
-        c.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        (c.full_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
         c.display_id.toLowerCase().includes(search.toLowerCase())
       )
     : cleaners
@@ -912,7 +912,7 @@ function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
         className="w-full h-[52px] px-4 flex items-center justify-between text-left"
       >
         <span className={`font-['Lato',sans-serif] text-[15px] ${selected ? 'text-[#1A1C19]' : 'text-[#9E9E9E]'}`}>
-          {selected ? `${selected.full_name} (${selected.display_id})` : unassignedLabel}
+          {selected ? `${selected.full_name ?? selected.display_id} (${selected.display_id})` : unassignedLabel}
         </span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={`transition-transform duration-200 shrink-0 ${open ? 'rotate-180' : ''}`} aria-hidden="true">
           <path d="M6 9l6 6 6-6" stroke="#737874" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -946,7 +946,7 @@ function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
                 className={`w-full px-4 py-3 text-left font-['Lato',sans-serif] text-[14px] hover:bg-[#F4F4EE] transition-colors flex items-center justify-between ${c.id === value ? 'bg-[#F4F4EE]' : ''}`}
               >
                 <span className={c.id === value ? 'text-[#1A1C19] font-semibold' : 'text-[#1A1C19]'}>
-                  {c.full_name} <span className="text-[#737874] font-normal">({c.display_id})</span>
+                  {c.full_name ?? c.display_id} <span className="text-[#737874] font-normal">({c.display_id})</span>
                 </span>
                 {c.id === value && (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

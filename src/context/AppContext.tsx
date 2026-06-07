@@ -75,6 +75,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Rehydrate user from an existing Supabase session on page refresh.
+  // onAuthStateChange alone does not cover this case — when the page loads with
+  // a stored session, user starts as null and the INITIAL_SESSION event hits
+  // the handler below while prev is still null, so it returns null unchanged.
+  // getSession() fetches the live session and populates user from the profile.
+  useEffect(() => {
+    void supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_id, role, full_name, company_id')
+        .eq('id', session.user.id)
+        .single()
+      if (!profile) return
+      const p = profile as { display_id: string; role: string; full_name: string | null; company_id: string }
+      setUser({
+        id: session.user.id,
+        display_id: p.display_id,
+        role: p.role as UserRole,
+        name: p.full_name ?? p.display_id,
+        language: readStoredLang(),
+        company_id: p.company_id ?? '',
+      })
+    })
+  }, [])
+
   // Clear app state when the Supabase session is signed out or replaced by a
   // different user (e.g. a cleaner logging in on another tab).
   useEffect(() => {
