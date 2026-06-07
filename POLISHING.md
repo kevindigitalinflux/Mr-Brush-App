@@ -12,12 +12,13 @@ Strike through an item when done. Add the date completed.
 - [ ] **Client portal / supervisor mobile fix #3** — *Kevin to confirm — may have been resolved*
 - [ ] **Client portal / supervisor mobile fix #4** — *Kevin to confirm — may have been resolved*
 - [ ] **Mobile device testing** — test all recent fixes (overview overflow, history load, animations) on a real device once available. Also confirm fixes #3 and #4 are still needed or already resolved.
-- [ ] **Page refresh — blank content bug** — when a logged-in user refreshes their page (any portal), content sometimes appears blank. Likely a race condition between auth session rehydration and the data fetch firing before the user object is available. Needs investigation and fix.
+- [x] ~~**Page refresh — blank content bug** — added `supabase.auth.getSession()` call on mount in AppContext so existing sessions are rehydrated into React state. Previously `onAuthStateChange` didn't fire for the initial session, leaving `user` as null permanently. Done 2026-06-07.~~
 
 ---
 
 ## Security
 
+- [x] ~~**Create New Zone crash** — `CleanerPicker` search filter threw `null.toLowerCase()` when a cleaner profile had a null `full_name`, crashing the component tree to a white screen. Fixed: guard with `(c.full_name ?? '').toLowerCase()` and fall back to `display_id` in the picker display. Done 2026-06-07.~~
 - [ ] **Route protection — unauthenticated URL access** — anyone who pastes a portal URL directly should be blocked and redirected to login, not shown a blank or broken screen. Verify all routes (`/cleaner/*`, `/supervisor/*`, `/client/*`) are properly guarded by an auth check. Unauthenticated users must never see portal content.
 - [ ] **SEO & security headers audit** — run a full SEO audit and review HTTP security headers (CSP, X-Frame-Options, HSTS, etc.) before the app goes live with real clients. Cloudflare Pages supports header rules via `_headers` file.
 
