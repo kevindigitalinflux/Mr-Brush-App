@@ -106,7 +106,7 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
     if (!zoneName.trim()) { setZoneError(t('sv_zone_name_required')); return }
     const cleaner = cleaners.find((c) => c.id === cleanerId) ?? null
     setZones((prev) => [...prev, {
-      tempId: crypto.randomUUID(),
+      tempId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       zoneName: zoneName.trim(),
       cleanerId,
       cleanerName: cleaner?.full_name ?? null,
