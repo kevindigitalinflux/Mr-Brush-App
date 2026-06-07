@@ -80,7 +80,7 @@ function useHistoryData(filterMonth: string): HistoryState & { reload: () => voi
       .lte('scheduled_date', to)
       .order('scheduled_date', { ascending: false })
 
-    if (!jobRows || jobRows.length === 0) { setState({ loading: false, shifts: [], month }); return }
+    if (!jobRows || jobRows.length === 0) { setState({ loading: false, shifts: [] }); return }
 
     const jobIds = jobRows.map((j) => j.id as string)
 

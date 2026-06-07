@@ -186,7 +186,8 @@ function ShiftCard({ record }: { record: ShiftRecord }) {
 function PayContent() {
   const { user } = useApp()
   const t = useTranslation()
-  const [filterMonth, setFilterMonth] = useState('')
+  const defaultMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  const [filterMonth, setFilterMonth] = useState(defaultMonth)
   const { records } = usePayData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
@@ -238,9 +239,9 @@ function PayContent() {
           onChange={(e) => setFilterMonth(e.target.value)}
           className="h-9 rounded-[8px] border border-[#D0CFCA] bg-white px-3 font-['Lato',sans-serif] text-[13px] text-[#1A1C19] focus:outline-none focus:ring-2 focus:ring-[#B8A77A]"
         />
-        {filterMonth && (
+        {filterMonth !== defaultMonth && (
           <button
-            onClick={() => setFilterMonth('')}
+            onClick={() => setFilterMonth(defaultMonth)}
             className="h-9 px-3 rounded-[8px] border border-[#D0CFCA] bg-white font-['Lato',sans-serif] text-[13px] text-[#737874] hover:text-[#1A1C19] transition-colors"
           >
             {t('pay_clear')}
