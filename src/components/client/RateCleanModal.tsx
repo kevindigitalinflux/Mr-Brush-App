@@ -93,7 +93,10 @@ export function RateCleanModal({ jobZoneId, zoneName, cleanerFirstName, onClose,
   const isVeryLowRating = form.stars > 0 && form.stars <= 2
 
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).slice(0, 3 - form.photos.length)
+    const MAX_BYTES = 10 * 1024 * 1024
+    const files = Array.from(e.target.files ?? [])
+      .filter((f) => f.type.startsWith('image/') && f.size <= MAX_BYTES)
+      .slice(0, 3 - form.photos.length)
     const previews = files.map((f) => URL.createObjectURL(f))
     setForm((s) => ({
       ...s,

@@ -330,7 +330,8 @@ function RatingForm({ cleanerId, supervisorId, companyId, onSubmitted }: RatingF
   const isLowRating = star > 0 && star <= 2
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(e.target.files ?? [])
+    const MAX_BYTES = 10 * 1024 * 1024
+    const picked = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/') && f.size <= MAX_BYTES)
     setFiles((prev) => [...prev, ...picked])
     setPreviews((prev) => [...prev, ...picked.map((f) => URL.createObjectURL(f))])
   }

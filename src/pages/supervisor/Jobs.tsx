@@ -556,7 +556,8 @@ function ShiftBuilderScreen({ facilityId }: { facilityId: string }) {
   }
 
   async function removeZone(id: string) {
-    await supabase.from('job_zones').update({ status: 'deleted' }).eq('id', id)
+    if (!jobId) return
+    await supabase.from('job_zones').update({ status: 'deleted' }).eq('id', id).eq('job_id', jobId)
     setZones((prev) => prev.filter((z) => z.id !== id))
   }
 
@@ -718,7 +719,7 @@ function ZoneEditScreen({ facilityId, zoneId }: { facilityId: string; zoneId: st
   async function handleDelete() {
     if (!confirmDelete) { setConfirmDelete(true); return }
     setDeleting(true)
-    await supabase.from('job_zones').update({ status: 'deleted' }).eq('id', zoneId)
+    await supabase.from('job_zones').update({ status: 'deleted' }).eq('id', zoneId).eq('job_id', stateJobId)
     goBack()
   }
 

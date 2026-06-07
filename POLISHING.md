@@ -23,7 +23,7 @@ Strike through an item when done. Add the date completed.
 
 - [x] ~~**Create New Zone crash** — `CleanerPicker` search filter threw `null.toLowerCase()` when a cleaner profile had a null `full_name`, crashing the component tree to a white screen. Fixed: guard with `(c.full_name ?? '').toLowerCase()` and fall back to `display_id` in the picker display. Done 2026-06-07.~~
 - [x] ~~**Route protection — unauthenticated URL access** — `RequireAuth` layout route guard wraps all portal routes. Uses `sessionChecked` flag to avoid flash-redirect while Supabase rehydrates a stored session on page load. Unauthenticated users land on `/login`. Done 2026-06-07.~~
-- [ ] **SEO & security headers audit** — run a full SEO audit and review HTTP security headers (CSP, X-Frame-Options, HSTS, etc.) before the app goes live with real clients. Cloudflare Pages supports header rules via `_headers` file.
+- [x] ~~**Security headers** — `public/_headers` created with X-Frame-Options, X-Content-Type-Options, HSTS, Referrer-Policy, Permissions-Policy, and CSP. Sourcemap explicitly disabled in vite.config.ts. Done 2026-06-07.~~
 
 ---
 

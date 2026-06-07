@@ -226,15 +226,17 @@ function StatusTimeline({ complaint }: { complaint: Complaint }) {
 function ComplaintCard({ complaint, onDelete }: { complaint: Complaint; onDelete: () => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const { user } = useApp()
 
   async function handleDelete() {
+    if (!user) return
     setDeleting(true)
     void supabase.rpc('notify_complaint_event', {
       p_facility_id: complaint.facilityId,
       p_event: 'deleted',
       p_title: complaint.title,
     })
-    await supabase.from('complaints').delete().eq('id', complaint.id)
+    await supabase.from('complaints').delete().eq('id', complaint.id).eq('filed_by', user.id)
     onDelete()
   }
 
@@ -360,7 +362,10 @@ function NewComplaintModal({
   const galleryRef = useRef<HTMLInputElement>(null)
 
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).slice(0, 3 - form.photos.length)
+    const MAX_BYTES = 10 * 1024 * 1024
+    const files = Array.from(e.target.files ?? [])
+      .filter((f) => f.type.startsWith('image/') && f.size <= MAX_BYTES)
+      .slice(0, 3 - form.photos.length)
     const previews = files.map((f) => URL.createObjectURL(f))
     setForm((s) => ({
       ...s,

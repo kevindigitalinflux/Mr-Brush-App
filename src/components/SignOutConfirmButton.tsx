@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { supabase } from '../lib/supabase'
 
 interface Props {
   triggerClassName: string
@@ -79,7 +80,7 @@ export function SignOutConfirmButton({
           <div className="flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => { setUser(null); navigate('/login') }}
+              onClick={() => { void supabase.auth.signOut().finally(() => { setUser(null); navigate('/login') }) }}
               className="w-full h-9 rounded-[8px] bg-[#3D3B3A] text-white font-['Lato'] text-[13px] font-semibold"
             >
               Sign out

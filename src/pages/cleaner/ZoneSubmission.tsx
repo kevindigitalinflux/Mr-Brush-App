@@ -68,6 +68,7 @@ function XIcon() {
 interface PhotoEntry { preview: string; file: File }
 
 const MAX_PHOTOS = 3
+const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
 
 // ─── Shared state hook ────────────────────────────────────────────────────────
 
@@ -100,7 +101,11 @@ function useZoneSubmissionState() {
   function handleAddPhoto() { fileInputRef.current?.click() }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
+    const files = Array.from(e.target.files ?? []).filter((f) => {
+      if (!f.type.startsWith('image/')) return false
+      if (f.size > MAX_FILE_BYTES) return false
+      return true
+    })
     files.slice(0, MAX_PHOTOS - photos.length).forEach((file) => {
       setPhotos((prev) => [...prev, { preview: URL.createObjectURL(file), file }])
     })
