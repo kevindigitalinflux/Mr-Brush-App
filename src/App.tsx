@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { useApp } from './context/AppContext'
 import { OfflineBanner } from './components/OfflineBanner'
+import { RequireAuth } from './components/RequireAuth'
 import { SplashScreen } from './pages/cleaner/SplashScreen'
 import { LanguageSelect } from './pages/cleaner/LanguageSelect'
 import { Login } from './pages/cleaner/Login'
@@ -42,43 +43,49 @@ export default function App() {
       <BrowserRouter>
         <GlobalOfflineBanner />
         <Routes>
+          {/* Public */}
           <Route path="/" element={<SplashScreen />} />
           <Route path="/language" element={<LanguageSelect />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/cleaner/home" element={<Home />} />
-          <Route path="/cleaner/job/:jobId" element={<ZoneList />} />
-          <Route path="/cleaner/job/:jobId/zone/:zoneId" element={<ZoneSubmission />} />
-          <Route path="/cleaner/job/:jobId/zone/:zoneId/success" element={<ZoneSubmissionSuccess />} />
-          <Route path="/cleaner/job/:jobId/zone/:zoneId/note" element={<NoPhotoNote />} />
-          <Route path="/cleaner/job/:jobId/complete" element={<ShiftCompleted />} />
-          <Route path="/cleaner/history" element={<ShiftHistory />} />
-          <Route path="/cleaner/history/:shiftId" element={<ShiftDetail />} />
-          <Route path="/cleaner/notifications" element={<Notifications />} />
-          <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
-          <Route path="/cleaner/pay" element={<CleanerPay />} />
-          <Route path="/cleaner/offline-queued" element={<ZoneOfflineQueued />} />
-          {/* Supervisor */}
-          <Route path="/supervisor/dashboard" element={<Dashboard />} />
-          <Route path="/supervisor/jobs" element={<Jobs />} />
-          <Route path="/supervisor/workers" element={<Workers />} />
-          <Route path="/supervisor/history" element={<History />} />
-          <Route path="/supervisor/evidence" element={<Evidence />} />
-          <Route path="/supervisor/evidence/:jobId" element={<Evidence />} />
-          <Route path="/supervisor/notifications" element={<SupervisorNotifications />} />
-          <Route path="/supervisor/issues" element={<Issues />} />
-          <Route path="/supervisor/workers/:cleanerId" element={<CleanerProfile />} />
-          <Route path="/supervisor/rates" element={<Rates />} />
-          <Route path="/supervisor/pay-records" element={<PayRecords />} />
-          <Route path="/supervisor/payslips" element={<Payslips />} />
-          <Route path="/supervisor/absence" element={<Absence />} />
-          {/* Client */}
-          <Route path="/client/overview"       element={<Overview />}             />
-          <Route path="/client/evidence"       element={<EvidenceFeed />}         />
-          <Route path="/client/complaints"     element={<Complaints />}           />
-          <Route path="/client/history"        element={<ClientHistory />}        />
-          <Route path="/client/notifications"  element={<ClientNotifications />}  />
-          <Route path="/client/home"           element={<Overview />}             />
-          <Route path="/client/reports/:reportId" element={<WeeklyReport />}      />
+
+          {/* Protected — all portal routes require authentication */}
+          <Route element={<RequireAuth />}>
+            {/* Cleaner */}
+            <Route path="/cleaner/home" element={<Home />} />
+            <Route path="/cleaner/job/:jobId" element={<ZoneList />} />
+            <Route path="/cleaner/job/:jobId/zone/:zoneId" element={<ZoneSubmission />} />
+            <Route path="/cleaner/job/:jobId/zone/:zoneId/success" element={<ZoneSubmissionSuccess />} />
+            <Route path="/cleaner/job/:jobId/zone/:zoneId/note" element={<NoPhotoNote />} />
+            <Route path="/cleaner/job/:jobId/complete" element={<ShiftCompleted />} />
+            <Route path="/cleaner/history" element={<ShiftHistory />} />
+            <Route path="/cleaner/history/:shiftId" element={<ShiftDetail />} />
+            <Route path="/cleaner/notifications" element={<Notifications />} />
+            <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
+            <Route path="/cleaner/pay" element={<CleanerPay />} />
+            <Route path="/cleaner/offline-queued" element={<ZoneOfflineQueued />} />
+            {/* Supervisor */}
+            <Route path="/supervisor/dashboard" element={<Dashboard />} />
+            <Route path="/supervisor/jobs" element={<Jobs />} />
+            <Route path="/supervisor/workers" element={<Workers />} />
+            <Route path="/supervisor/history" element={<History />} />
+            <Route path="/supervisor/evidence" element={<Evidence />} />
+            <Route path="/supervisor/evidence/:jobId" element={<Evidence />} />
+            <Route path="/supervisor/notifications" element={<SupervisorNotifications />} />
+            <Route path="/supervisor/issues" element={<Issues />} />
+            <Route path="/supervisor/workers/:cleanerId" element={<CleanerProfile />} />
+            <Route path="/supervisor/rates" element={<Rates />} />
+            <Route path="/supervisor/pay-records" element={<PayRecords />} />
+            <Route path="/supervisor/payslips" element={<Payslips />} />
+            <Route path="/supervisor/absence" element={<Absence />} />
+            {/* Client */}
+            <Route path="/client/overview"          element={<Overview />}            />
+            <Route path="/client/evidence"          element={<EvidenceFeed />}        />
+            <Route path="/client/complaints"        element={<Complaints />}          />
+            <Route path="/client/history"           element={<ClientHistory />}       />
+            <Route path="/client/notifications"     element={<ClientNotifications />} />
+            <Route path="/client/home"              element={<Overview />}            />
+            <Route path="/client/reports/:reportId" element={<WeeklyReport />}        />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AppProvider>

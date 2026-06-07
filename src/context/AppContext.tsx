@@ -28,6 +28,7 @@ export interface CompletedJob {
 interface AppContextValue {
   user: User | null
   setUser: (user: User | null) => void
+  sessionChecked: boolean
   language: Language
   setLanguage: (lang: Language) => void
   activeJobId: string | null
@@ -53,6 +54,7 @@ function readStoredLang(): Language {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [sessionChecked, setSessionChecked] = useState(false)
   const [language, setLanguageState] = useState<Language>(readStoredLang)
 
   function setLanguage(lang: Language) {
@@ -82,13 +84,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // getSession() fetches the live session and populates user from the profile.
   useEffect(() => {
     void supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return
+      if (!session?.user) { setSessionChecked(true); return }
       const { data: profile } = await supabase
         .from('profiles')
         .select('display_id, role, full_name, company_id')
         .eq('id', session.user.id)
         .single()
-      if (!profile) return
+      if (!profile) { setSessionChecked(true); return }
       const p = profile as { display_id: string; role: string; full_name: string | null; company_id: string }
       setUser({
         id: session.user.id,
@@ -98,6 +100,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         language: readStoredLang(),
         company_id: p.company_id ?? '',
       })
+      setSessionChecked(true)
     })
   }, [])
 
@@ -139,7 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      user, setUser, language, setLanguage, activeJobId, setActiveJobId, isOnline,
+      user, setUser, sessionChecked, language, setLanguage, activeJobId, setActiveJobId, isOnline,
       completedZones, markZoneComplete, completedJobs, markJobComplete,
     }}>
       {children}

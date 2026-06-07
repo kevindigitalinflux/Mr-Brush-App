@@ -22,7 +22,7 @@ Strike through an item when done. Add the date completed.
 ## Security
 
 - [x] ~~**Create New Zone crash** — `CleanerPicker` search filter threw `null.toLowerCase()` when a cleaner profile had a null `full_name`, crashing the component tree to a white screen. Fixed: guard with `(c.full_name ?? '').toLowerCase()` and fall back to `display_id` in the picker display. Done 2026-06-07.~~
-- [ ] **Route protection — unauthenticated URL access** — anyone who pastes a portal URL directly should be blocked and redirected to login, not shown a blank or broken screen. Verify all routes (`/cleaner/*`, `/supervisor/*`, `/client/*`) are properly guarded by an auth check. Unauthenticated users must never see portal content.
+- [x] ~~**Route protection — unauthenticated URL access** — `RequireAuth` layout route guard wraps all portal routes. Uses `sessionChecked` flag to avoid flash-redirect while Supabase rehydrates a stored session on page load. Unauthenticated users land on `/login`. Done 2026-06-07.~~
 - [ ] **SEO & security headers audit** — run a full SEO audit and review HTTP security headers (CSP, X-Frame-Options, HSTS, etc.) before the app goes live with real clients. Cloudflare Pages supports header rules via `_headers` file.
 
 ---
