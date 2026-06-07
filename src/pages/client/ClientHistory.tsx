@@ -4,7 +4,13 @@ import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
+
+function currentMonthStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,39 +27,26 @@ interface ShiftRecord {
 interface HistoryState {
   loading: boolean
   shifts: ShiftRecord[]
-  month: Date
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function monthStart(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1)
-}
-
-function monthEnd(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0)
-}
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
-function formatMonthLabel(d: Date): string {
-  return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-}
 
 function formatShiftDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
+function monthLabelFromStr(str: string): string {
+  return new Date(str + '-01T00:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+}
+
 // ─── Data hook ────────────────────────────────────────────────────────────────
 
-function useHistoryData(month: Date): HistoryState & { reload: () => void } {
+function useHistoryData(filterMonth: string): HistoryState & { reload: () => void } {
   const { user } = useApp()
-  const [state, setState] = useState<HistoryState>({ loading: true, shifts: [], month })
+  const [state, setState] = useState<HistoryState>({ loading: true, shifts: [] })
 
   const load = useCallback(async () => {
-    if (!user) return
+    if (!user || !filterMonth) return
     setState((s) => ({ ...s, loading: true }))
 
     const { data: memberRows } = await supabase
@@ -62,7 +55,7 @@ function useHistoryData(month: Date): HistoryState & { reload: () => void } {
       .eq('profile_id', user.id)
 
     const orgIds = (memberRows ?? []).map((m) => (m as { org_id: string }).org_id)
-    if (orgIds.length === 0) { setState({ loading: false, shifts: [], month }); return }
+    if (orgIds.length === 0) { setState({ loading: false, shifts: [] }); return }
 
     const { data: facilityRows } = await supabase
       .from('facilities')
@@ -71,12 +64,13 @@ function useHistoryData(month: Date): HistoryState & { reload: () => void } {
 
     const facilities: { id: string; name: string }[] = (facilityRows ?? []).map((f) => (f as { id: string; name: string }))
     const facilityIds = facilities.map((f) => f.id)
-    if (facilityIds.length === 0) { setState({ loading: false, shifts: [], month }); return }
+    if (facilityIds.length === 0) { setState({ loading: false, shifts: [] }); return }
 
     const facilityMap = Object.fromEntries(facilities.map((f) => [f.id, f.name]))
 
-    const from = isoDate(monthStart(month))
-    const to = isoDate(monthEnd(month))
+    const [yr, mo] = filterMonth.split('-').map(Number)
+    const from = `${yr}-${String(mo).padStart(2, '0')}-01`
+    const to = new Date(yr, mo, 0).toISOString().slice(0, 10)
 
     const { data: jobRows } = await supabase
       .from('jobs')
@@ -134,8 +128,8 @@ function useHistoryData(month: Date): HistoryState & { reload: () => void } {
       }
     })
 
-    setState({ loading: false, shifts, month })
-  }, [user, month])
+    setState({ loading: false, shifts })
+  }, [user, filterMonth])
 
   useEffect(() => { if (user) void load() }, [load, user])
   return { ...state, reload: load }
@@ -143,45 +137,11 @@ function useHistoryData(month: Date): HistoryState & { reload: () => void } {
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function ChevronIcon({ dir }: { dir: 'left' | 'right' }) {
+function ChevronRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {dir === 'left'
-        ? <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        : <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
+      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  )
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function MonthPicker({ month, onChange }: { month: Date; onChange: (d: Date) => void }) {
-  const now = new Date()
-  const isCurrentMonth = month.getFullYear() === now.getFullYear() && month.getMonth() === now.getMonth()
-
-  function prev() {
-    onChange(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-  }
-  function next() {
-    if (!isCurrentMonth) onChange(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-  }
-
-  return (
-    <div className="flex items-center justify-center gap-3 bg-white border border-[#D0CFCA] rounded-[10px] px-3 py-2">
-      <button onClick={prev} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#F5F4EF] text-[#434B4D]">
-        <ChevronIcon dir="left" />
-      </button>
-      <span className="font-['Poppins'] font-semibold text-[13px] text-[#3D3B3A] min-w-[120px] text-center">
-        {formatMonthLabel(month)}
-      </span>
-      <button
-        onClick={next}
-        disabled={isCurrentMonth}
-        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#F5F4EF] text-[#434B4D] disabled:opacity-30"
-      >
-        <ChevronIcon dir="right" />
-      </button>
-    </div>
   )
 }
 
@@ -237,7 +197,7 @@ function ShiftCard({ shift }: { shift: ShiftRecord }) {
 
       {/* Chevron */}
       <div className="text-[#D0CFCA] shrink-0">
-        <ChevronIcon dir="right" />
+        <ChevronRightIcon />
       </div>
     </button>
   )
@@ -245,42 +205,70 @@ function ShiftCard({ shift }: { shift: ShiftRecord }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-/** Client portal — cleaning visit history by month. */
+/** Client portal — cleaning visit history by month. Month/year input; header stays static on navigation. */
 export function ClientHistory() {
-  const [month, setMonth] = useState(() => new Date())
-  const { loading, shifts } = useHistoryData(month)
+  const isDesktop = useIsDesktop()
+  const [filterMonth, setFilterMonth] = useState(currentMonthStr)
+  const { loading, shifts } = useHistoryData(filterMonth)
   const containerRef = useRef<HTMLDivElement>(null)
+  const mountedRef    = useRef(false)
+  const isFirstRender = useRef(true)
+  const defaultMonth  = currentMonthStr()
 
+  const monthLabel = filterMonth
+    ? monthLabelFromStr(filterMonth)
+    : new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+
+  // One-time entrance — header + filter fade in, no y movement
   useGSAP(() => {
-    if (loading) return
-    gsap.set(['.hist-heading', '.hist-picker'], { clearProps: 'all' })
+    if (loading || mountedRef.current) return
+    mountedRef.current = true
     gsap.timeline({ defaults: { ease: 'power2.out' } })
-      .from('.hist-heading', { opacity: 0, y: 14, duration: 0.4 })
-      .from('.hist-picker', { opacity: 0, y: 10, duration: 0.3 }, '-=0.15')
+      .from('.hist-heading', { opacity: 0, duration: 0.4 })
+      .from('.hist-filter',  { opacity: 0, duration: 0.3 }, '<0.1')
+      .from('.cl-hist-card', { opacity: 0, duration: 0.35, stagger: 0.06 }, '<0.1')
   }, { scope: containerRef, dependencies: [loading] })
 
-  useGSAP(() => {
-    if (!containerRef.current || loading || shifts.length === 0) return
-    gsap.set('.cl-hist-card', { clearProps: 'all' })
-    gsap.from('.cl-hist-card', { opacity: 0, y: 14, duration: 0.35, stagger: 0.06, ease: 'power2.out' })
-  }, { scope: containerRef, dependencies: [loading, month] })
+  // Cards only on month change — fade in, no y, skip first render
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    if (loading || !containerRef.current) return
+    gsap.from(containerRef.current.querySelectorAll('.cl-hist-card'), {
+      opacity: 0, duration: 0.35, stagger: 0.06, ease: 'power2.out',
+    })
+  }, [filterMonth, loading])
 
   const content = (
-    <div ref={containerRef} className="max-w-[900px] mx-auto px-6 py-8 pb-[88px] md:pb-8">
-      {/* Header */}
+    <div ref={containerRef} className={isDesktop ? 'max-w-[900px] mx-auto px-8 py-8 pb-12' : 'w-full max-w-[480px] mx-auto px-6 py-8 pb-[100px]'}>
+
+      {/* Static header */}
       <div className="hist-heading mb-6">
         <p className="font-['Lato'] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
           Visit Records
         </p>
-        <h1 className="font-['Poppins'] font-bold text-[26px] text-[#3D3B3A] leading-tight">History</h1>
+        <h1 className="font-['Poppins'] font-bold text-[30px] text-[#3D3B3A] leading-tight">History</h1>
+        <p className="font-['Lato'] text-[13px] text-[#434B4D] mt-0.5">{monthLabel}</p>
       </div>
 
-      {/* Month picker */}
-      <div className="hist-picker mb-5">
-        <MonthPicker month={month} onChange={setMonth} />
+      {/* Static month/year input */}
+      <div className="hist-filter flex items-center gap-3 mb-5">
+        <input
+          type="month"
+          value={filterMonth}
+          onChange={(e) => setFilterMonth(e.target.value)}
+          className="h-9 rounded-[8px] border border-[#D0CFCA] bg-white px-3 font-['Lato'] text-[13px] text-[#3D3B3A] focus:outline-none focus:ring-2 focus:ring-[#B8A77A]"
+        />
+        {filterMonth !== defaultMonth && (
+          <button
+            onClick={() => setFilterMonth(defaultMonth)}
+            className="h-9 px-3 rounded-[8px] border border-[#D0CFCA] bg-white font-['Lato'] text-[13px] text-[#434B4D] hover:text-[#3D3B3A] transition-colors"
+          >
+            This month
+          </button>
+        )}
       </div>
 
-      {/* List */}
+      {/* Animated area */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
@@ -288,16 +276,16 @@ export function ClientHistory() {
           ))}
         </div>
       ) : shifts.length === 0 ? (
-        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
+        <div className="cl-hist-card bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
           <p className="font-['Poppins'] font-semibold text-[15px] text-[#3D3B3A]">No visits this month</p>
           <p className="font-['Lato'] text-[13px] text-[#434B4D] mt-1">
-            No cleaning visits were recorded for {formatMonthLabel(month)}.
+            No cleaning visits were recorded for {monthLabel}.
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           <p className="font-['Lato'] text-[12px] text-[#434B4D] mb-1">
-            {shifts.length} visit{shifts.length > 1 ? 's' : ''} in {formatMonthLabel(month)}
+            {shifts.length} visit{shifts.length > 1 ? 's' : ''} in {monthLabel}
           </p>
           {shifts.map((s) => <ShiftCard key={s.id} shift={s} />)}
         </div>
@@ -305,19 +293,19 @@ export function ClientHistory() {
     </div>
   )
 
+  if (isDesktop) {
+    return (
+      <>
+        <ClientSidebar active="history" />
+        <main className="pl-60 min-h-screen bg-[#F5F4EF]">{content}</main>
+      </>
+    )
+  }
+
   return (
     <>
-      <div className="hidden md:block">
-        <ClientSidebar active="history" />
-      </div>
-
-      <div className="md:pl-60 min-h-screen bg-[#F5F4EF]">
-        {content}
-      </div>
-
-      <div className="md:hidden">
-        <ClientNav active="history" />
-      </div>
+      <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto">{content}</div>
+      <ClientNav active="history" />
     </>
   )
 }
