@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
+import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -355,7 +356,8 @@ function NewComplaintModal({
     title: '', description: '', severity: 3,
     photos: [], previews: [], submitting: false, error: null, success: false,
   })
-  const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
 
   function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, 3 - form.photos.length)
@@ -549,18 +551,34 @@ function NewComplaintModal({
                   </div>
                 ))}
                 {form.photos.length < 3 && (
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="w-20 h-20 rounded-[8px] border-2 border-dashed border-[#D0CFCA] flex flex-col items-center justify-center gap-1 text-[#B8A77A] hover:border-[#B8A77A] transition-colors"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    <span className="font-['Lato'] text-[9px] font-bold uppercase tracking-[0.5px]">Photo</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => cameraRef.current?.click()}
+                      className="h-10 px-3 rounded-[8px] border-2 border-dashed border-[#D0CFCA] flex items-center gap-1.5 text-[#B8A77A] hover:border-[#B8A77A] transition-colors"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      <span className="font-['Lato'] text-[11px] font-bold uppercase tracking-[0.5px]">Camera</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => galleryRef.current?.click()}
+                      className="h-10 px-3 rounded-[8px] border-2 border-dashed border-[#D0CFCA] flex items-center gap-1.5 text-[#B8A77A] hover:border-[#B8A77A] transition-colors"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                        <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span className="font-['Lato'] text-[11px] font-bold uppercase tracking-[0.5px]">Gallery</span>
+                    </button>
+                  </div>
                 )}
-                <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={pickPhoto} />
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={pickPhoto} />
+                <input ref={galleryRef} type="file" accept="image/*" multiple hidden onChange={pickPhoto} />
               </div>
             </div>
 
@@ -590,6 +608,7 @@ function NewComplaintModal({
 /** Client portal — complaint filing and status tracking screen. */
 export function Complaints() {
   const { user } = useApp()
+  const isDesktop = useIsDesktop()
   const { loading, complaints, facilities, reload } = useComplaintsData()
   const [showModal, setShowModal] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -604,78 +623,104 @@ export function Complaints() {
       .from('.cl-cmp-card', { opacity: 0, y: 12, duration: 0.35, stagger: 0.07 }, '-=0.1')
   }, { scope: containerRef, dependencies: [loading] })
 
-  const content = (
-    <div ref={containerRef} className="max-w-[900px] mx-auto px-6 py-8 pb-[88px] md:pb-8">
-      {/* Header */}
-      <div className="cmp-heading flex items-end justify-between mb-6">
-        <div>
-          <p className="font-['Lato'] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
-            Issues & Resolutions
-          </p>
-          <h1 className="font-['Poppins'] font-bold text-[26px] text-[#3D3B3A] leading-tight">Complaints</h1>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="h-10 px-4 rounded-[10px] bg-[#3D3B3A] text-white font-['Poppins'] font-semibold text-[13px] shrink-0 hover:bg-[#2a2928] transition-colors"
-        >
-          + File Complaint
-        </button>
+  function ComplaintList() {
+    return loading ? (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-32 rounded-[12px] bg-white border border-[#D0CFCA] animate-pulse" />
+        ))}
       </div>
+    ) : complaints.length === 0 ? (
+      <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
+        <p className="font-['Poppins'] font-semibold text-[15px] text-[#3D3B3A]">No complaints filed</p>
+        <p className="font-['Lato'] text-[13px] text-[#434B4D] mt-1">
+          Use the button above to report an issue with your cleaning service.
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-3">
+        {complaints.map((c) => <ComplaintCard key={c.id} complaint={c} onDelete={() => void reload()} />)}
+      </div>
+    )
+  }
 
-      {/* Summary pill */}
-      {!loading && progressCount > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <span className="font-['Lato'] text-[12px] text-[#434B4D]">
-            {progressCount} complaint{progressCount > 1 ? 's' : ''} with updates from your supervisor
-          </span>
-        </div>
-      )}
+  const modal = showModal && user ? (
+    <NewComplaintModal
+      facilities={facilities}
+      userId={user.id}
+      companyId={user.company_id}
+      onClose={() => setShowModal(false)}
+      onSubmitted={() => void reload()}
+    />
+  ) : null
 
-      {/* List */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 rounded-[12px] bg-white border border-[#D0CFCA] animate-pulse" />
-          ))}
+  /* ── Mobile ── */
+  if (!isDesktop) {
+    return (
+      <>
+        <div className="fixed inset-0 bg-[#F5F4EF] overflow-y-auto">
+          <div ref={containerRef} className="w-full max-w-[480px] mx-auto px-6 pt-8 pb-[100px]">
+            <div className="cmp-heading mb-6">
+              <p className="font-['Lato'] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
+                Issues & Resolutions
+              </p>
+              <div className="flex items-end justify-between gap-3">
+                <h1 className="font-['Poppins'] font-bold text-[30px] text-[#3D3B3A] leading-tight">Complaints</h1>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="shrink-0 h-10 px-4 rounded-[10px] bg-[#3D3B3A] text-white font-['Poppins'] font-semibold text-[13px] hover:bg-[#2a2928] transition-colors mb-0.5"
+                >
+                  + File
+                </button>
+              </div>
+            </div>
+            {!loading && progressCount > 0 && (
+              <div className="mb-4">
+                <span className="font-['Lato'] text-[12px] text-[#434B4D]">
+                  {progressCount} complaint{progressCount > 1 ? 's' : ''} with updates from your supervisor
+                </span>
+              </div>
+            )}
+            <ComplaintList />
+          </div>
+          <ClientNav active="complaints" complaintsCount={progressCount} />
         </div>
-      ) : complaints.length === 0 ? (
-        <div className="bg-white border border-[#D0CFCA] rounded-[12px] p-10 text-center">
-          <p className="font-['Poppins'] font-semibold text-[15px] text-[#3D3B3A]">No complaints filed</p>
-          <p className="font-['Lato'] text-[13px] text-[#434B4D] mt-1">
-            Use the button above to report an issue with your cleaning service.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {complaints.map((c) => <ComplaintCard key={c.id} complaint={c} onDelete={() => void reload()} />)}
-        </div>
-      )}
-    </div>
-  )
+        {modal}
+      </>
+    )
+  }
 
+  /* ── Desktop ── */
   return (
     <>
-      <div className="hidden md:block">
-        <ClientSidebar active="complaints" complaintsCount={progressCount} />
-      </div>
-
-      <div className="md:pl-60 min-h-screen bg-[#F5F4EF]">
-        {content}
-      </div>
-
-      <div className="md:hidden">
-        <ClientNav active="complaints" complaintsCount={progressCount} />
-      </div>
-
-      {showModal && user && (
-        <NewComplaintModal
-          facilities={facilities}
-          userId={user.id}
-          companyId={user.company_id}
-          onClose={() => setShowModal(false)}
-          onSubmitted={() => void reload()}
-        />
-      )}
+      <ClientSidebar active="complaints" complaintsCount={progressCount} />
+      <main className="pl-60 min-h-screen bg-[#F5F4EF]">
+        <div ref={containerRef} className="max-w-[900px] mx-auto px-8 py-8 pb-12">
+          <div className="cmp-heading flex items-end justify-between mb-6">
+            <div>
+              <p className="font-['Lato'] text-[13px] text-[#B8A77A] font-bold tracking-[1.5px] uppercase mb-1">
+                Issues & Resolutions
+              </p>
+              <h1 className="font-['Poppins'] font-bold text-[30px] text-[#3D3B3A] leading-tight">Complaints</h1>
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="h-10 px-4 rounded-[10px] bg-[#3D3B3A] text-white font-['Poppins'] font-semibold text-[13px] shrink-0 hover:bg-[#2a2928] transition-colors"
+            >
+              + File Complaint
+            </button>
+          </div>
+          {!loading && progressCount > 0 && (
+            <div className="mb-4">
+              <span className="font-['Lato'] text-[12px] text-[#434B4D]">
+                {progressCount} complaint{progressCount > 1 ? 's' : ''} with updates from your supervisor
+              </span>
+            </div>
+          )}
+          <ComplaintList />
+        </div>
+      </main>
+      {modal}
     </>
   )
 }

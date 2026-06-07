@@ -156,6 +156,7 @@ export const strings: Record<Language, Record<string, string>> = {
     lead_specialist: 'Lead Specialist',
     cleaned_zones: 'Cleaned Zones',
     zone_skipped: 'Skipped',
+    zone_flagged: 'Flagged — No Photo',
     note_prefix: 'Note:',
     shift_not_found: 'Shift not found',
 
@@ -517,6 +518,7 @@ export const strings: Record<Language, Record<string, string>> = {
     lead_specialist: 'Especialista principal',
     cleaned_zones: 'Zonas limpiadas',
     zone_skipped: 'Omitido',
+    zone_flagged: 'Marcado — Sin Foto',
     note_prefix: 'Nota:',
     shift_not_found: 'Turno no encontrado',
 
@@ -873,6 +875,7 @@ export const strings: Record<Language, Record<string, string>> = {
     lead_specialist: 'Especialista principal',
     cleaned_zones: 'Zonas limpas',
     zone_skipped: 'Ignorado',
+    zone_flagged: 'Marcado — Sem Foto',
     note_prefix: 'Nota:',
     shift_not_found: 'Turno não encontrado',
 
