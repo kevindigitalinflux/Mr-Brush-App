@@ -34,6 +34,8 @@ Strike through an item when done. Add the date completed.
 - [ ] **WF-15 verification** — confirm `evidence_photos` count is accurate on next real weekly run (first Sunday after real cleaning data exists for a full week).
 - [x] ~~**WF-8 real data test** — Fixed status mismatch (`approved` → `confirmed`), Collect Companies and Build Notification paired-item errors, and added Confirm button to Pay Records screen. WF-8 ran end-to-end: payslips created, supervisor notification inserted. Done 2026-06-08.~~
 
+- [x] ~~**Payslip notification deep-link** — "Payslips Ready for Review" notification now shows a "View payslips" CTA that navigates directly to `/supervisor/payslips`. Done 2026-06-08.~~
+
 ---
 
 ## Infrastructure / Config
