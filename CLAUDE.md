@@ -219,7 +219,8 @@ The app must **never** write directly to `cleaning_logs` during initial submissi
 |---|---|---|---|
 | `C` | Cleaner | `/cleaner/*` | Complete |
 | `S` | Supervisor | `/supervisor/*` | Complete |
-| `M` | Manager | `/manager/*` | Not started |
+| `CL` | Client (building manager) | `/manager/*` | Complete |
+| `A` | Admin (business owner) | `/admin/*` | Planned — future build |
 
 ---
 
@@ -259,17 +260,19 @@ Desktop layout: 240px fixed sidebar + main content area. All screens use `useIsD
 
 ---
 
-## Client Portal (Manager) — NOT STARTED
+## Client Portal (Building Manager) — COMPLETE
 
-Next build phase. Key questions to nail before coding:
-- Can a manager see multiple facilities or just their own?
-- Read-only evidence view, or can they sign off / raise issues?
-- Do they receive notifications when a job is ready for review?
-- Do they need downloadable PDF clean reports?
-- Any KPI dashboard (completion %, average rating)?
-- Same login flow (display_id + password) as other roles?
+Route prefix: `/manager/*` — role detected from `CL` prefix on login. CL prefix must be checked before C in parseDisplayId.
 
-Route prefix: `/manager/*` — role detected from `M` prefix on login.
+---
+
+## Admin Portal — PLANNED (future build)
+
+For Kevin (business owner) and future business admins. Not building managers — those use the client portal above.
+
+Route prefix: `/admin/*` — role detected from `A` prefix on login (e.g. `A001`).
+
+Scope TBD — likely: cross-company overview, user management, company-wide reporting, system config. Build when operationally needed.
 
 ---
 

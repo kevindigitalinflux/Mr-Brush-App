@@ -44,5 +44,11 @@ Strike through an item when done. Add the date completed.
 
 ---
 
+## Upcoming Build — Admin Portal
+
+- [ ] **Admin portal** — For Kevin and future business admins. Accessible via `A` prefix login (e.g. `A001`). Route prefix `/admin/*`. Scope TBD — likely: cross-company overview, user management, company-wide reporting, system config. Build when operationally needed.
+
+---
+
 ## Notes
 - WF-A/B/C (WhatsApp absence flows) need rewiring from Google Sheets → Supabase — already built, just need node swap. Tracked separately in AUTOMATIONS.md.
