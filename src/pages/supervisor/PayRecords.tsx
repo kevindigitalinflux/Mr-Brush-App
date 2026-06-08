@@ -18,6 +18,7 @@ interface PayRecord {
   hourlyRate: number
   grossPay: number
   isReplacement: boolean
+  status: 'draft' | 'confirmed' | 'paid'
 }
 
 interface CleanerOption { id: string; name: string; displayId: string }
@@ -85,11 +86,11 @@ function usePayData(filterCleaner: string, filterMonth: string) {
       return { id: r.id, displayId: r.display_id, name: r.full_name ?? r.display_id }
     }))
 
-    type PRRow = { id: string; shift_date: string; cleaner_id: string; facility_id: string; role_type: string; hours_worked: string; hourly_rate: string; gross_pay: string; is_replacement: boolean }
+    type PRRow = { id: string; shift_date: string; cleaner_id: string; facility_id: string; role_type: string; hours_worked: string; hourly_rate: string; gross_pay: string; is_replacement: boolean; status: string }
 
     let q = supabase
       .from('pay_records')
-      .select('id, shift_date, cleaner_id, facility_id, role_type, hours_worked, hourly_rate, gross_pay, is_replacement')
+      .select('id, shift_date, cleaner_id, facility_id, role_type, hours_worked, hourly_rate, gross_pay, is_replacement, status')
       .eq('company_id', user.company_id)
       .order('shift_date', { ascending: false })
       .limit(200)
@@ -136,6 +137,7 @@ function usePayData(filterCleaner: string, filterMonth: string) {
       hourlyRate: Number(r.hourly_rate),
       grossPay: Number(r.gross_pay),
       isReplacement: r.is_replacement,
+      status: (r.status ?? 'draft') as 'draft' | 'confirmed' | 'paid',
     })))
 
     setLoading(false)
@@ -374,7 +376,13 @@ function LogPayModal({ cleaners, companyId, onClose, onSaved }: LogPayModalProps
 
 // ─── Pay record card ──────────────────────────────────────────────────────────
 
-function PayRecordCard({ record }: { record: PayRecord }) {
+const STATUS_STYLES: Record<string, string> = {
+  draft: 'bg-[#FEF3C7] text-[#92400E]',
+  confirmed: 'bg-[#EEF6F1] text-[#2F4A3D]',
+  paid: 'bg-[#E3E3DD] text-[#737874]',
+}
+
+function PayRecordCard({ record, onApprove }: { record: PayRecord; onApprove: (id: string) => void }) {
   return (
     <div className="bg-white border border-[#D5D5CF] rounded-[12px] flex items-stretch overflow-hidden">
       {/* Date column */}
@@ -401,11 +409,23 @@ function PayRecordCard({ record }: { record: PayRecord }) {
         </p>
       </div>
 
-      {/* Gross pay */}
-      <div className="flex items-center pr-4 pl-2 shrink-0">
+      {/* Right column — gross pay + status/action */}
+      <div className="flex flex-col items-end justify-center gap-2 pr-4 pl-2 py-3 shrink-0">
         <span className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19]">
           £{Number(record.grossPay).toFixed(2)}
         </span>
+        {record.status === 'draft' ? (
+          <button
+            onClick={() => onApprove(record.id)}
+            className="h-7 px-3 rounded-[6px] bg-[#2F4A3D] text-white font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[0.5px] whitespace-nowrap"
+          >
+            Approve
+          </button>
+        ) : (
+          <span className={`font-['Lato',sans-serif] text-[10px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-full ${STATUS_STYLES[record.status] ?? ''}`}>
+            {record.status}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -435,13 +455,34 @@ function SummaryBar({ records }: { records: PayRecord[] }) {
 
 // ─── Page content ─────────────────────────────────────────────────────────────
 
+function currentMonth() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 function PayRecordsContent() {
   const { user } = useApp()
   const navigate = useNavigate()
   const [filterCleaner, setFilterCleaner] = useState('')
-  const [filterMonth, setFilterMonth] = useState('')
+  const [filterMonth, setFilterMonth] = useState(currentMonth)
   const [showModal, setShowModal] = useState(false)
+  const [approveError, setApproveError] = useState<string | null>(null)
+  const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set())
   const { loading, records, cleaners, reload } = usePayData(filterCleaner, filterMonth)
+
+  async function handleApprove(id: string) {
+    setApprovingIds((prev) => new Set([...prev, id]))
+    setApproveError(null)
+    const { error } = await supabase
+      .from('pay_records')
+      .update({ status: 'confirmed' })
+      .eq('id', id)
+      .eq('company_id', user!.company_id)
+    if (error) {
+      setApproveError('Could not approve record. Try again.')
+      setApprovingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 md:px-10 py-8 md:py-10 pb-[100px] md:pb-10">
@@ -515,8 +556,14 @@ function PayRecordsContent() {
       ) : (
         <>
           <SummaryBar records={records} />
+          {approveError && (
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A] mb-3">{approveError}</p>
+          )}
           <div className="space-y-3">
-            {records.map((r) => <PayRecordCard key={r.id} record={r} />)}
+            {records.map((r) => {
+              const optimisticStatus = approvingIds.has(r.id) ? 'confirmed' : r.status
+              return <PayRecordCard key={r.id} record={{ ...r, status: optimisticStatus }} onApprove={handleApprove} />
+            })}
           </div>
         </>
       )}

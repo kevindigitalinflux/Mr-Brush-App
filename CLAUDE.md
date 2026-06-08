@@ -166,7 +166,7 @@ Mobile-first. Desktop = same screens with 240px left sidebar (`pl-60`), wider co
 **pay_records**
 - `id`, `cleaner_id`, `supervisor_id`, `company_id`, `pay_period_start/end`
 - `hours_worked`, `hourly_rate`, `gross_pay` (GENERATED column — never pass in INSERT)
-- `status`: `draft` | `approved` | `paid`
+- `status`: `draft` | `confirmed` | `paid`
 
 **payslips**
 - `id`, `pay_record_id`, `cleaner_id`, `supervisor_id`, `company_id`

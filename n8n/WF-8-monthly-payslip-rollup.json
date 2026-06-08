@@ -32,7 +32,7 @@
       "typeVersion": 4.2,
       "parameters": {
         "method": "GET",
-        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/pay_records?shift_date=gte.{{ $json.period_start }}&shift_date=lte.{{ $json.period_end }}&status=in.(approved,paid)&select=cleaner_id,company_id,hours_worked,gross_pay",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/pay_records?shift_date=gte.{{ $json.period_start }}&shift_date=lte.{{ $json.period_end }}&status=in.(confirmed,paid)&select=cleaner_id,company_id,hours_worked,gross_pay",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
         "options": {}
@@ -67,7 +67,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Prefer", "value": "resolution=merge-duplicates" }
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=representation" }
           ]
         },
         "options": {}
@@ -82,7 +82,7 @@
       "typeVersion": 2,
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const allCleaners = $('Group by Cleaner').all();\nif (allCleaners.length === 0) return [];\nconst companyIds = [...new Set(allCleaners.map(i => i.json.company_id))].join(',');\nconst periodStart = $('Set Date Range').item.json.period_start;\nreturn [{ json: { company_ids: companyIds, period_start: periodStart } }];"
+        "jsCode": "const allItems = $input.all();\nif (allItems.length === 0) return [];\nconst companyIds = [...new Set(allItems.map(i => i.json.company_id))].filter(Boolean).join(',');\nconst periodStart = allItems[0]?.json?.period_start ?? '';\nreturn [{ json: { company_ids: companyIds, period_start: periodStart } }];"
       }
     },
     {
@@ -107,7 +107,7 @@
       "position": [1880, 300],
       "typeVersion": 2,
       "parameters": {
-        "jsCode": "var periodStart = $('Set Date Range').item.json.period_start;\nvar monthLabel = new Date(periodStart + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });\nreturn [{ json: {\n  user_id: $json.id,\n  title: 'Payslips Ready for Review',\n  message: 'Monthly payslips for ' + monthLabel + ' have been generated. Please review and approve in the Payslips screen.'\n} }];"
+        "jsCode": "const now = new Date();\nconst periodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];\nconst monthLabel = new Date(periodStart + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });\nreturn [{ json: {\n  user_id: $json.id,\n  title: 'Payslips Ready for Review',\n  message: 'Monthly payslips for ' + monthLabel + ' have been generated. Please review and approve in the Payslips screen.'\n} }];"
       }
     },
     {
