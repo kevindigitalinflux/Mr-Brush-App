@@ -326,7 +326,7 @@ Route prefix: `/manager/*` — role detected from `M` prefix on login.
 
 ---
 
-## Current Status (as of 2026-06-01)
+## Current Status (as of 2026-06-08)
 
 **Cleaner portal:** Complete. Real Supabase auth, zone-by-zone photo submission, offline queue, multilingual.
 
@@ -341,6 +341,21 @@ Route prefix: `/manager/*` — role detected from `M` prefix on login.
 - Pay Records, Absence management
 
 **Manager/client portal:** Not started — next build phase.
+
+**Security hardening (2026-06-07 / 2026-06-08):** Full DI-Dreamlabs 50-check security audit completed and all CRITICAL/HIGH findings resolved:
+- Route protection: `RequireAuth` layout guard wraps all portal routes. `sessionChecked` flag prevents flash-redirect on page refresh.
+- Security headers: `public/_headers` deployed to Cloudflare Pages (X-Frame-Options, CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy). Source maps disabled in `vite.config.ts`.
+- RLS hardening: 14 supervisor policies missing `company_id` scope fixed. `weekly_reports` open-read policy replaced with company-scoped join. `companies` table policy added.
+- SECURITY DEFINER functions: `get_my_role()` and `get_my_company_id()` recreated as STABLE with `SET search_path = public`. `notify_client_on_complaint_update()` fixed same. All 6 SECURITY DEFINER functions have `anon` EXECUTE revoked — `notify_client_on_complaint_update` and `rls_auto_enable` also revoked from `authenticated` (trigger/utility only).
+- Storage: broad `evidence-photos` listing policy replaced with company-scoped path filter.
+- Sign-out: `supabase.auth.signOut()` now called explicitly before clearing React state.
+- File uploads: MIME type + 10MB size validation added in `ZoneSubmission`, `CleanerProfile`, `RateCleanModal`, `Complaints`.
+- Defense-in-depth: ownership filters added to zone delete, log status update, and complaint delete queries.
+
+**Known plan limitations (free tier — revisit at first contracts):**
+- Supabase PITR backups — Pro plan only ($25/mo)
+- Leaked password protection (HaveIBeenPwned) — Pro plan only
+- Cloudflare WAF / Rate Limiting — paid add-on (Supabase Auth rate limits cover sign-in brute-force)
 
 **Known issues:** None outstanding.
 
