@@ -330,40 +330,52 @@ Route prefix: `/manager/*` — role detected from `M` prefix on login.
 
 **Cleaner portal:** Complete. Real Supabase auth, zone-by-zone photo submission, offline queue, multilingual.
 
-**Supervisor portal:** Complete. All screens built and working with live Supabase data and realtime subscriptions:
+**Supervisor portal:** Complete. All screens built, tested, and production-ready:
 - Dashboard with live pending count, issues count, unread bell badge
 - Jobs — facility list, zone builder, shift management, cleaner grouping
 - Evidence review — pagination (5/page), approve/reject with feedback
 - Client Issues — status workflow (received → acknowledged → in progress → resolved)
-- Notifications — unread badge, mark all read, complaint deep-link
+- Notifications — unread badge, mark all read, complaint deep-link, payslip deep-link
 - Workers + Cleaner profiles + star ratings
+- Pay Records — per-shift log with Confirm button (status: draft → confirmed → paid)
 - Payslips with jsPDF download
-- Pay Records, Absence management
+- Absence management
 
 **Manager/client portal:** Not started — next build phase.
 
-**Security hardening (2026-06-07 / 2026-06-08):** Full DI-Dreamlabs 50-check security audit completed and all CRITICAL/HIGH findings resolved:
-- Route protection: `RequireAuth` layout guard wraps all portal routes. `sessionChecked` flag prevents flash-redirect on page refresh.
-- Security headers: `public/_headers` deployed to Cloudflare Pages (X-Frame-Options, CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy). Source maps disabled in `vite.config.ts`.
-- RLS hardening: 14 supervisor policies missing `company_id` scope fixed. `weekly_reports` open-read policy replaced with company-scoped join. `companies` table policy added.
-- SECURITY DEFINER functions: `get_my_role()` and `get_my_company_id()` recreated as STABLE with `SET search_path = public`. `notify_client_on_complaint_update()` fixed same. All 6 SECURITY DEFINER functions have `anon` EXECUTE revoked — `notify_client_on_complaint_update` and `rls_auto_enable` also revoked from `authenticated` (trigger/utility only).
-- Storage: broad `evidence-photos` listing policy replaced with company-scoped path filter.
-- Sign-out: `supabase.auth.signOut()` now called explicitly before clearing React state.
-- File uploads: MIME type + 10MB size validation added in `ZoneSubmission`, `CleanerProfile`, `RateCleanModal`, `Complaints`.
-- Defense-in-depth: ownership filters added to zone delete, log status update, and complaint delete queries.
+**n8n automations — all live:**
+- WF-5: Proof of Cleaning submission ✓
+- WF-6: Shift Completion + Pay Record creation ✓
+- WF-8: Monthly Payslip Roll-up ✓ (runs 1st of month 06:00; tested manually 2026-06-08)
+- WF-10: Zone Assignment Notification ✓
+- WF-11: Evidence Feedback Notification ✓
+- WF-15: Weekly Report Compilation ✓ (pending first real-data Sunday verification)
+- WF-A/B/C: WhatsApp absence flows — built, need Google Sheets → Supabase node swap
+
+**Security hardening (2026-06-07 / 2026-06-08):** Full DI-Dreamlabs 50-check audit completed, all CRITICAL/HIGH findings resolved:
+- Route protection via `RequireAuth` layout guard with `sessionChecked` flash prevention
+- Security headers in `public/_headers` (CSP, HSTS, X-Frame-Options, etc.). Source maps disabled.
+- RLS: 14 supervisor policies scoped to `company_id`, `weekly_reports` fixed, `companies` policy added
+- SECURITY DEFINER functions: search_path fixed, `anon` EXECUTE revoked on all 6 functions
+- Storage: evidence-photos listing policy scoped to company path
+- File uploads: MIME type + 10MB size validation across all upload points
+- Sign-out calls `supabase.auth.signOut()` explicitly
 
 **Known plan limitations (free tier — revisit at first contracts):**
 - Supabase PITR backups — Pro plan only ($25/mo)
 - Leaked password protection (HaveIBeenPwned) — Pro plan only
-- Cloudflare WAF / Rate Limiting — paid add-on (Supabase Auth rate limits cover sign-in brute-force)
+- Cloudflare WAF / Rate Limiting — paid add-on (Supabase Auth rate limits cover auth endpoints)
 
 **Known issues:** None outstanding.
+
+**Key data note — pay_records.status values (live DB constraint):**
+`draft` | `confirmed` | `paid` — NOT `approved`. CLAUDE.md was wrong; live constraint is the source of truth.
 
 **Mock data seeded for testing:**
 - Supervisor: `S001` (password in `.env` / Supabase auth)
 - Facility: "Riverfront Tower" + "Skyline Plaza" + "Metro Hub"
 - Jobs and cleaning_logs seeded for 2026-05-30 and 2026-06-01
-- Complaints and notifications seeded for realistic supervisor testing
+- Complaints, notifications, and payslips seeded for realistic testing
 
 ---
 
