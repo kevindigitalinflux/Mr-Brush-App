@@ -32,7 +32,7 @@ Strike through an item when done. Add the date completed.
 - [x] ~~**WF-15 evidence_photos count** — was counting cleaning_log rows, not actual evidence_files. Fixed: node 7 now selects `evidence_files(id)` nested, node 8 reduces over the array. Deployed 2026-06-06.~~
 - [x] ~~**weekly_reports duplicate rows** — duplicate test rows deleted, UNIQUE constraint `(facility_id, week_start)` added, WF-15 node 10 switched to upsert (`Prefer: resolution=merge-duplicates`). Re-runs now update in place. Done 2026-06-06.~~
 - [ ] **WF-15 verification** — confirm `evidence_photos` count is accurate on next real weekly run (first Sunday after real cleaning data exists for a full week).
-- [ ] **WF-8 real data test** — WF-8 built and deployed (n8n ID: `9fL3t334AwDqmFJi`, active). To test: mark at least one pay_record as `approved` in the supervisor portal, then manually trigger. Currently all test data is `draft` so the workflow exits early with no output.
+- [x] ~~**WF-8 real data test** — Fixed status mismatch (`approved` → `confirmed`), Collect Companies and Build Notification paired-item errors, and added Confirm button to Pay Records screen. WF-8 ran end-to-end: payslips created, supervisor notification inserted. Done 2026-06-08.~~
 
 ---
 

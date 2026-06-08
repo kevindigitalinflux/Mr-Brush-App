@@ -32,11 +32,16 @@ function isComplaint(title: string) {
   return title.toLowerCase().includes('complaint')
 }
 
+function isPayslip(title: string) {
+  return title.toLowerCase().includes('payslip')
+}
+
 // ─── Notification card ────────────────────────────────────────────────────────
 
 function NotifCard({ notif, onRead }: { notif: Notif; onRead: (id: string) => void }) {
   const navigate = useNavigate()
   const complaint = isComplaint(notif.title)
+  const payslip = isPayslip(notif.title)
 
   function handleClick() {
     if (!notif.is_read) onRead(notif.id)
@@ -82,6 +87,19 @@ function NotifCard({ notif, onRead }: { notif: Notif; onRead: (id: string) => vo
           className="self-start flex items-center gap-1.5 font-['Lato',sans-serif] font-semibold text-[12px] text-[#B8A77A] hover:text-[#8B7A5A] transition-colors"
         >
           View complaint
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      {/* Payslip CTA */}
+      {payslip && (
+        <button
+          onClick={(e) => { e.stopPropagation(); navigate('/supervisor/payslips') }}
+          className="self-start flex items-center gap-1.5 font-['Lato',sans-serif] font-semibold text-[12px] text-[#B8A77A] hover:text-[#8B7A5A] transition-colors"
+        >
+          View payslips
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
