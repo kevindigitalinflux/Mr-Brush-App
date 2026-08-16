@@ -175,7 +175,8 @@ function useZoneSubmissionState() {
 
       markZoneComplete(zoneId) // optimistic update — reflects immediately in ZoneList
       navigate(`/cleaner/job/${jobId}/zone/${zoneId}/success`)
-    } catch {
+    } catch (err) {
+      console.error('Zone submission failed:', err)
       setSubmitError(true)
       setSubmitting(false)
     }
