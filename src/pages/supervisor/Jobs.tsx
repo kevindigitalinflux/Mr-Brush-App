@@ -1405,7 +1405,7 @@ function FacilitiesListView() {
     if (!silent) setLoading(true)
 
     const [facilsRes, jobsRes] = await Promise.all([
-      supabase.from('facilities').select('id, name').eq('company_id', user.company_id),
+      supabase.from('supervisor_facilities').select('facilities ( id, name )').eq('profile_id', user.id),
       supabase.from('jobs')
         .select('id, status, facility_id, job_zones ( id, zone_name, status, cleaner_id, notes )')
         .eq('supervisor_id', user.id)
@@ -1414,7 +1414,9 @@ function FacilitiesListView() {
         .order('created_at', { ascending: false }),
     ])
 
-    const facilities = (facilsRes.data ?? []) as unknown as Facility[]
+    const facilities = ((facilsRes.data ?? []) as unknown as { facilities: Facility | null }[])
+      .map((r) => r.facilities)
+      .filter((f): f is Facility => f !== null)
     const jobs = (jobsRes.data ?? []) as unknown as {
       id: string; status: string; facility_id: string
       job_zones: { id: string; zone_name: string; status: string; cleaner_id: string | null; notes: string | null }[]
