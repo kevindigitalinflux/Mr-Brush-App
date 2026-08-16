@@ -63,7 +63,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
     })
     if (fbErr) { setSubmitErr('Could not save feedback. Try again.'); setSubmitting(false); return }
 
-    const { error: logErr } = await supabase.from('cleaning_logs').update({ status: logStatus }).eq('id', log.id).eq('company_id', log.company_id)
+    const { error: logErr } = await supabase.from('cleaning_logs').update({ status: logStatus }).eq('id', log.id)
     if (logErr) { setSubmitErr('Feedback saved but zone status update failed.'); setSubmitting(false); return }
 
     setSubmitted(true)
