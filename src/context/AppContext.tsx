@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Language } from '../lib/i18n'
 import type { UserRole } from '../lib/auth'
 import { flushOfflineQueue } from '../lib/offlineQueue'
@@ -36,6 +36,8 @@ interface AppContextValue {
   isOnline: boolean
   completedZones: Set<string>
   markZoneComplete: (zoneId: string) => void
+  failedZones: Set<string>
+  retryOfflineQueue: () => void
   completedJobs: CompletedJob[]
   markJobComplete: (job: CompletedJob) => void
 }
@@ -64,6 +66,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [completedZones, setCompletedZones] = useState<Set<string>>(new Set())
+  const [failedZones, setFailedZones] = useState<Set<string>>(new Set())
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([])
 
   useEffect(() => {
@@ -122,12 +125,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Flush any queued offline submissions when connected and authenticated
+  const runFlush = useCallback(() => {
+    void flushOfflineQueue(
+      (zoneId) => {
+        setCompletedZones((prev) => new Set([...prev, zoneId]))
+        setFailedZones((prev) => { if (!prev.has(zoneId)) return prev; const next = new Set(prev); next.delete(zoneId); return next })
+      },
+      (zoneId) => {
+        setFailedZones((prev) => new Set([...prev, zoneId]))
+      }
+    )
+  }, [])
+
   useEffect(() => {
     if (!isOnline || !user) return
-    void flushOfflineQueue((zoneId) => {
-      setCompletedZones((prev) => new Set([...prev, zoneId]))
-    })
-  }, [isOnline, user])
+    runFlush()
+  }, [isOnline, user, runFlush])
+
+  function retryOfflineQueue() {
+    setFailedZones(new Set())
+    runFlush()
+  }
 
   function markZoneComplete(zoneId: string) {
     setCompletedZones((prev) => new Set([...prev, zoneId]))
@@ -143,7 +161,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       user, setUser, sessionChecked, language, setLanguage, activeJobId, setActiveJobId, isOnline,
-      completedZones, markZoneComplete, completedJobs, markJobComplete,
+      completedZones, markZoneComplete, failedZones, retryOfflineQueue, completedJobs, markJobComplete,
     }}>
       {children}
     </AppContext.Provider>

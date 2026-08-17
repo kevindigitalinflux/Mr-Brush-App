@@ -93,6 +93,9 @@ export const strings: Record<Language, Record<string, string>> = {
     uploaded: 'Uploaded!',
     uploaded_body: 'Your evidence has been submitted successfully. Returning to your shift…',
     back_to_zones: 'Back to zone list',
+    offline_upload_failed: 'Upload Failed',
+    offline_upload_failed_body: "Something went wrong uploading this submission. It's still saved on this device — tap retry, or it will try again automatically next time you reconnect.",
+    retry: 'Retry',
 
     // Pay
     pay_title: 'Your Pay',
@@ -455,6 +458,9 @@ export const strings: Record<Language, Record<string, string>> = {
     uploaded: '¡Subido!',
     uploaded_body: 'Tu evidencia ha sido enviada correctamente. Volviendo a tu turno…',
     back_to_zones: 'Volver a la lista de zonas',
+    offline_upload_failed: 'Error al subir',
+    offline_upload_failed_body: 'Algo salió mal al subir este envío. Sigue guardado en este dispositivo — toca reintentar, o se intentará de nuevo automáticamente la próxima vez que te conectes.',
+    retry: 'Reintentar',
 
     // Pay
     pay_title: 'Tu pago',
@@ -812,6 +818,9 @@ export const strings: Record<Language, Record<string, string>> = {
     uploaded: 'Enviado!',
     uploaded_body: 'Sua evidência foi enviada com sucesso. Voltando ao seu turno…',
     back_to_zones: 'Voltar à lista de zonas',
+    offline_upload_failed: 'Falha no envio',
+    offline_upload_failed_body: 'Algo deu errado ao enviar esta submissão. Ainda está salva neste dispositivo — toque em tentar novamente, ou será enviada automaticamente na próxima vez que você se conectar.',
+    retry: 'Tentar novamente',
 
     // Pay
     pay_title: 'Seu pagamento',

@@ -26,7 +26,7 @@ function WifiIcon() {
   )
 }
 
-type Phase = 'offline' | 'uploading' | 'done'
+type Phase = 'offline' | 'uploading' | 'done' | 'failed'
 
 /** Shown when a zone is submitted without internet — queued locally, auto-uploads on reconnect. */
 export function ZoneOfflineQueued() {
@@ -34,7 +34,7 @@ export function ZoneOfflineQueued() {
   const [params] = useSearchParams()
   const jobId = params.get('jobId') ?? ''
   const zoneId = params.get('zoneId') ?? ''
-  const { isOnline, completedZones } = useApp()
+  const { isOnline, completedZones, failedZones, retryOfflineQueue } = useApp()
   const tr = useTranslation()
 
   const [phase, setPhase] = useState<Phase>(() => (isOnline ? 'uploading' : 'offline'))
@@ -52,6 +52,17 @@ export function ZoneOfflineQueued() {
     const timer = setTimeout(() => navigate(`/cleaner/job/${jobId}`), 1400)
     return () => clearTimeout(timer)
   }, [completedZones, zoneId, jobId, navigate])
+
+  // Transition uploading → failed when AppContext flush marks zone failed
+  useEffect(() => {
+    if (!zoneId || !failedZones.has(zoneId)) return
+    setPhase((p) => (p === 'uploading' ? 'failed' : p))
+  }, [failedZones, zoneId])
+
+  function handleRetry() {
+    setPhase('uploading')
+    retryOfflineQueue()
+  }
 
   const content = {
     offline: {
@@ -85,6 +96,13 @@ export function ZoneOfflineQueued() {
       body: tr('uploaded_body'),
       pill: null,
     },
+    failed: {
+      icon: <WifiOffIcon />,
+      iconBg: 'bg-[#FDECEA] border border-[#BA1A1A]/20',
+      title: tr('offline_upload_failed'),
+      body: tr('offline_upload_failed_body'),
+      pill: null,
+    },
   }[phase]
 
   return (
@@ -113,6 +131,23 @@ export function ZoneOfflineQueued() {
           >
             {tr('back_to_zones')}
           </button>
+        )}
+
+        {phase === 'failed' && (
+          <div className="flex flex-col items-center gap-3 mt-2">
+            <button
+              onClick={handleRetry}
+              className="h-[48px] px-8 rounded-[12px] font-['Poppins',sans-serif] font-semibold text-base text-[#F8F8F2] bg-[#B8A77A] hover:bg-[#a8976a] transition-colors cursor-pointer"
+            >
+              {tr('retry')}
+            </button>
+            <button
+              onClick={() => navigate(`/cleaner/job/${jobId}`)}
+              className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] underline decoration-[#C3C8C2] cursor-pointer"
+            >
+              {tr('back_to_zones')}
+            </button>
+          </div>
         )}
 
       </div>

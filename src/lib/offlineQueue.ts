@@ -26,7 +26,8 @@ export async function getOfflineQueue(): Promise<OfflineEntry[]> {
 }
 
 export async function flushOfflineQueue(
-  onZoneComplete: (zoneId: string) => void
+  onZoneComplete: (zoneId: string) => void,
+  onZoneFailed: (zoneId: string) => void = () => {}
 ): Promise<void> {
   const queue = await getOfflineQueue()
   if (queue.length === 0) return
@@ -57,6 +58,7 @@ export async function flushOfflineQueue(
       onZoneComplete(entry.zoneId)
     } catch {
       failed.push(entry)
+      onZoneFailed(entry.zoneId)
     }
   }
   await localforage.setItem(QUEUE_KEY, failed)
