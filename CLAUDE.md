@@ -1,7 +1,7 @@
 # Mr Brush & Co. — Cleaning Operations App
 
 ## What This Is
-An internal field operations app for Mr Brush & Co., a commercial cleaning company. The app enables cleaners (field workers), supervisors, and building managers (clients) to manage and verify cleaning jobs in real time. The system is role-based: a user's `display_id` prefix (C = cleaner, S = supervisor, M = manager) determines which portal they access on login. The app never holds automation logic — it sends events to n8n, which handles all processing, database writes, and notifications.
+An internal field operations app for Mr Brush & Co., a commercial cleaning company. The app enables cleaners (field workers), supervisors, and building managers (clients) to manage and verify cleaning jobs in real time. The system is role-based: a user's `display_id` prefix (C = cleaner, S = supervisor, CL = client/building manager) determines which portal they access on login. The app never holds automation logic — it sends events to n8n, which handles all processing, database writes, and notifications.
 
 ---
 
@@ -60,7 +60,7 @@ src/
 │   │   ├── PayRecords.tsx
 │   │   ├── Absence.tsx
 │   │   └── Rates.tsx
-│   └── manager/                     # Client/manager portal — NOT YET STARTED
+│   └── client/                      # Client/building-manager portal — COMPLETE
 ├── supervisor-preview/              # Standalone phone-frame preview (mock data)
 │   ├── App.tsx
 │   ├── MockAppProvider.tsx
@@ -127,14 +127,19 @@ Mobile-first. Desktop = same screens with 240px left sidebar (`pl-60`), wider co
 
 **profiles** (extends Supabase auth.users)
 - `id` (uuid) — matches auth.uid()
-- `display_id` (text) — e.g. `C002`, `S001`, `M003`
-- `role` (text) — `cleaner` | `supervisor` | `manager`
-- `full_name` (text)
+- `display_id` (text) — e.g. `C0002`, `S0001`, `CL0003` (4-digit; `R001` replacement cleaners are 3-digit)
+- `role` (text) — `cleaner` | `supervisor` | `client` (NOT `manager` — live constraint, see Role-Based Routing note)
+- `full_name` (text), `phone`, `language_preference` (`en`|`es`|`pt`, default `en`)
 - `company_id` (uuid → companies)
-- `language` (text) — `en` | `es` | `pt`
+- `supervisor_id` (uuid → profiles, nullable) — cleaner's assigned supervisor
+- `contract_type` (`contracted`|`replacement`, nullable), `contracted_hours`
 
 **facilities**
-- `id`, `name`, `company_id`
+- `id`, `display_id` (e.g. `F0001`), `name`, `address`, `org_id` (→ client_organisations), `company_id`
+
+**client_organisations** — the client company that owns a facility (e.g. "Journey London Office"); `client_org_members (profile_id, org_id)` links a `client`-role profile to the orgs they can see.
+
+**supervisor_facilities** (added 2026-08-17) — `(profile_id, facility_id)` many-to-many. Controls which facilities show up on a supervisor's Jobs screen. RLS-enabled, admin-managed only (no app-facing write policy yet — assignments are made directly via SQL). Without a row here, a supervisor sees nothing on that screen, even if they have jobs at that facility — see Known Patterns & Gotchas.
 
 **jobs**
 - `id`, `supervisor_id`, `facility_id`, `company_id`
@@ -145,8 +150,8 @@ Mobile-first. Desktop = same screens with 240px left sidebar (`pl-60`), wider co
 - `status`: `not_started` | `in_progress` | `completed` | `flagged_no_photo` | `deleted`
 
 **cleaning_logs**
-- `id`, `job_id`, `cleaner_id`, `job_zone_id`, `company_id`
-- `note`, `note_translated`, `created_at`
+- `id`, `job_id`, `cleaner_id`, `job_zone_id` — **no `company_id` column** (get it via `jobs.company_id` if needed; a supervisor-update query once filtered on `cleaning_logs.company_id` directly and silently errored — see Known Patterns & Gotchas)
+- `note`, `note_translated`, `note_language`, `submitted_at`, `created_at`
 - `status`: `pending` | `approved` | `needs_attention` | `reclean_requested`
 
 **evidence_files**
@@ -219,7 +224,7 @@ The app must **never** write directly to `cleaning_logs` during initial submissi
 |---|---|---|---|
 | `C` | Cleaner | `/cleaner/*` | Complete |
 | `S` | Supervisor | `/supervisor/*` | Complete |
-| `CL` | Client (building manager) | `/manager/*` | Complete |
+| `CL` | Client (building manager) | `/client/*` | Complete |
 | `A` | Admin (business owner) | `/admin/*` | Planned — future build |
 
 ---
@@ -262,7 +267,7 @@ Desktop layout: 240px fixed sidebar + main content area. All screens use `useIsD
 
 ## Client Portal (Building Manager) — COMPLETE
 
-Route prefix: `/manager/*` — role detected from `CL` prefix on login. CL prefix must be checked before C in parseDisplayId.
+Route prefix: `/client/*` — role detected from `CL` prefix on login. CL prefix must be checked before C in parseDisplayId. (Internal role value in `profiles.role` is `client`, not `manager` — this doc previously said `manager` throughout; the schema and routes have always used `client`.)
 
 ---
 
@@ -283,6 +288,11 @@ Scope TBD — likely: cross-company overview, user management, company-wide repo
 - **Legacy complaint status**: Old data may have `status = 'open'` — treat as `'received'` in the UI.
 - **UUID validation**: UUIDs must be hex-only (0–9, a–f). Characters like `j`, `z` are invalid and will be rejected by Postgres.
 - **Desktop scrollbar pattern**: Use `min-h-screen` + `pl-60` on main content, not `flex h-screen overflow-hidden` + `flex-1 ml-60 overflow-y-auto` (the latter creates a mid-screen trapped scrollbar).
+- **CSP `connect-src` must list every external domain the app calls, including `data:`**: any URL `fetch()`-ed from the app that isn't in `connect-src` fails silently in the browser with a generic `TypeError: Failed to fetch` — no console warning that names CSP as the cause unless you check devtools. Forgetting the n8n webhook domain broke all three webhook calls (zone submission, shift completion, reclean ack) with no server-side trace at all (n8n showed zero executions). Forgetting `data:` broke the offline queue's `fetch(dataUrl)` blob conversion the same way, silently, after the n8n domain fix. Whenever a new external call is added anywhere in the app, check `public/_headers` first.
+- **Never use a bare `catch {}` on a multi-step async operation**: it collapses genuinely different failures (network/CSP block, RLS denial, bad column reference) into one generic user-facing message, which is exactly what made both bugs above take real investigation instead of a 30-second console check. Always `catch (err) { console.error(...) }` at minimum.
+- **`cleaning_logs` has no `company_id` column** — don't filter or scope queries on it directly; go through `jobs.company_id` (RLS policies already do this via a join, so app-side filters usually don't need to duplicate it).
+- **Supervisor facility visibility is scoped via `supervisor_facilities`, not `company_id`**: a supervisor with real jobs at a facility still won't see it on the Jobs screen (and RLS will hide the `facilities` row entirely) unless there's a matching `supervisor_facilities` row. This is enforced at both the app-query and RLS level — assign new supervisors to their facilities as part of onboarding them, not as an afterthought.
+- **Verify Cloudflare Pages' GitHub integration is actually connected before assuming a push will deploy** — it can silently disconnect (happened 2026-08-17) with no notification; pushes succeed on GitHub's side but nothing builds. Check the Pages project dashboard for a "disconnected from Git" banner if a deploy seems stuck.
 
 ---
 
@@ -324,61 +334,55 @@ Scope TBD — likely: cross-company overview, user management, company-wide repo
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase → Project Settings → API |
 | `VITE_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
-| `VITE_N8N_WEBHOOK_URL` | n8n → Proof of Cleaning webhook URL |
+| `VITE_N8N_WEBHOOK_URL` | n8n → Proof of Cleaning (WF-5) webhook URL |
+| `VITE_N8N_SHIFT_COMPLETE_WEBHOOK` | n8n → Shift Completion + Pay Record (WF-6) webhook URL |
+| `VITE_N8N_RECLEAN_ACK_WEBHOOK` | n8n → Reclean Acknowledgement (WF-12) webhook URL |
 | `VITE_GOOGLE_TRANSLATE_API_KEY` | Google Cloud Console → Translate API |
+
+**All three n8n webhook domains must be in `public/_headers`' CSP `connect-src`, and `data:` must be there too** (the offline queue converts saved photos back to blobs via `fetch(dataUrl)`, which needs it) — see Known Patterns & Gotchas.
 
 ---
 
-## Current Status (as of 2026-06-08)
+## Current Status (as of 2026-08-17)
 
-**Cleaner portal:** Complete. Real Supabase auth, zone-by-zone photo submission, offline queue, multilingual.
+**All three portals complete and production-ready:** Cleaner (`/cleaner/*`), Supervisor (`/supervisor/*`), Client (`/client/*`).
 
-**Supervisor portal:** Complete. All screens built, tested, and production-ready:
-- Dashboard with live pending count, issues count, unread bell badge
-- Jobs — facility list, zone builder, shift management, cleaner grouping
-- Evidence review — pagination (5/page), approve/reject with feedback
-- Client Issues — status workflow (received → acknowledged → in progress → resolved)
-- Notifications — unread badge, mark all read, complaint deep-link, payslip deep-link
-- Workers + Cleaner profiles + star ratings
-- Pay Records — per-shift log with Confirm button (status: draft → confirmed → paid)
-- Payslips with jsPDF download
-- Absence management
+**First commercial client — Journey London Office:** Deep clean ran 2026-08-17 (physical only, app not used that day). Rolling contract onboarding is 2026-08-18. Facility `F0003`, org "Journey London Office" created 2026-08-16. Accounts:
+- `CL0003` — Karis Reed (building manager)
+- `S0003` — Kevin Zamora-Saenz (2nd account, separate from his existing `C0004` cleaner account — supervises Journey remotely)
+- `C0006` — Andres Figuero (cleaner, es)
+- `C0007` — Myriam (cleaner, es; surname unknown, full_name to be updated when known)
 
-**Manager/client portal:** Not started — next build phase.
+All four are seeded directly via SQL (`crypt()` + `gen_salt('bf')` on `auth.users`, matching how earlier seed users were created) — there's no in-app account creation flow yet.
 
-**n8n automations — all live:**
+**Bugs found and fixed this session (2026-08-16/17), all verified live in production:**
+1. CSP `connect-src` didn't include the n8n webhook domain → all three webhook calls (zone submission, shift completion, reclean ack) silently failed client-side with zero server-side trace, surfaced to cleaners as a misleading "check your connection" message from a bare `catch {}`.
+2. CSP `connect-src` also needed `data:` → the offline queue's `fetch(dataUrl)` blob conversion was silently blocked the same way, discovered only after fixing #1. Added a real "Upload Failed" state with a Retry button to `ZoneOfflineQueued.tsx` — previously a failed flush spun on "Uploading…" forever with no feedback.
+3. Supervisor "not accepted" feedback flow updated `cleaning_logs` filtered on `.eq('company_id', ...)`, but that table has no such column — PostgREST rejected the query. Fixed by dropping the redundant filter (RLS already scopes it via the `jobs` join).
+4. Every supervisor could see every company facility (unscoped query) — added `supervisor_facilities` join table + RLS policies, scoped `Jobs.tsx`'s facility list query through it. S0001's 16 pre-existing demo jobs at Downtown Corporate Hub were reassigned to S0002 as part of the same migration (S0001 is a real account reserved for near-term use and needed a clean slate).
+5. Cloudflare Pages' GitHub integration had silently disconnected at some point — pushes to `main` weren't deploying at all. Reconnected via the dashboard.
+
+**Rollback tags** left on each commit from this session (`pre-csp-webhook-fix-20260816`, `pre-evidence-status-fix-20260816`, `pre-facility-scoping-20260817`, `pre-offline-queue-fix-20260817`) in case any need reverting.
+
+**Cloudflare hosting:** Deliberately staying on the kevindigitalinflux@gmail.com personal account for now (not mrbrushandco@gmail.com) — a migration was scoped (new Pages project + `app.mrbrushandco.co.uk` custom domain + n8n CORS allowlist update, since Cloudflare has no native cross-account Pages transfer) but shelved because it needs SSH access to the Hostinger VPS that wasn't available in the moment. Revisit once that access is sorted and things are less time-pressured.
+
+**n8n automations — all live and re-verified 2026-08-17:**
 - WF-5: Proof of Cleaning submission ✓
 - WF-6: Shift Completion + Pay Record creation ✓
-- WF-8: Monthly Payslip Roll-up ✓ (runs 1st of month 06:00; tested manually 2026-06-08)
+- WF-8: Monthly Payslip Roll-up ✓
 - WF-10: Zone Assignment Notification ✓
 - WF-11: Evidence Feedback Notification ✓
-- WF-15: Weekly Report Compilation ✓ (pending first real-data Sunday verification)
-- WF-A/B/C: WhatsApp absence flows — built, need Google Sheets → Supabase node swap
+- WF-12: Reclean Acknowledgement ✓
+- WF-15: Weekly Report Compilation ✓
+- WF-A/B/C: WhatsApp absence flows — built, still need Google Sheets → Supabase node swap
 
-**Security hardening (2026-06-07 / 2026-06-08):** Full DI-Dreamlabs 50-check audit completed, all CRITICAL/HIGH findings resolved:
-- Route protection via `RequireAuth` layout guard with `sessionChecked` flash prevention
-- Security headers in `public/_headers` (CSP, HSTS, X-Frame-Options, etc.). Source maps disabled.
-- RLS: 14 supervisor policies scoped to `company_id`, `weekly_reports` fixed, `companies` policy added
-- SECURITY DEFINER functions: search_path fixed, `anon` EXECUTE revoked on all 6 functions
-- Storage: evidence-photos listing policy scoped to company path
-- File uploads: MIME type + 10MB size validation across all upload points
-- Sign-out calls `supabase.auth.signOut()` explicitly
-
-**Known plan limitations (free tier — revisit at first contracts):**
-- Supabase PITR backups — Pro plan only ($25/mo)
-- Leaked password protection (HaveIBeenPwned) — Pro plan only
+**Known plan limitations (free tier — revisit as Journey's usage grows):**
+- Supabase PITR backups, leaked password protection — Pro plan only ($25/mo)
 - Cloudflare WAF / Rate Limiting — paid add-on (Supabase Auth rate limits cover auth endpoints)
-
-**Known issues:** None outstanding.
+- Watch Supabase Storage usage (Project Settings → Usage) now that real cleaning-verification photos are landing — that's the trigger point for upgrading to Pro
 
 **Key data note — pay_records.status values (live DB constraint):**
-`draft` | `confirmed` | `paid` — NOT `approved`. CLAUDE.md was wrong; live constraint is the source of truth.
-
-**Mock data seeded for testing:**
-- Supervisor: `S001` (password in `.env` / Supabase auth)
-- Facility: "Riverfront Tower" + "Skyline Plaza" + "Metro Hub"
-- Jobs and cleaning_logs seeded for 2026-05-30 and 2026-06-01
-- Complaints, notifications, and payslips seeded for realistic testing
+`draft` | `confirmed` | `paid` — NOT `approved`.
 
 ---
 
