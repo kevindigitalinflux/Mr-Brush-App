@@ -19,12 +19,14 @@ function BackIcon() {
   )
 }
 
-function RuleRow({ rule, cleanerName, onEdit, onToggleActive, onDelete, t }: {
+function RuleRow({ rule, cleanerName, onEdit, onToggleActive, onDeleteClick, confirming, mutating, t }: {
   rule: RecurringRule
   cleanerName: string
   onEdit: () => void
   onToggleActive: () => void
-  onDelete: () => void
+  onDeleteClick: () => void
+  confirming: boolean
+  mutating: boolean
   t: (key: string) => string
 }) {
   const dayLabels = [...rule.days_of_week].sort().map((d) => t(DAY_LABEL_KEYS[d])).join(', ')
@@ -41,21 +43,30 @@ function RuleRow({ rule, cleanerName, onEdit, onToggleActive, onDelete, t }: {
       ].join(' ')}>
         {rule.active ? t('sv_recurring_active') : t('sv_recurring_paused')}
       </span>
-      <button onClick={onToggleActive}
-        className="h-8 px-3 border border-[#D0CFCA] rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[12px] text-[#434844] hover:border-[#B8A77A] transition-colors shrink-0">
+      <button onClick={onToggleActive} disabled={mutating}
+        className="h-8 px-3 border border-[#D0CFCA] rounded-[6px] font-['Poppins',sans-serif] font-semibold text-[12px] text-[#434844] hover:border-[#B8A77A] transition-colors shrink-0 disabled:opacity-40">
         {rule.active ? t('sv_recurring_pause') : t('sv_recurring_resume')}
       </button>
-      <button onClick={onEdit} aria-label="Edit rule"
-        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F4F4EE] transition-colors shrink-0">
+      <button onClick={onEdit} aria-label="Edit rule" disabled={mutating}
+        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F4F4EE] transition-colors shrink-0 disabled:opacity-40">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="#737874" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      <button onClick={onDelete} aria-label="Delete rule"
-        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#FDECEA] transition-colors shrink-0">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M18 6L6 18M6 6l12 12" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+      <button onClick={onDeleteClick} disabled={mutating} aria-label={confirming ? 'Confirm delete rule' : 'Delete rule'}
+        className={[
+          'shrink-0 transition-colors disabled:opacity-40',
+          confirming
+            ? "h-8 px-3 flex items-center justify-center rounded-[6px] bg-[#BA1A1A] font-['Poppins',sans-serif] font-semibold text-[12px] text-white"
+            : 'w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#FDECEA]',
+        ].join(' ')}>
+        {confirming ? (
+          t('sv_recurring_confirm_delete')
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" stroke="#BA1A1A" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        )}
       </button>
     </div>
   )
@@ -72,12 +83,18 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
   const [cleaners, setCleaners] = useState<Cleaner[]>([])
   const [facilityName, setFacilityName] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list')
   const [editingRule, setEditingRule] = useState<RecurringRule | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [mutatingIds, setMutatingIds] = useState<Set<string>>(new Set())
 
-  const load = useCallback(async () => {
+  // `t` intentionally left out of the dependency array below — it's a new closure
+  // every render (see useTranslation), and including it would re-trigger the
+  // mount effect on every render instead of only when `user`/`facilityId` change.
+  const load = useCallback(async (silent = false) => {
     if (!user) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const [rulesRes, cleanersRes, facilityRes] = await Promise.all([
       supabase.from('recurring_zone_rules')
         .select('id, zone_name, cleaner_id, days_of_week, notes, active')
@@ -87,10 +104,19 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
         .eq('company_id', user.company_id).in('role', ['cleaner']),
       supabase.from('facilities').select('name').eq('id', facilityId).single(),
     ])
+    const loadError = rulesRes.error ?? cleanersRes.error ?? facilityRes.error
+    if (loadError) {
+      console.error('Failed to load recurring schedule data:', loadError)
+      setError(t('sv_recurring_load_failed'))
+      setLoading(false)
+      return
+    }
+    setError('')
     setRules((rulesRes.data ?? []) as unknown as RecurringRule[])
     setCleaners((cleanersRes.data ?? []) as unknown as Cleaner[])
     setFacilityName((facilityRes.data as { name: string } | null)?.name ?? '')
     setLoading(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, facilityId])
 
   useEffect(() => { void load() }, [load])
@@ -100,14 +126,59 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
     return c?.full_name ?? c?.display_id ?? t('sv_unassigned')
   }
 
+  function addMutating(id: string) {
+    setMutatingIds((prev) => new Set(prev).add(id))
+  }
+
+  function removeMutating(id: string) {
+    setMutatingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+  }
+
   async function toggleActive(rule: RecurringRule) {
-    await supabase.from('recurring_zone_rules').update({ active: !rule.active }).eq('id', rule.id)
-    void load()
+    addMutating(rule.id)
+    const { error: err } = await supabase.from('recurring_zone_rules').update({ active: !rule.active }).eq('id', rule.id)
+    if (err) {
+      console.error('Failed to toggle recurring rule active state:', err)
+      setError(t('sv_recurring_load_failed'))
+      removeMutating(rule.id)
+      return
+    }
+    removeMutating(rule.id)
+    void load(true)
   }
 
   async function deleteRule(rule: RecurringRule) {
-    await supabase.from('recurring_zone_rules').delete().eq('id', rule.id)
-    void load()
+    addMutating(rule.id)
+    const { error: err } = await supabase.from('recurring_zone_rules').delete().eq('id', rule.id)
+    if (err) {
+      console.error('Failed to delete recurring rule:', err)
+      setError(t('sv_recurring_load_failed'))
+      removeMutating(rule.id)
+      setConfirmingDeleteId(null)
+      return
+    }
+    removeMutating(rule.id)
+    setConfirmingDeleteId(null)
+    void load(true)
+  }
+
+  function handleEditClick(rule: RecurringRule) {
+    setConfirmingDeleteId(null)
+    setEditingRule(rule)
+    setMode('edit')
+  }
+
+  function handleToggleClick(rule: RecurringRule) {
+    setConfirmingDeleteId(null)
+    void toggleActive(rule)
+  }
+
+  function handleDeleteClick(rule: RecurringRule) {
+    if (confirmingDeleteId === rule.id) {
+      void deleteRule(rule)
+      return
+    }
+    setConfirmingDeleteId(rule.id)
   }
 
   function goBackToJobs() {
@@ -120,7 +191,7 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
         facilityId={facilityId}
         cleaners={cleaners}
         initialRule={mode === 'edit' ? editingRule : null}
-        onSaved={() => { setMode('list'); void load() }}
+        onSaved={() => { setMode('list'); void load(true) }}
         onCancel={() => setMode('list')}
       />
     )
@@ -130,21 +201,24 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
     <div className="flex flex-col gap-2">
       {[1, 2, 3].map((i) => <div key={i} className="h-[72px] bg-white border border-[#D0CFCA] rounded-[10px] animate-pulse" />)}
     </div>
-  ) : rules.length === 0 ? (
+  ) : rules.length === 0 && !error ? (
     <div className="bg-white border border-dashed border-[#C3C8C2] rounded-[12px] p-8 flex flex-col items-center gap-1 text-center">
       <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19]">{t('sv_recurring_no_rules')}</p>
       <p className="font-['Lato',sans-serif] text-[13px] text-[#9E9E9E] max-w-[280px]">{t('sv_recurring_no_rules_body')}</p>
     </div>
   ) : (
     <div className="flex flex-col gap-2">
+      {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
       {rules.map((rule) => (
         <RuleRow
           key={rule.id}
           rule={rule}
           cleanerName={cleanerName(rule.cleaner_id)}
-          onEdit={() => { setEditingRule(rule); setMode('edit') }}
-          onToggleActive={() => void toggleActive(rule)}
-          onDelete={() => void deleteRule(rule)}
+          confirming={confirmingDeleteId === rule.id}
+          mutating={mutatingIds.has(rule.id)}
+          onEdit={() => handleEditClick(rule)}
+          onToggleActive={() => handleToggleClick(rule)}
+          onDeleteClick={() => handleDeleteClick(rule)}
           t={t}
         />
       ))}
@@ -152,7 +226,7 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
   )
 
   const addButton = (
-    <button onClick={() => setMode('add')}
+    <button onClick={() => { setConfirmingDeleteId(null); setMode('add') }}
       className="w-full h-[52px] bg-[#1A1C19] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#2e3130] transition-colors">
       {t('sv_add_recurring_zone')} +
     </button>
