@@ -21,7 +21,7 @@ interface EvidenceLog {
   zoneName: string
   zoneStatus: string
   cleanerFirstName: string
-  photoUrls: string[]
+  media: { url: string; type: 'image' | 'video' }[]
   isRated: boolean
 }
 
@@ -102,22 +102,23 @@ function useEvidenceData() {
     const [zonesRes, profilesRes, evidenceRes, ratingsRes] = await Promise.all([
       supabase.from('job_zones').select('id, zone_name, status').in('id', zoneIds),
       supabase.from('profiles').select('id, full_name').in('id', cleanerIds),
-      supabase.from('evidence_files').select('cleaning_log_id, public_url').in('cleaning_log_id', logIds),
+      supabase.from('evidence_files').select('cleaning_log_id, public_url, file_type').in('cleaning_log_id', logIds),
       supabase.from('cleaner_ratings').select('job_zone_id').eq('rated_by', user.id).eq('rated_by_role', 'client'),
     ])
 
     type ZoneRow    = { id: string; zone_name: string; status: string }
     type ProfileRow = { id: string; full_name: string }
-    type EvidRow    = { cleaning_log_id: string; public_url: string }
+    type EvidRow    = { cleaning_log_id: string; public_url: string; file_type: string | null }
     type RatingRow  = { job_zone_id: string }
 
     const zoneMap    = Object.fromEntries(((zonesRes.data    ?? []) as unknown as ZoneRow[]).map((z) => [z.id, z]))
     const profileMap = Object.fromEntries(((profilesRes.data ?? []) as unknown as ProfileRow[]).map((p) => [p.id, p]))
 
-    const evidenceMap: Record<string, string[]> = {}
+    const evidenceMap: Record<string, { url: string; type: 'image' | 'video' }[]> = {}
     for (const ef of (evidenceRes.data ?? []) as unknown as EvidRow[]) {
       if (!evidenceMap[ef.cleaning_log_id]) evidenceMap[ef.cleaning_log_id] = []
-      evidenceMap[ef.cleaning_log_id].push(ef.public_url)
+      const type: 'image' | 'video' = (ef.file_type ?? '').startsWith('video/') ? 'video' : 'image'
+      evidenceMap[ef.cleaning_log_id].push({ url: ef.public_url, type })
     }
 
     const ratedZoneIds = new Set(((ratingsRes.data ?? []) as unknown as RatingRow[]).map((r) => r.job_zone_id).filter(Boolean))
@@ -137,7 +138,7 @@ function useEvidenceData() {
         zoneName:          zone?.zone_name ?? 'Zone',
         zoneStatus:        zone?.status ?? 'completed',
         cleanerFirstName:  firstName(fullName),
-        photoUrls:         evidenceMap[log.id] ?? [],
+        media:             evidenceMap[log.id] ?? [],
         isRated:           ratedZoneIds.has(log.job_zone_id ?? ''),
       }
     })
@@ -225,13 +226,14 @@ function FilterChips({ mode, onMode, zoneNames, activeZone, onZone }: {
 
 function EvidenceCard({ log, onPhotoTap, onRateTap, isRatedOverride }: {
   log: EvidenceLog
-  onPhotoTap: (url: string) => void
+  onPhotoTap: (media: { url: string; type: 'image' | 'video' }) => void
   onRateTap: (log: EvidenceLog) => void
   isRatedOverride?: boolean
 }) {
   const isRated = log.isRated || (isRatedOverride ?? false)
-  const hasPhotos = log.photoUrls.length > 0
-  const extraCount = log.photoUrls.length - 1
+  const hasMedia = log.media.length > 0
+  const firstMedia = log.media[0]
+  const extraCount = log.media.length - 1
   const displayNote = log.noteLanguage && log.noteLanguage !== 'en' && log.noteTranslated
     ? { text: log.noteTranslated, translated: true }
     : log.note
@@ -241,24 +243,33 @@ function EvidenceCard({ log, onPhotoTap, onRateTap, isRatedOverride }: {
   return (
     <div className="ev-card bg-white border border-[#D0CFCA] rounded-[12px] overflow-hidden">
 
-      {/* Photo */}
-      {hasPhotos ? (
+      {/* Photo / video */}
+      {hasMedia ? (
         <div className="relative">
           <button
-            onClick={() => onPhotoTap(log.photoUrls[0])}
+            onClick={() => onPhotoTap(firstMedia)}
             className="block w-full"
-            aria-label={`View photo of ${log.zoneName}`}
+            aria-label={`View evidence of ${log.zoneName}`}
           >
-            <img
-              src={log.photoUrls[0]}
-              alt={log.zoneName}
-              className="w-full h-[220px] object-cover"
-              loading="lazy"
-            />
+            {firstMedia.type === 'video' ? (
+              <video src={firstMedia.url} muted playsInline className="w-full h-[220px] object-cover" />
+            ) : (
+              <img
+                src={firstMedia.url}
+                alt={log.zoneName}
+                className="w-full h-[220px] object-cover"
+                loading="lazy"
+              />
+            )}
           </button>
+          {firstMedia.type === 'video' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </div>
+          )}
           {extraCount > 0 && (
             <button
-              onClick={() => onPhotoTap(log.photoUrls[0])}
+              onClick={() => onPhotoTap(firstMedia)}
               className="absolute bottom-2.5 right-2.5 bg-black/60 text-white font-['Lato',sans-serif] font-bold text-[12px] px-2.5 py-1 rounded-full"
             >
               +{extraCount} more
@@ -305,7 +316,7 @@ function EvidenceCard({ log, onPhotoTap, onRateTap, isRatedOverride }: {
       )}
 
       {/* Rate entry point */}
-      {!isRated && hasPhotos && (
+      {!isRated && hasMedia && (
         <div className="px-4 pb-3.5 pt-1 border-t border-[#F0EFE9] mt-1">
           <button
             onClick={() => onRateTap(log)}
@@ -367,7 +378,7 @@ function MobileEvidenceFeed() {
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState<FilterMode>((searchParams.get('filter') as FilterMode | null) ?? 'all')
   const [activeZone, setActiveZone] = useState<string | null>(null)
-  const [lightbox, setLightbox] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [ratingLog, setRatingLog] = useState<EvidenceLog | null>(null)
   const [localRatedIds, setLocalRatedIds] = useState<Set<string>>(new Set())
 
@@ -439,7 +450,7 @@ function MobileEvidenceFeed() {
         )}
       </div>
 
-      {lightbox && <ImageViewer src={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && <ImageViewer src={lightbox.url} type={lightbox.type} onClose={() => setLightbox(null)} />}
       {ratingLog && (
         <RateCleanModal
           jobZoneId={ratingLog.jobZoneId}
@@ -462,7 +473,7 @@ function DesktopEvidenceFeed() {
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState<FilterMode>((searchParams.get('filter') as FilterMode | null) ?? 'all')
   const [activeZone, setActiveZone] = useState<string | null>(null)
-  const [lightbox, setLightbox] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [ratingLog, setRatingLog] = useState<EvidenceLog | null>(null)
   const [localRatedIds, setLocalRatedIds] = useState<Set<string>>(new Set())
 
@@ -537,7 +548,7 @@ function DesktopEvidenceFeed() {
         </div>
       </main>
 
-      {lightbox && <ImageViewer src={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && <ImageViewer src={lightbox.url} type={lightbox.type} onClose={() => setLightbox(null)} />}
       {ratingLog && (
         <RateCleanModal
           jobZoneId={ratingLog.jobZoneId}

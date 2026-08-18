@@ -8,6 +8,7 @@ export interface ZoneSubmissionPayload {
   zone_id: string
   company_id: string
   image_urls: string[]
+  video_url: string | null
   note: string | null
   timestamp: string
 }

@@ -52,6 +52,7 @@ export async function flushOfflineQueue(
         zone_id: entry.zoneId,
         company_id: entry.companyId,
         image_urls: imageUrls,
+        video_url: null,
         note: entry.note,
         timestamp: entry.timestamp,
       })

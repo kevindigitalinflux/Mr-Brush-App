@@ -128,12 +128,21 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Zone submission
     take_photo_instruction: 'Take a photo after cleaning this zone.',
-    photo_requirements: 'Minimum 1 photo required. Ensure the area is fully visible and well-lit.',
+    photo_requirements: 'Add at least 1 photo, or record a short video (max 15s). Ensure the area is fully visible and well-lit.',
     note_placeholder: 'Any notes about this zone...',
     cant_submit_photo: "I can't submit a photo",
     submit_zone: 'Submit Zone',
     submitting: 'Submitting…',
     add_photo: 'Add photo',
+    record_video: 'Record video',
+    recording_label: 'Recording',
+    retake_video: 'Retake',
+    use_video: 'Use video',
+    remove_video: 'Remove video',
+    video_needs_signal: 'Needs a signal to record',
+    video_too_long: 'Video must be 15 seconds or under. Please record again.',
+    video_too_large: 'Video file is too large. Please record a shorter clip.',
+    camera_permission_denied: 'Camera access is needed to record video. Check your browser permissions.',
 
     // No photo note
     no_photo_warning_body: 'Missing photos can affect quality assurance records. Please provide a detailed reason below to proceed with the report.',
@@ -493,12 +502,21 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Zone submission
     take_photo_instruction: 'Toma una foto después de limpiar esta zona.',
-    photo_requirements: 'Se requiere mínimo 1 foto. Asegúrate de que el área sea completamente visible y bien iluminada.',
+    photo_requirements: 'Agrega al menos 1 foto, o graba un video corto (máx. 15s). Asegúrate de que el área sea completamente visible y bien iluminada.',
     note_placeholder: 'Notas sobre esta zona...',
     cant_submit_photo: 'No puedo enviar una foto',
     submit_zone: 'Enviar zona',
     submitting: 'Enviando…',
     add_photo: 'Añadir foto',
+    record_video: 'Grabar video',
+    recording_label: 'Grabando',
+    retake_video: 'Grabar de nuevo',
+    use_video: 'Usar video',
+    remove_video: 'Eliminar video',
+    video_needs_signal: 'Necesita señal para grabar',
+    video_too_long: 'El video debe durar 15 segundos o menos. Por favor, grábalo de nuevo.',
+    video_too_large: 'El archivo de video es demasiado grande. Graba un clip más corto.',
+    camera_permission_denied: 'Se necesita acceso a la cámara para grabar video. Comprueba los permisos de tu navegador.',
 
     // No photo note
     no_photo_warning_body: 'La falta de fotos puede afectar los registros de control de calidad. Proporcione una razón detallada a continuación para continuar con el informe.',
@@ -853,12 +871,21 @@ export const strings: Record<Language, Record<string, string>> = {
 
     // Zone submission
     take_photo_instruction: 'Tire uma foto após limpar esta zona.',
-    photo_requirements: 'Mínimo 1 foto obrigatória. Certifique-se de que a área esteja totalmente visível e bem iluminada.',
+    photo_requirements: 'Adicione pelo menos 1 foto, ou grave um vídeo curto (máx. 15s). Certifique-se de que a área esteja totalmente visível e bem iluminada.',
     note_placeholder: 'Notas sobre esta zona...',
     cant_submit_photo: 'Não consigo enviar uma foto',
     submit_zone: 'Enviar zona',
     submitting: 'Enviando…',
     add_photo: 'Adicionar foto',
+    record_video: 'Gravar vídeo',
+    recording_label: 'Gravando',
+    retake_video: 'Gravar novamente',
+    use_video: 'Usar vídeo',
+    remove_video: 'Remover vídeo',
+    video_needs_signal: 'Precisa de sinal para gravar',
+    video_too_long: 'O vídeo deve ter 15 segundos ou menos. Por favor, grave novamente.',
+    video_too_large: 'O arquivo de vídeo é muito grande. Grave um clipe mais curto.',
+    camera_permission_denied: 'É necessário acesso à câmera para gravar vídeo. Verifique as permissões do seu navegador.',
 
     // No photo note
     no_photo_warning_body: 'A falta de fotos pode afetar os registros de controle de qualidade. Forneça um motivo detalhado abaixo para prosseguir com o relatório.',

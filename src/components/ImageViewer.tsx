@@ -3,11 +3,12 @@ import { useEffect } from 'react'
 interface Props {
   src: string
   alt?: string
+  type?: 'image' | 'video'
   onClose: () => void
 }
 
-/** Full-screen image overlay. Click anywhere or press Escape to dismiss. */
-export function ImageViewer({ src, alt = 'Image', onClose }: Props) {
+/** Full-screen image/video overlay. Click anywhere or press Escape to dismiss. */
+export function ImageViewer({ src, alt = 'Image', type = 'image', onClose }: Props) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -33,15 +34,27 @@ export function ImageViewer({ src, alt = 'Image', onClose }: Props) {
         </svg>
       </button>
 
-      {/* Image — stop propagation so clicking image itself doesn't close */}
-      <img
-        src={src}
-        alt={alt}
-        onClick={(e) => e.stopPropagation()}
-        className="max-w-full max-h-full object-contain select-none"
-        style={{ maxWidth: 'min(100vw, 1200px)', maxHeight: '90vh' }}
-        draggable={false}
-      />
+      {/* Media — stop propagation so clicking it doesn't close the overlay */}
+      {type === 'video' ? (
+        <video
+          src={src}
+          controls
+          autoPlay
+          playsInline
+          onClick={(e) => e.stopPropagation()}
+          className="max-w-full max-h-full object-contain"
+          style={{ maxWidth: 'min(100vw, 1200px)', maxHeight: '90vh' }}
+        />
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          onClick={(e) => e.stopPropagation()}
+          className="max-w-full max-h-full object-contain select-none"
+          style={{ maxWidth: 'min(100vw, 1200px)', maxHeight: '90vh' }}
+          draggable={false}
+        />
+      )}
     </div>
   )
 }

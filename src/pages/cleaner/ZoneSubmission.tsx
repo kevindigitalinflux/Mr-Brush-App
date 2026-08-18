@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { postZoneSubmission } from '../../lib/webhooks'
 import { enqueueOfflineSubmission } from '../../lib/offlineQueue'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
+import { VideoRecorder } from '../../components/VideoRecorder'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -63,11 +64,29 @@ function XIcon() {
   )
 }
 
+function VideoCameraIcon() {
+  return (
+    <svg width="26" height="20" viewBox="0 0 24 18" fill="none" aria-hidden="true">
+      <rect x="1" y="2" width="15" height="14" rx="2" stroke="#6B5D36" strokeWidth="1.5" />
+      <path d="M16 7.5l6-3.5v10l-6-3.5" stroke="#6B5D36" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PlayIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PhotoEntry { preview: string; file: File }
+interface VideoEntry { preview: string; file: File }
 
-const MAX_PHOTOS = 3
+const MAX_PHOTOS = 5
 const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
 
 // ─── Shared state hook ────────────────────────────────────────────────────────
@@ -78,10 +97,24 @@ function useZoneSubmissionState() {
   const { user, markZoneComplete } = useApp()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [photos, setPhotos] = useState<PhotoEntry[]>([])
+  const [video, setVideo] = useState<VideoEntry | null>(null)
+  const [showRecorder, setShowRecorder] = useState(false)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(false)
   const [zoneName, setZoneName] = useState('Zone')
+
+  useEffect(() => {
+    function goOnline() { setIsOnline(true) }
+    function goOffline() { setIsOnline(false) }
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+    return () => {
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
+  }, [])
 
   // Fetch zone name from DB
   useEffect(() => {
@@ -96,9 +129,21 @@ function useZoneSubmissionState() {
     })()
   }, [zoneId])
 
-  const canSubmit = photos.length > 0
+  const canSubmit = photos.length > 0 || video !== null
 
   function handleAddPhoto() { fileInputRef.current?.click() }
+
+  function handleOpenRecorder() { if (isOnline) setShowRecorder(true) }
+  function handleCancelRecorder() { setShowRecorder(false) }
+  function handleVideoCaptured(file: File) {
+    if (video) URL.revokeObjectURL(video.preview)
+    setVideo({ preview: URL.createObjectURL(file), file })
+    setShowRecorder(false)
+  }
+  function handleRemoveVideo() {
+    if (video) URL.revokeObjectURL(video.preview)
+    setVideo(null)
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).filter((f) => {
@@ -162,6 +207,18 @@ function useZoneSubmissionState() {
         })
       )
 
+      // Upload video, if recorded, to its own bucket
+      let videoUrl: string | null = null
+      if (video) {
+        const ext = video.file.name.split('.').pop() ?? 'webm'
+        const path = `${user.company_id}/${jobId}/${zoneId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadErr } = await supabase.storage
+          .from('evidence-videos')
+          .upload(path, video.file, { contentType: video.file.type })
+        if (uploadErr) throw uploadErr
+        videoUrl = supabase.storage.from('evidence-videos').getPublicUrl(path).data.publicUrl
+      }
+
       // Fire n8n webhook — n8n handles DB writes and notifications
       await postZoneSubmission({
         cleaner_id: user.id,
@@ -169,6 +226,7 @@ function useZoneSubmissionState() {
         zone_id: zoneId,
         company_id: user.company_id,
         image_urls: imageUrls,
+        video_url: videoUrl,
         note: note.trim() || null,
         timestamp: new Date().toISOString(),
       })
@@ -182,7 +240,11 @@ function useZoneSubmissionState() {
     }
   }
 
-  return { jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit }
+  return {
+    jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit,
+    handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit,
+    video, showRecorder, isOnline, handleOpenRecorder, handleCancelRecorder, handleVideoCaptured, handleRemoveVideo,
+  }
 }
 
 // ─── Photo slot ───────────────────────────────────────────────────────────────
@@ -221,6 +283,46 @@ function PhotoSlot({ index, preview, active, onAdd, onRemove }: PhotoSlotProps) 
   )
 }
 
+// ─── Video slot ───────────────────────────────────────────────────────────────
+
+interface VideoSlotProps {
+  preview: string | null; isOnline: boolean
+  onRecord: () => void; onRemove: () => void
+}
+
+function VideoSlot({ preview, isOnline, onRecord, onRemove }: VideoSlotProps) {
+  const t = useTranslation()
+  if (preview) {
+    return (
+      <div data-slot="video" className="relative aspect-square rounded-[12px] overflow-hidden bg-black">
+        <video src={preview} muted playsInline className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <PlayIcon />
+        </div>
+        <button onClick={onRemove} aria-label={t('remove_video')}
+          className="absolute top-1.5 right-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center cursor-pointer">
+          <XIcon />
+        </button>
+      </div>
+    )
+  }
+  if (!isOnline) {
+    return (
+      <div data-slot="video" className="aspect-square rounded-[12px] border-2 border-dashed border-[#C3C8C2] flex flex-col items-center justify-center gap-1.5 opacity-50 px-2 text-center">
+        <VideoCameraIcon />
+        <span className="font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#6B5D36]">{t('video_needs_signal')}</span>
+      </div>
+    )
+  }
+  return (
+    <button data-slot="video" onClick={onRecord}
+      className="aspect-square rounded-[12px] border-2 border-dashed border-[#6B5D36] flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#F1DEAD]/20 transition-colors">
+      <VideoCameraIcon />
+      <span className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#6B5D36]">{t('record_video')}</span>
+    </button>
+  )
+}
+
 // ─── Error banner ─────────────────────────────────────────────────────────────
 
 function SubmitError() {
@@ -238,7 +340,11 @@ function SubmitError() {
 
 function DesktopZoneSubmission() {
   const state = useZoneSubmissionState()
-  const { jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = state
+  const {
+    jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit,
+    handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit,
+    video, showRecorder, isOnline, handleOpenRecorder, handleCancelRecorder, handleVideoCaptured, handleRemoveVideo,
+  } = state
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
@@ -296,10 +402,14 @@ function DesktopZoneSubmission() {
                 onRemove={() => handleRemovePhoto(i)}
               />
             ))}
+            <VideoSlot preview={video?.preview ?? null} isOnline={isOnline}
+              onRecord={handleOpenRecorder} onRemove={handleRemoveVideo} />
           </div>
 
           <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
             multiple className="hidden" onChange={handleFileChange} />
+
+          {showRecorder && <VideoRecorder onCapture={handleVideoCaptured} onCancel={handleCancelRecorder} />}
 
           <div className="dzs-note flex flex-col gap-2">
             <label htmlFor="dZoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">
@@ -337,7 +447,11 @@ function DesktopZoneSubmission() {
 // ─── Mobile layout ────────────────────────────────────────────────────────────
 
 function MobileZoneSubmission() {
-  const { jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit, handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit } = useZoneSubmissionState()
+  const {
+    jobId, zoneId, navigate, photos, note, setNote, submitting, submitError, fileInputRef, zoneName, canSubmit,
+    handleAddPhoto, handleFileChange, handleRemovePhoto, handleSubmit,
+    video, showRecorder, isOnline, handleOpenRecorder, handleCancelRecorder, handleVideoCaptured, handleRemoveVideo,
+  } = useZoneSubmissionState()
   const t = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const prevPhotoCount = useRef(0)
@@ -394,10 +508,14 @@ function MobileZoneSubmission() {
               onRemove={() => handleRemovePhoto(i)}
             />
           ))}
+          <VideoSlot preview={video?.preview ?? null} isOnline={isOnline}
+            onRecord={handleOpenRecorder} onRemove={handleRemoveVideo} />
         </div>
 
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
           multiple className="hidden" onChange={handleFileChange} />
+
+        {showRecorder && <VideoRecorder onCapture={handleVideoCaptured} onCancel={handleCancelRecorder} />}
 
         <div className="zs-note flex flex-col gap-2">
           <label htmlFor="zoneNote" className="font-['Lato',sans-serif] font-bold text-[14px] tracking-[0.7px] text-[#434844] ml-1">

@@ -24,7 +24,7 @@ interface EvidenceLog {
   cleaner_name: string
   cleaner_display_id: string
   zone_name: string
-  photo_urls: string[]
+  media: { url: string; type: 'image' | 'video' }[]
   existing_feedback: { status: string; comment: string } | null
 }
 
@@ -43,7 +43,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
   const [submitting, setSubmitting]   = useState(false)
   const [submitted, setSubmitted]     = useState(!!log.existing_feedback)
   const [submitErr, setSubmitErr]     = useState('')
-  const [lightbox, setLightbox]       = useState<string | null>(null)
+  const [lightbox, setLightbox]       = useState<{ url: string; type: 'image' | 'video' } | null>(null)
 
   async function handleSubmit() {
     if (!decision) return
@@ -95,20 +95,25 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
         </p>
       </div>
 
-      {/* Photos */}
-      {log.photo_urls.length > 0 ? (
+      {/* Photos + video */}
+      {log.media.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto px-5 py-4">
-          {log.photo_urls.map((url, i) => (
+          {log.media.map((m, i) => (
             <button
               key={i}
-              onClick={() => setLightbox(url)}
-              className="shrink-0 w-[120px] h-[90px] rounded-[8px] overflow-hidden bg-[#E3E3DD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]"
+              onClick={() => setLightbox(m)}
+              className="relative shrink-0 w-[120px] h-[90px] rounded-[8px] overflow-hidden bg-[#E3E3DD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8A77A]"
             >
-              <img
-                src={url}
-                alt={`Zone photo ${i + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {m.type === 'video' ? (
+                <>
+                  <video src={m.url} muted playsInline className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                  </div>
+                </>
+              ) : (
+                <img src={m.url} alt={`Zone evidence ${i + 1}`} className="w-full h-full object-cover" />
+              )}
             </button>
           ))}
         </div>
@@ -179,7 +184,7 @@ function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId:
         </div>
       )}
 
-      {lightbox && <ImageViewer src={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && <ImageViewer src={lightbox.url} type={lightbox.type} onClose={() => setLightbox(null)} />}
     </div>
   )
 }
@@ -265,7 +270,7 @@ export function Evidence() {
         jobs!cleaning_logs_job_id_fkey ( company_id ),
         profiles!cleaning_logs_cleaner_id_fkey ( full_name, display_id ),
         job_zones ( zone_name ),
-        evidence_files ( public_url ),
+        evidence_files ( public_url, file_type ),
         feedback_comments ( status, comment )
       `)
       .order('created_at', { ascending: false })
@@ -289,7 +294,7 @@ export function Evidence() {
         jobs: { company_id: string } | null
         profiles: { full_name: string; display_id: string } | null
         job_zones: { zone_name: string } | null
-        evidence_files: { public_url: string }[]
+        evidence_files: { public_url: string; file_type: string | null }[]
         feedback_comments: { status: string; comment: string }[]
       }[]).map((r) => ({
         id: r.id,
@@ -302,7 +307,10 @@ export function Evidence() {
         cleaner_name: r.profiles?.full_name ?? 'Unknown',
         cleaner_display_id: r.profiles?.display_id ?? '',
         zone_name: r.job_zones?.zone_name ?? 'Unknown Zone',
-        photo_urls: (r.evidence_files ?? []).map((f) => f.public_url),
+        media: (r.evidence_files ?? []).map((f) => ({
+          url: f.public_url,
+          type: (f.file_type ?? '').startsWith('video/') ? 'video' as const : 'image' as const,
+        })),
         existing_feedback: r.feedback_comments?.[0] ?? null,
       }))
       setLogs(mapped)

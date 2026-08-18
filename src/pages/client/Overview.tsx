@@ -75,6 +75,7 @@ interface FacilityInfo {
 interface EvidenceItem {
   id: string
   publicUrl: string
+  fileType: 'image' | 'video'
   zoneName: string
   submittedAt: string
 }
@@ -165,16 +166,18 @@ function useOverviewData(): OverviewState {
     if (recentJobIds.length > 0) {
       const { data: logRows } = await supabase
         .from('cleaning_logs')
-        .select('submitted_at, job_zones ( zone_name ), evidence_files ( id, public_url )')
+        .select('submitted_at, job_zones ( zone_name ), evidence_files ( id, public_url, file_type )')
         .in('job_id', recentJobIds)
         .order('submitted_at', { ascending: false })
         .limit(8)
 
       recentEvidence = (logRows ?? []).flatMap((log) => {
-        const l = log as unknown as { submitted_at: string; job_zones: { zone_name: string } | null; evidence_files: { id: string; public_url: string }[] }
+        const l = log as unknown as { submitted_at: string; job_zones: { zone_name: string } | null; evidence_files: { id: string; public_url: string; file_type: string | null }[] }
         const zone = l.job_zones?.zone_name ?? 'Zone'
         return (l.evidence_files ?? []).map((ef) => ({
-          id: ef.id, publicUrl: ef.public_url, zoneName: zone, submittedAt: l.submitted_at,
+          id: ef.id, publicUrl: ef.public_url,
+          fileType: ((ef.file_type ?? '').startsWith('video/') ? 'video' : 'image') as 'image' | 'video',
+          zoneName: zone, submittedAt: l.submitted_at,
         }))
       }).slice(0, 3)
     }
@@ -327,7 +330,16 @@ function EvidenceStrip({ items, onViewAll }: { items: EvidenceItem[]; onViewAll:
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-6 px-6 snap-x snap-mandatory">
         {items.map((item) => (
           <div key={item.id} className="ov-ev-card relative shrink-0 w-[148px] h-[148px] rounded-[12px] overflow-hidden bg-[#E3E3DD] snap-start">
-            <img src={item.publicUrl} alt={item.zoneName} className="w-full h-full object-cover" loading="lazy" />
+            {item.fileType === 'video' ? (
+              <video src={item.publicUrl} muted playsInline className="w-full h-full object-cover" />
+            ) : (
+              <img src={item.publicUrl} alt={item.zoneName} className="w-full h-full object-cover" loading="lazy" />
+            )}
+            {item.fileType === 'video' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+              </div>
+            )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 pt-8 pb-2.5">
               <p className="font-['Lato',sans-serif] text-white text-[11px] font-bold truncate">{item.zoneName}</p>
               <p className="font-['Lato',sans-serif] text-white/70 text-[10px]">{formatEvidenceTime(item.submittedAt)}</p>
@@ -575,7 +587,16 @@ function DesktopOverview({ unreadCount }: { unreadCount: number }) {
                   <div className="flex gap-4">
                     {data.recentEvidence.map((item) => (
                       <div key={item.id} className="ov-ev-card relative w-[200px] h-[200px] rounded-[12px] overflow-hidden bg-[#E3E3DD] shrink-0">
-                        <img src={item.publicUrl} alt={item.zoneName} className="w-full h-full object-cover" loading="lazy" />
+                        {item.fileType === 'video' ? (
+                          <video src={item.publicUrl} muted playsInline className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={item.publicUrl} alt={item.zoneName} className="w-full h-full object-cover" loading="lazy" />
+                        )}
+                        {item.fileType === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                          </div>
+                        )}
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pt-10 pb-3">
                           <p className="font-['Lato',sans-serif] text-white text-[12px] font-bold truncate">{item.zoneName}</p>
                           <p className="font-['Lato',sans-serif] text-white/70 text-[11px]">{formatEvidenceTime(item.submittedAt)}</p>
