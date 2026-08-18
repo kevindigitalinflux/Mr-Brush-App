@@ -8,6 +8,7 @@ import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { RecurringSchedule } from './RecurringSchedule'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1287,6 +1288,13 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
           </div>
         )}
 
+        <button
+          onClick={() => navigate(`/supervisor/jobs?facility=${facilityId}&action=recurring`)}
+          className="h-9 px-4 border border-[#D0CFCA] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-[13px] text-[#434844] hover:border-[#B8A77A] hover:text-[#1A1C19] transition-colors bg-white mb-4"
+        >
+          {t('sv_recurring_schedule_title')}
+        </button>
+
         {loading ? (
           <div className="flex flex-col gap-2">
             {[1, 2, 3].map((i) => (
@@ -1659,6 +1667,7 @@ export function Jobs() {
   if (facilityId && action === 'build') return <ShiftBuilderScreen facilityId={facilityId} />
   if (facilityId && action === 'add') return <AddZoneScreen facilityId={facilityId} />
   if (facilityId && action === 'edit' && zoneId) return <ZoneEditScreen facilityId={facilityId} zoneId={zoneId} />
+  if (facilityId && action === 'recurring') return <RecurringSchedule facilityId={facilityId} />
 
   if (isDesktop) {
     if (facilityId) return <DesktopFacilityZonesView facilityId={facilityId} />
