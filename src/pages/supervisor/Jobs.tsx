@@ -12,7 +12,7 @@ import { gsap, useGSAP } from '../../lib/gsap'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Facility  { id: string; name: string }
-interface Cleaner   { id: string; full_name: string; display_id: string }
+export interface Cleaner { id: string; full_name: string; display_id: string }
 interface LocalZone { tempId: string; zoneName: string; cleanerId: string; cleanerName: string | null }
 
 interface Zone {
@@ -886,7 +886,7 @@ function ZoneEditScreen({ facilityId, zoneId }: { facilityId: string; zoneId: st
 
 // ─── Searchable cleaner picker ────────────────────────────────────────────────
 
-function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
+export function CleanerPicker({ cleaners, value, onChange, unassignedLabel }: {
   cleaners: Cleaner[]
   value: string
   onChange: (id: string) => void
