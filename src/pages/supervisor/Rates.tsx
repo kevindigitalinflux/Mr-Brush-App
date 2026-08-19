@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
+import { CleanerPicker } from './Jobs'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -191,14 +192,12 @@ function RateRow({ label, rate, effectiveFrom, onSave }: RateRowProps) {
   )
 }
 
-interface HoursRowProps {
-  name: string
-  displayId: string
+interface HoursEditRowProps {
   hours: number | null
   onSave: (newHours: number) => Promise<string | null>
 }
 
-function HoursRow({ name, displayId, hours, onSave }: HoursRowProps) {
+function HoursEditRow({ hours, onSave }: HoursEditRowProps) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(hours !== null ? String(hours) : '')
   const [saving, setSaving] = useState(false)
@@ -223,11 +222,8 @@ function HoursRow({ name, displayId, hours, onSave }: HoursRowProps) {
 
   return (
     <div className="flex flex-col gap-1.5 px-4 py-2.5 bg-[#F4F4EE] rounded-[8px]">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="font-['Poppins',sans-serif] font-semibold text-[13px] text-[#1A1C19] truncate">{name}</p>
-          <p className="font-['Lato',sans-serif] text-[11px] text-[#737874]">{displayId}</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[1px] text-[#737874]">Expected Hours</p>
         {editing ? (
           <div className="flex items-center gap-1.5 shrink-0">
             <input
@@ -262,6 +258,32 @@ function HoursRow({ name, displayId, hours, onSave }: HoursRowProps) {
   )
 }
 
+interface WorkerHoursEditorProps {
+  cleaners: CleanerOption[]
+  hours: Record<string, number | null>
+  onSave: (cleanerId: string, newHours: number) => Promise<string | null>
+}
+
+function WorkerHoursEditor({ cleaners, hours, onSave }: WorkerHoursEditorProps) {
+  const [selectedId, setSelectedId] = useState('')
+  const pickerCleaners = cleaners.map((c) => ({ id: c.id, full_name: c.name, display_id: c.displayId }))
+  const selected = cleaners.find((c) => c.id === selectedId)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[1px] text-[#737874]">Worker Hours</p>
+      <CleanerPicker cleaners={pickerCleaners} value={selectedId} onChange={setSelectedId} unassignedLabel="Select a worker…" />
+      {selected && (
+        <HoursEditRow
+          key={selected.id}
+          hours={hours[selected.id] ?? null}
+          onSave={(newHours) => onSave(selected.id, newHours)}
+        />
+      )}
+    </div>
+  )
+}
+
 function FacilityCard({ facility, cleaners, onSaveRate, onSaveHours }: {
   facility: FacilityRate
   cleaners: CleanerOption[]
@@ -287,18 +309,11 @@ function FacilityCard({ facility, cleaners, onSaveRate, onSaveHours }: {
       </div>
 
       {cleaners.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[1px] text-[#737874]">Worker Hours</p>
-          {cleaners.map((c) => (
-            <HoursRow
-              key={c.id}
-              name={c.name}
-              displayId={c.displayId}
-              hours={facility.hours[c.id] ?? null}
-              onSave={(hours) => onSaveHours(facility.facilityId, c.id, hours)}
-            />
-          ))}
-        </div>
+        <WorkerHoursEditor
+          cleaners={cleaners}
+          hours={facility.hours}
+          onSave={(cleanerId, hours) => onSaveHours(facility.facilityId, cleanerId, hours)}
+        />
       )}
     </div>
   )
