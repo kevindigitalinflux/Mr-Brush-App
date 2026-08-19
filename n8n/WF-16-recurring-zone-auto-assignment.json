@@ -1,0 +1,401 @@
+{
+  "updatedAt": "2026-08-19T17:22:13.960Z",
+  "createdAt": "2026-08-19T17:22:13.960Z",
+  "id": "24EqOIbqQiQze45K",
+  "name": "WF-16 - Recurring Zone Auto-Assignment",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## WF-16 — Recurring Zone Auto-Assignment\n\n**Trigger:** Schedule, 05:00 daily (instance default timezone — matches WF-15's convention of no per-workflow timezone override)\n\n**What this does:**\n1. Reads all active recurring_zone_rules\n2. Filters to the ones whose days_of_week includes today\n3. Finds or creates today's job for each due facility\n4. Inserts any missing job_zones for each due rule (skips ones that already exist — guards against a re-run or a supervisor having already added the same zone manually that morning)\n5. Each job_zones insert fires the existing on_job_zone_insert Supabase Database Webhook → WF-10 → cleaner notification. No new notification logic needed here.\n\n**Design notes (why HTTP Request nodes instead of the Supabase node for several steps):**\n- job_zones has real historical duplicate (job_id, zone_name, cleaner_id) rows (from the app's existing \"Duplicate Zone\" feature), so a DB-level unique constraint + upsert wasn't safe to add — dedup is done explicitly in JS instead, using one bulk existence check.\n- Every Code node here runs \"Once for All Items\" and reads its inputs via explicit $('Node Name') references to genuine linear ancestors only — never a same-branch $input from a fan-out step and never a cross-branch reference — to avoid the paired-item pitfalls already documented in this project's n8n workflows (see WF-6/WF-8 history).\n- Built and deployed via the n8n REST API in a single session with no interactive test run in the editor — recommend a manual \"Execute Workflow\" test run (or waiting for the first real 05:00 run) before fully trusting the schedule.",
+        "height": 620,
+        "width": 620,
+        "color": 3
+      },
+      "id": "wf16-note",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 5 * * *"
+            }
+          ]
+        }
+      },
+      "id": "wf16-01",
+      "name": "5:00 AM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "recurring_zone_rules",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "active",
+              "condition": "eq",
+              "keyValue": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wf16-02",
+      "name": "Get Active Rules",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        320,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qqH4brGQ87PpjkK5",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rules = $input.all().map(i => i.json);\nconst today = new Date().getDay(); // 0=Sun..6=Sat, matches recurring_zone_rules.days_of_week\nconst todayDate = new Date().toISOString().slice(0, 10);\n\nconst dueRules = rules.filter(r => Array.isArray(r.days_of_week) && r.days_of_week.includes(today));\n\nif (dueRules.length === 0) return []; // nothing due today — workflow ends here, correctly\n\nreturn [{ json: { dueRules, todayDate } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "wf16-03",
+      "name": "Compute Due Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/jobs?scheduled_date=eq.{{ $json.todayDate }}&status=neq.cancelled&select=id,facility_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wf16-04",
+      "name": "Get Todays Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qqH4brGQ87PpjkK5",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const { dueRules, todayDate } = $('Compute Due Rules').first().json;\n\nconst raw = $input.all().map(i => i.json);\nconst todaysJobs = Array.isArray(raw[0]) ? raw[0] : raw.filter(r => r && r.id);\n\nconst jobByFacility = {};\nfor (const j of todaysJobs) jobByFacility[j.facility_id] = j.id;\n\nconst seenFacilities = new Set();\nconst jobsToCreate = [];\nfor (const rule of dueRules) {\n  if (jobByFacility[rule.facility_id] || seenFacilities.has(rule.facility_id)) continue;\n  seenFacilities.add(rule.facility_id);\n  jobsToCreate.push({\n    facility_id: rule.facility_id,\n    company_id: rule.company_id,\n    scheduled_date: todayDate,\n    status: 'scheduled',\n    supervisor_id: rule.created_by,\n  });\n}\n\nreturn [{ json: { dueRules, todayDate, jobByFacility, jobsToCreate } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "wf16-05",
+      "name": "Resolve Jobs + Compute New Job Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bstohwxzufebufbybxtd.supabase.co/rest/v1/jobs",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.jobsToCreate }}"
+      },
+      "id": "wf16-06",
+      "name": "Create Missing Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qqH4brGQ87PpjkK5",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const { dueRules, jobByFacility } = $('Resolve Jobs + Compute New Job Rows').first().json;\n\nconst raw = $input.all().map(i => i.json);\nconst newJobs = Array.isArray(raw[0]) ? raw[0] : raw.filter(r => r && r.id);\n\nconst resolvedJobByFacility = { ...jobByFacility };\nfor (const j of newJobs) resolvedJobByFacility[j.facility_id] = j.id;\n\nconst zoneRows = dueRules\n  .map(r => ({\n    job_id: resolvedJobByFacility[r.facility_id],\n    zone_name: r.zone_name,\n    cleaner_id: r.cleaner_id,\n    notes: r.notes ?? null,\n    status: 'not_started',\n  }))\n  .filter(z => !!z.job_id);\n\nconst jobIds = [...new Set(zoneRows.map(z => z.job_id))];\n\nreturn [{ json: { zoneRows, jobIdsCsv: jobIds.join(',') } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "wf16-07",
+      "name": "Build Zone Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://bstohwxzufebufbybxtd.supabase.co/rest/v1/job_zones?job_id=in.({{ $json.jobIdsCsv }})&status=neq.deleted&select=job_id,zone_name,cleaner_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "wf16-08",
+      "name": "Get Existing Zones For Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qqH4brGQ87PpjkK5",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const { zoneRows } = $('Build Zone Payload').first().json;\n\nconst raw = $input.all().map(i => i.json);\nconst existing = Array.isArray(raw[0]) ? raw[0] : raw.filter(r => r && r.job_id);\n\nconst existingKeys = new Set(existing.map(e => `${e.job_id}::${e.zone_name}::${e.cleaner_id}`));\nconst toInsert = zoneRows.filter(z => !existingKeys.has(`${z.job_id}::${z.zone_name}::${z.cleaner_id}`));\n\nreturn [{ json: { toInsert } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "wf16-09",
+      "name": "Filter New Zones",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bstohwxzufebufbybxtd.supabase.co/rest/v1/job_zones",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.toInsert }}"
+      },
+      "id": "wf16-10",
+      "name": "Insert New Zones",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        200
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "qqH4brGQ87PpjkK5",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "5:00 AM Daily": {
+      "main": [
+        [
+          {
+            "node": "Get Active Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Rules": {
+      "main": [
+        [
+          {
+            "node": "Compute Due Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Due Rules": {
+      "main": [
+        [
+          {
+            "node": "Get Todays Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Todays Jobs": {
+      "main": [
+        [
+          {
+            "node": "Resolve Jobs + Compute New Job Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Jobs + Compute New Job Rows": {
+      "main": [
+        [
+          {
+            "node": "Create Missing Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Missing Jobs": {
+      "main": [
+        [
+          {
+            "node": "Build Zone Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Zone Payload": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Zones For Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Zones For Jobs": {
+      "main": [
+        [
+          {
+            "node": "Filter New Zones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Zones": {
+      "main": [
+        [
+          {
+            "node": "Insert New Zones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "e777d4d4-c51b-4448-9350-970947ac8307",
+  "activeVersionId": null,
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-19T17:22:13.963Z",
+      "createdAt": "2026-08-19T17:22:13.963Z",
+      "role": "workflow:owner",
+      "workflowId": "24EqOIbqQiQze45K",
+      "projectId": "maW3NuD5SiZNpU5H",
+      "project": {
+        "updatedAt": "2026-06-03T12:22:30.235Z",
+        "createdAt": "2026-06-02T20:57:06.515Z",
+        "id": "maW3NuD5SiZNpU5H",
+        "name": "kevin zamora-saenz <kevindigitalinflux@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "c50c4ed5-2ce8-4beb-893e-30ff3fba1e91"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

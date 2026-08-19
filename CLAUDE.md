@@ -386,6 +386,25 @@ All four are seeded directly via SQL (`crypt()` + `gen_salt('bf')` on `auth.user
 
 ---
 
+## Session update (2026-08-19) — first live shift, bugs found + fixed, WF-16 built
+
+Journey's rolling contract had its first officially-used shift today. Feedback surfaced four issues, all fixed and merged to `main`:
+
+1. **History screen excluded today's shifts** — `.lt('scheduled_date', today)` on both "My Shifts" and "All Workers" tabs meant a shift completed *today* never showed up, only from the next day onward. Changed to `.lte`.
+2. **Pay records had no edit path once logged** — draft records had no edit action at all, and "confirmed" ones were permanently static (an accidental Approve click was unrecoverable). Added an Edit action on drafts and a "Revert to Draft" action on confirmed records; "paid" stays locked since money's already moved.
+3. **Rates screen was read-only** ("Contact an administrator to update rates") even though supervisors already had full RLS write access — the restriction was frontend-only. Turned it into "Manage Facilities": rates are now inline-editable, and a new `cleaner_facility_hours` table (per cleaner, per facility) backs a per-worker expected-hours list, since a cleaner's hours can differ by site.
+4. **Evidence full-screen viewer showed a cropped, boxed-in image, not true full-screen** — root cause: `ImageViewer` used `position: fixed`, but was rendered as a child of cards with `hover:-translate-y-px` (`Evidence.tsx`'s `evidence-ticket`). A transformed ancestor becomes the containing block for `fixed` descendants — this is the *exact* class of bug already documented above from the SupervisorNav incident. Fixed at the root by rendering `ImageViewer` through a React portal to `document.body`, so no ancestor's transform can ever trap it again, in any of its call sites. Also added a download button (blob-fetch + save, new-tab fallback) since supervisors want to reuse evidence photos for social media.
+
+**Root cause of #2/#3's underlying data problem:** Andres's first Aug 19 pay record auto-generated with 8h/£12.50 defaults (`profiles.contracted_hours` was unset, Journey had zero `facility_rates` rows) and got accidentally approved before anyone could fix it. Corrected directly in the DB as a stopgap (4h/£14.80) alongside the UI fixes.
+
+**n8n — WF-6 updated (live, 2026-08-19):** the pay-record hours lookup now reads `cleaner_facility_hours.expected_hours` first, falling back to `profiles.contracted_hours`, then `8.0` — added a new "Get Cleaner Facility Hours" Supabase node feeding the existing "Build Pay Record" code node. Applied directly via the n8n REST API (`N8N_API_KEY` in `.env`, expires — see comment above the key). Local export refreshed at `n8n/WF-6-shift-completion-pay-record.json`.
+
+**n8n — WF-16 built (NEW, inactive pending test run):** "Recurring Zone Auto-Assignment" — daily 05:00 schedule trigger that turns `recurring_zone_rules` into real `job_zones` each matching day. Built via direct REST API calls (id `24EqOIbqQiQze45K`), no interactive editor testing was possible from this session. **Left inactive deliberately** — recommend an "Execute Workflow" test run in the n8n editor before activating. Low risk either way right now since `recurring_zone_rules` has 0 rows in production (the app UI for supervisors to create rules lives on the still-parked `feature/recurring-zone-assignments` branch, not yet merged) — activating it today would just be a harmless no-op daily until that branch lands. Export at `n8n/WF-16-recurring-zone-auto-assignment.json`. Uses direct PostgREST HTTP Request calls (not the Supabase node) for the job/zone bulk reads and inserts, matching WF-6's `Insert Pay Record` pattern — needed because `job_zones` has real historical duplicate `(job_id, zone_name, cleaner_id)` rows (from the app's own "Duplicate Zone" feature) so a DB unique-constraint-based upsert wasn't safe to add; dedup is done explicitly in a Code node instead.
+
+**Still pending:** WF-5 update for video evidence (`file_type='video'` row) — belongs to the *separate*, still-unmerged `feature/multi-photo-video-evidence` branch, explicitly deferred, not touched this session.
+
+---
+
 ## Do Not Touch
 - Data flow architecture — app sends to n8n, n8n writes to Supabase. No direct `cleaning_logs` writes from the app during submission.
 - Role routing logic in `lib/auth.ts` — the C/S/M prefix system is fixed
