@@ -79,8 +79,10 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
       streamRef.current = stream
       if (liveVideoRef.current) liveVideoRef.current.srcObject = stream
       setStage('live')
-    } catch {
-      setError(t('camera_permission_denied'))
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : 'UnknownError'
+      console.error('getUserMedia failed:', name, err)
+      setError(`${t('camera_permission_denied')} (${name})`)
       setStage('error')
     }
   }
