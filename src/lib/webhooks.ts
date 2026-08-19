@@ -1,6 +1,7 @@
 const N8N_WEBHOOK_URL           = import.meta.env.VITE_N8N_WEBHOOK_URL as string
 const N8N_SHIFT_COMPLETE_URL    = import.meta.env.VITE_N8N_SHIFT_COMPLETE_WEBHOOK as string
 const N8N_RECLEAN_ACK_URL       = import.meta.env.VITE_N8N_RECLEAN_ACK_WEBHOOK as string
+const N8N_RECURRING_SYNC_URL    = import.meta.env.VITE_N8N_RECURRING_SYNC_WEBHOOK as string
 
 export interface ZoneSubmissionPayload {
   cleaner_id: string
@@ -56,6 +57,17 @@ export async function postShiftComplete(payload: ShiftCompletePayload): Promise<
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(`Webhook error: ${res.status}`)
+}
+
+/** Manually trigger WF-16 to materialize today's due recurring zone assignments. No-ops if the URL is not yet configured. */
+export async function postRecurringSync(): Promise<void> {
+  if (!N8N_RECURRING_SYNC_URL) return
+  const res = await fetch(N8N_RECURRING_SYNC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ triggered_at: new Date().toISOString() }),
   })
   if (!res.ok) throw new Error(`Webhook error: ${res.status}`)
 }

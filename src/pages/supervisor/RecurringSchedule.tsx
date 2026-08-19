@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
+import { postRecurringSync } from '../../lib/webhooks'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
@@ -88,6 +89,8 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
   const [editingRule, setEditingRule] = useState<RecurringRule | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [mutatingIds, setMutatingIds] = useState<Set<string>>(new Set())
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState<{ text: string; isError: boolean } | null>(null)
 
   // `t` intentionally left out of the dependency array below — it's a new closure
   // every render (see useTranslation), and including it would re-trigger the
@@ -185,6 +188,20 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
     navigate(`/supervisor/jobs?facility=${facilityId}`)
   }
 
+  async function handleSyncNow() {
+    setSyncing(true)
+    setSyncMessage(null)
+    try {
+      await postRecurringSync()
+      setSyncMessage({ text: t('sv_recurring_sync_success'), isError: false })
+    } catch (err) {
+      console.error('Failed to trigger recurring sync:', err)
+      setSyncMessage({ text: t('sv_recurring_sync_error'), isError: true })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (mode === 'add' || mode === 'edit') {
     return (
       <RecurringRuleForm
@@ -232,6 +249,23 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
     </button>
   )
 
+  const syncButton = (
+    <div className="flex flex-col gap-1.5">
+      <button onClick={handleSyncNow} disabled={syncing}
+        className="w-full h-11 border border-[#D0CFCA] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-[13px] text-[#434844] hover:border-[#B8A77A] transition-colors disabled:opacity-50">
+        {syncing ? t('sv_recurring_syncing') : t('sv_recurring_sync_now')}
+      </button>
+      <p className="font-['Lato',sans-serif] text-[11px] text-[#9E9E9E] text-center">
+        {t('sv_recurring_sync_note')}
+      </p>
+      {syncMessage && (
+        <p className={`font-['Lato',sans-serif] text-[12px] text-center ${syncMessage.isError ? 'text-[#BA1A1A]' : 'text-[#2F4A3D]'}`}>
+          {syncMessage.text}
+        </p>
+      )}
+    </div>
+  )
+
   if (isDesktop) {
     return (
       <div className="min-h-screen bg-[#F4F4EE]">
@@ -254,6 +288,7 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
               </div>
             </div>
             {addButton}
+            {syncButton}
             {body}
           </div>
         </main>
