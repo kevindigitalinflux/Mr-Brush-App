@@ -73,11 +73,10 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
     setError('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
         audio: false,
       })
       streamRef.current = stream
-      if (liveVideoRef.current) liveVideoRef.current.srcObject = stream
       setStage('live')
     } catch (err) {
       const name = err instanceof DOMException ? err.name : 'UnknownError'
@@ -96,6 +95,16 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // The live-preview <video> element only mounts once stage becomes 'live',
+  // so the stream can only be attached to it after that render — attaching
+  // it synchronously inside startCamera() (before setStage('live')) hits a
+  // null ref and silently no-ops, leaving the preview permanently black.
+  useEffect(() => {
+    if (stage === 'live' && liveVideoRef.current && streamRef.current) {
+      liveVideoRef.current.srcObject = streamRef.current
+    }
+  }, [stage])
 
   function beginRecording() {
     const stream = streamRef.current
