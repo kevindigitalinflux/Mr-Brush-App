@@ -139,8 +139,17 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
     stopStream()
     const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current || 'video/webm' })
     const url = URL.createObjectURL(blob)
+    console.error('[VideoRecorder] recording stopped:', {
+      chunkCount: chunksRef.current.length,
+      blobSize: blob.size,
+      blobType: blob.type,
+      mimeTypeUsed: mimeTypeRef.current,
+    })
     setPreviewBlob(blob)
     setPreviewUrl(url)
+    if (blob.size === 0) {
+      setError(`Debug: recording produced 0 bytes (${chunksRef.current.length} chunks, mimeType: ${mimeTypeRef.current || 'default'})`)
+    }
     setStage('preview')
   }
 
@@ -155,6 +164,12 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
       return
     }
     setError('')
+  }
+
+  function handlePreviewError() {
+    const mediaError = previewVideoRef.current?.error
+    console.error('[VideoRecorder] preview playback error:', mediaError?.code, mediaError?.message)
+    setError(`Debug: playback error code ${mediaError?.code ?? '?'} — blob ${previewBlob?.size ?? '?'} bytes, type ${previewBlob?.type ?? '?'}`)
   }
 
   function retake() {
@@ -228,6 +243,7 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
         <div className="relative w-full h-full flex flex-col items-center justify-center gap-6 px-6">
           <video ref={previewVideoRef} src={previewUrl} controls playsInline
             onLoadedMetadata={handlePreviewLoaded}
+            onError={handlePreviewError}
             className="max-w-full max-h-[70vh] object-contain rounded-[12px]" />
 
           {error && (
