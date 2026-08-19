@@ -374,6 +374,99 @@ function LogPayModal({ cleaners, companyId, onClose, onSaved }: LogPayModalProps
   )
 }
 
+// ─── Edit Pay Modal (draft records only) ──────────────────────────────────────
+
+interface EditPayModalProps {
+  record: PayRecord
+  onClose: () => void
+  onSaved: () => void
+}
+
+function EditPayModal({ record, onClose, onSaved }: EditPayModalProps) {
+  const [hoursWorked, setHoursWorked] = useState(String(record.hoursWorked))
+  const [hourlyRate, setHourlyRate] = useState(String(record.hourlyRate))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave() {
+    const hours = parseFloat(hoursWorked)
+    const rate = parseFloat(hourlyRate)
+    if (isNaN(hours) || hours <= 0) { setError('Enter hours worked (greater than 0).'); return }
+    if (isNaN(rate) || rate <= 0) { setError('Enter an hourly rate (greater than £0.00).'); return }
+
+    setSaving(true); setError(null)
+    const { error: err } = await supabase
+      .from('pay_records')
+      .update({ hours_worked: hours, hourly_rate: rate })
+      .eq('id', record.id)
+
+    if (err) { console.error('Failed to update pay record:', err); setSaving(false); setError('Could not save. Try again.'); return }
+    onSaved()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-[16px] w-full max-w-md flex flex-col shadow-xl">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#E3E3DD] shrink-0">
+          <h2 className="font-['Poppins',sans-serif] font-semibold text-[17px] text-[#1A1C19]">Edit Pay Record</h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F4F4EE] text-[#737874]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="bg-[#F4F4EE] rounded-[8px] px-4 py-3">
+            <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-[#1A1C19]">{record.cleanerName}</p>
+            <p className="font-['Lato',sans-serif] text-[12px] text-[#737874]">{record.facilityName} · {fmtDate(record.shiftDate)}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[1px] text-[#737874] mb-1.5">Hours Worked</label>
+              <input
+                type="number" step="0.25" min="0.25"
+                value={hoursWorked}
+                onChange={(e) => { setHoursWorked(e.target.value); setError(null) }}
+                className="w-full h-10 rounded-[8px] border border-[#D5D5CF] bg-white px-3 font-['Lato',sans-serif] text-[14px] text-[#1A1C19] focus:outline-none focus:ring-2 focus:ring-[#B8A77A]"
+              />
+            </div>
+            <div>
+              <label className="block font-['Lato',sans-serif] text-[11px] font-bold uppercase tracking-[1px] text-[#737874] mb-1.5">Hourly Rate (£)</label>
+              <input
+                type="number" step="0.01" min="0.01"
+                value={hourlyRate}
+                onChange={(e) => { setHourlyRate(e.target.value); setError(null) }}
+                className="w-full h-10 rounded-[8px] border border-[#D5D5CF] bg-white px-3 font-['Lato',sans-serif] text-[14px] text-[#1A1C19] focus:outline-none focus:ring-2 focus:ring-[#B8A77A]"
+              />
+            </div>
+          </div>
+
+          {hoursWorked && hourlyRate && !isNaN(parseFloat(hoursWorked)) && !isNaN(parseFloat(hourlyRate)) && (
+            <div className="flex items-center justify-between bg-[#F4F4EE] rounded-[8px] px-4 py-3">
+              <span className="font-['Lato',sans-serif] text-[13px] text-[#737874]">Gross pay</span>
+              <span className="font-['Poppins',sans-serif] font-semibold text-[16px] text-[#1A1C19]">
+                £{(parseFloat(hoursWorked) * parseFloat(hourlyRate)).toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {error && <p className="font-['Lato',sans-serif] text-[12px] text-[#BA1A1A]">{error}</p>}
+        </div>
+
+        <div className="px-6 pb-6 pt-4 border-t border-[#E3E3DD] shrink-0">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full h-11 rounded-[10px] bg-[#1A1C19] text-white font-['Lato',sans-serif] text-[14px] font-semibold disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Pay record card ──────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
@@ -382,7 +475,12 @@ const STATUS_STYLES: Record<string, string> = {
   paid: 'bg-[#E3E3DD] text-[#737874]',
 }
 
-function PayRecordCard({ record, onApprove }: { record: PayRecord; onApprove: (id: string) => void }) {
+function PayRecordCard({ record, onApprove, onRevert, onEdit }: {
+  record: PayRecord
+  onApprove: (id: string) => void
+  onRevert: (id: string) => void
+  onEdit: (record: PayRecord) => void
+}) {
   return (
     <div className="bg-white border border-[#D5D5CF] rounded-[12px] flex items-stretch overflow-hidden">
       {/* Date column */}
@@ -407,6 +505,11 @@ function PayRecordCard({ record, onApprove }: { record: PayRecord; onApprove: (i
         <p className="font-['Lato',sans-serif] text-[12px] text-[#B8A77A] mt-0.5">
           {record.hoursWorked}h × £{Number(record.hourlyRate).toFixed(2)}/{record.roleType === 'supervisor' ? 'hr (sup)' : 'hr'}
         </p>
+        {record.status === 'draft' && (
+          <button onClick={() => onEdit(record)} className="mt-1 font-['Lato',sans-serif] text-[11px] font-semibold text-[#B8A77A] hover:text-[#8B7A5A] transition-colors">
+            Edit
+          </button>
+        )}
       </div>
 
       {/* Right column — gross pay + status/action */}
@@ -421,6 +524,18 @@ function PayRecordCard({ record, onApprove }: { record: PayRecord; onApprove: (i
           >
             Approve
           </button>
+        ) : record.status === 'confirmed' ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className={`font-['Lato',sans-serif] text-[10px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-full ${STATUS_STYLES[record.status] ?? ''}`}>
+              {record.status}
+            </span>
+            <button
+              onClick={() => onRevert(record.id)}
+              className="font-['Lato',sans-serif] text-[11px] font-semibold text-[#737874] hover:text-[#1A1C19] transition-colors whitespace-nowrap"
+            >
+              Revert to Draft
+            </button>
+          </div>
         ) : (
           <span className={`font-['Lato',sans-serif] text-[10px] font-bold uppercase tracking-[0.5px] px-2 py-0.5 rounded-full ${STATUS_STYLES[record.status] ?? ''}`}>
             {record.status}
@@ -466,8 +581,10 @@ function PayRecordsContent() {
   const [filterCleaner, setFilterCleaner] = useState('')
   const [filterMonth, setFilterMonth] = useState(currentMonth)
   const [showModal, setShowModal] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<PayRecord | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set())
+  const [revertingIds, setRevertingIds] = useState<Set<string>>(new Set())
   const { loading, records, cleaners, reload } = usePayData(filterCleaner, filterMonth)
 
   async function handleApprove(id: string) {
@@ -479,9 +596,31 @@ function PayRecordsContent() {
       .eq('id', id)
       .eq('company_id', user!.company_id)
     if (error) {
+      console.error('Failed to approve pay record:', error)
       setApproveError('Could not approve record. Try again.')
       setApprovingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
     }
+  }
+
+  async function handleRevert(id: string) {
+    setRevertingIds((prev) => new Set([...prev, id]))
+    setApproveError(null)
+    const { error } = await supabase
+      .from('pay_records')
+      .update({ status: 'draft' })
+      .eq('id', id)
+      .eq('company_id', user!.company_id)
+    if (error) {
+      console.error('Failed to revert pay record to draft:', error)
+      setApproveError('Could not revert record. Try again.')
+      setRevertingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+      return
+    }
+    // Reload before clearing the optimistic flag — records is otherwise never
+    // refetched after a mutation (see handleApprove), which would make the
+    // card flash back to "confirmed" once the optimistic override clears.
+    await reload()
+    setRevertingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
   }
 
   return (
@@ -561,8 +700,16 @@ function PayRecordsContent() {
           )}
           <div className="space-y-3">
             {records.map((r) => {
-              const optimisticStatus = approvingIds.has(r.id) ? 'confirmed' : r.status
-              return <PayRecordCard key={r.id} record={{ ...r, status: optimisticStatus }} onApprove={handleApprove} />
+              const optimisticStatus = approvingIds.has(r.id) ? 'confirmed' : revertingIds.has(r.id) ? 'draft' : r.status
+              return (
+                <PayRecordCard
+                  key={r.id}
+                  record={{ ...r, status: optimisticStatus }}
+                  onApprove={handleApprove}
+                  onRevert={handleRevert}
+                  onEdit={setEditingRecord}
+                />
+              )
             })}
           </div>
         </>
@@ -574,6 +721,14 @@ function PayRecordsContent() {
           companyId={user.company_id}
           onClose={() => setShowModal(false)}
           onSaved={() => { setShowModal(false); void reload() }}
+        />
+      )}
+
+      {editingRecord && (
+        <EditPayModal
+          record={editingRecord}
+          onClose={() => setEditingRecord(null)}
+          onSaved={() => { setEditingRecord(null); void reload() }}
         />
       )}
     </div>
