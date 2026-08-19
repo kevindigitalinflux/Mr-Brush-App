@@ -68,10 +68,21 @@ function usePayData(filterCleaner: string, filterMonth: string) {
   const [loading, setLoading] = useState(true)
   const [records, setRecords] = useState<PayRecord[]>([])
   const [cleaners, setCleaners] = useState<CleanerOption[]>([])
+  const [facilityIds, setFacilityIds] = useState<string[]>([])
 
   const load = useCallback(async () => {
     if (!user) return
     setLoading(true)
+
+    const { data: sfRows } = await supabase
+      .from('supervisor_facilities')
+      .select('facility_id')
+      .eq('profile_id', user.id)
+
+    const assignedFacilityIds = [...new Set((sfRows ?? []).map((r) => (r as { facility_id: string }).facility_id))]
+    setFacilityIds(assignedFacilityIds)
+
+    if (assignedFacilityIds.length === 0) { setRecords([]); setCleaners([]); setLoading(false); return }
 
     const { data: cRows } = await supabase
       .from('profiles')
@@ -92,6 +103,7 @@ function usePayData(filterCleaner: string, filterMonth: string) {
       .from('pay_records')
       .select('id, shift_date, cleaner_id, facility_id, role_type, hours_worked, hourly_rate, gross_pay, is_replacement, status')
       .eq('company_id', user.company_id)
+      .in('facility_id', assignedFacilityIds)
       .order('shift_date', { ascending: false })
       .limit(200)
 
@@ -144,23 +156,23 @@ function usePayData(filterCleaner: string, filterMonth: string) {
   }, [user, filterCleaner, filterMonth])
 
   useEffect(() => { void load() }, [load])
-  return { loading, records, cleaners, reload: load }
+  return { loading, records, cleaners, facilityIds, reload: load }
 }
 
 // ─── Job options hook (used inside modal) ─────────────────────────────────────
 
-function useJobOptions(open: boolean, companyId: string) {
+function useJobOptions(open: boolean, facilityIds: string[]) {
   const [jobs, setJobs] = useState<JobOption[]>([])
   const [loadingJobs, setLoadingJobs] = useState(false)
 
   useEffect(() => {
-    if (!open || !companyId) return
+    if (!open || facilityIds.length === 0) return
     setLoadingJobs(true)
     async function load() {
       const { data: jRows } = await supabase
         .from('jobs')
         .select('id, facility_id, scheduled_date')
-        .eq('company_id', companyId)
+        .in('facility_id', facilityIds)
         .order('scheduled_date', { ascending: false })
         .limit(60)
 
@@ -184,7 +196,8 @@ function useJobOptions(open: boolean, companyId: string) {
       setLoadingJobs(false)
     }
     void load()
-  }, [open, companyId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, facilityIds.join(',')])
 
   return { jobs, loadingJobs }
 }
@@ -194,14 +207,15 @@ function useJobOptions(open: boolean, companyId: string) {
 interface LogPayModalProps {
   cleaners: CleanerOption[]
   companyId: string
+  facilityIds: string[]
   onClose: () => void
   onSaved: () => void
 }
 
-function LogPayModal({ cleaners, companyId, onClose, onSaved }: LogPayModalProps) {
+function LogPayModal({ cleaners, companyId, facilityIds, onClose, onSaved }: LogPayModalProps) {
   const { user } = useApp()
   const [form, setForm] = useState<LogForm>(BLANK_FORM)
-  const { jobs, loadingJobs } = useJobOptions(true, companyId)
+  const { jobs, loadingJobs } = useJobOptions(true, facilityIds)
 
   function set<K extends keyof LogForm>(key: K, val: LogForm[K]) {
     setForm((f) => ({ ...f, [key]: val }))
@@ -585,7 +599,7 @@ function PayRecordsContent() {
   const [approveError, setApproveError] = useState<string | null>(null)
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set())
   const [revertingIds, setRevertingIds] = useState<Set<string>>(new Set())
-  const { loading, records, cleaners, reload } = usePayData(filterCleaner, filterMonth)
+  const { loading, records, cleaners, facilityIds, reload } = usePayData(filterCleaner, filterMonth)
 
   async function handleApprove(id: string) {
     setApprovingIds((prev) => new Set([...prev, id]))
@@ -719,6 +733,7 @@ function PayRecordsContent() {
         <LogPayModal
           cleaners={cleaners}
           companyId={user.company_id}
+          facilityIds={facilityIds}
           onClose={() => setShowModal(false)}
           onSaved={() => { setShowModal(false); void reload() }}
         />
