@@ -98,7 +98,7 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
           job_zones ( id, status ),
           profiles!jobs_supervisor_id_fkey ( full_name )
         `)
-        .lt('scheduled_date', new Date().toISOString().slice(0, 10))
+        .lte('scheduled_date', new Date().toISOString().slice(0, 10))
         .order('scheduled_date', { ascending: false })
         .limit(60)
 
