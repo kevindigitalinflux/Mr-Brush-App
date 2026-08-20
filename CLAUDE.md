@@ -30,12 +30,15 @@ An internal field operations app for Mr Brush & Co., a commercial cleaning compa
 ```
 src/
 ├── components/
-│   ├── ImageViewer.tsx              # Lightbox for photo thumbnails
+│   ├── ImageViewer.tsx              # Full-screen photo/video viewer (portal to document.body)
+│   ├── VideoRecorder.tsx            # Live camera recorder — 15s max, no file-picker fallback
 │   ├── SignOutConfirmButton.tsx
 │   ├── supervisor/
 │   │   ├── SupervisorNav.tsx        # Mobile bottom nav (fixed)
 │   │   ├── SupervisorDesktopSidebar.tsx
-│   │   └── LanguageSheet.tsx
+│   │   ├── LanguageSheet.tsx
+│   │   ├── RecurringRuleForm.tsx    # Add/edit a recurring zone rule
+│   │   └── DayOfWeekPicker.tsx
 │   └── ui/                          # Base design system components
 ├── pages/
 │   ├── cleaner/                     # All cleaner-side screens — COMPLETE
@@ -59,7 +62,8 @@ src/
 │   │   ├── Payslips.tsx
 │   │   ├── PayRecords.tsx
 │   │   ├── Absence.tsx
-│   │   └── Rates.tsx
+│   │   ├── Rates.tsx                # "Manage Facilities" — rates + worker hours
+│   │   └── RecurringSchedule.tsx    # Per-facility recurring zone rules + manual WF-16 sync
 │   └── client/                      # Client/building-manager portal — COMPLETE
 ├── supervisor-preview/              # Standalone phone-frame preview (mock data)
 │   ├── App.tsx
@@ -155,7 +159,11 @@ Mobile-first. Desktop = same screens with 240px left sidebar (`pl-60`), wider co
 - `status`: `pending` | `approved` | `needs_attention` | `reclean_requested`
 
 **evidence_files**
-- `id`, `cleaning_log_id`, `public_url`
+- `id`, `cleaning_log_id`, `public_url`, `storage_path`, `file_type` (MIME type, e.g. `image/jpeg` or `video/webm` — used to distinguish video from photo rows in evidence review screens)
+
+**recurring_zone_rules** (added 2026-08-18) — `(id, facility_id, cleaner_id, zone_name, days_of_week int[], notes, active, created_by, created_at)`. A supervisor-authored template; WF-16 turns due rules into real `jobs`/`job_zones` rows each day (or on manual sync). RLS scoped like other supervisor-facing config tables.
+
+**cleaner_facility_hours** (added 2026-08-19) — `(id, cleaner_id, facility_id, company_id, expected_hours, created_at)`, `unique(cleaner_id, facility_id)`. Per-cleaner, per-facility expected shift length — a cleaner's hours can differ by site. WF-6 reads this first when building a pay record, falling back to `profiles.contracted_hours`, then `8.0`.
 
 **feedback_comments**
 - `id`, `cleaning_log_id`, `supervisor_id`, `comment`, `status`, `company_id`
@@ -169,9 +177,12 @@ Mobile-first. Desktop = same screens with 240px left sidebar (`pl-60`), wider co
 - `id`, `user_id`, `title`, `message`, `is_read`, `created_at`
 
 **pay_records**
-- `id`, `cleaner_id`, `supervisor_id`, `company_id`, `pay_period_start/end`
+- `id`, `cleaner_id`, `supervisor_id`, `facility_id`, `job_id`, `company_id`, `shift_date`, `role_type` (`cleaner`|`supervisor`), `is_replacement`, `notes`
 - `hours_worked`, `hourly_rate`, `gross_pay` (GENERATED column — never pass in INSERT)
 - `status`: `draft` | `confirmed` | `paid`
+- RLS (added 2026-08-19): supervisor access is scoped by `facility_id` via `supervisor_facilities`, not just `company_id` — a supervisor can no longer see/edit pay records for a facility they aren't assigned to, even within the same company.
+
+**jobs.recurring_job_key** / **job_zones.recurring_assignment_key** (added 2026-08-19) — nullable `text`, plain `UNIQUE` constraints (deliberately *not* partial/conditional indexes — PostgREST's `on_conflict` upsert doesn't reliably target those). WF-16 upserts against these to avoid duplicate job/zone creation on repeated runs.
 
 **payslips**
 - `id`, `pay_record_id`, `cleaner_id`, `supervisor_id`, `company_id`
@@ -242,8 +253,9 @@ The app must **never** write directly to `cleaning_logs` during initial submissi
 | Client Issues | `/supervisor/issues` | Complete — realtime, status workflow |
 | Notifications | `/supervisor/notifications` | Complete — mark read, complaint link |
 | Payslips | `/supervisor/payslips` | Complete — PDF download via jsPDF |
-| Pay Records | `/supervisor/pay-records` | Complete |
+| Pay Records | `/supervisor/pay-records` | Complete — facility-scoped |
 | Absence | `/supervisor/absence` | Complete |
+| Recurring Schedule | `/supervisor/jobs?action=recurring&facility=:id` | Complete — includes manual "Sync Today's Zones Now" (WF-16) |
 
 Desktop layout: 240px fixed sidebar + main content area. All screens use `useIsDesktop()` to conditionally render sidebar vs bottom nav.
 
@@ -293,6 +305,12 @@ Scope TBD — likely: cross-company overview, user management, company-wide repo
 - **`cleaning_logs` has no `company_id` column** — don't filter or scope queries on it directly; go through `jobs.company_id` (RLS policies already do this via a join, so app-side filters usually don't need to duplicate it).
 - **Supervisor facility visibility is scoped via `supervisor_facilities`, not `company_id`**: a supervisor with real jobs at a facility still won't see it on the Jobs screen (and RLS will hide the `facilities` row entirely) unless there's a matching `supervisor_facilities` row. This is enforced at both the app-query and RLS level — assign new supervisors to their facilities as part of onboarding them, not as an afterthought.
 - **Verify Cloudflare Pages' GitHub integration is actually connected before assuming a push will deploy** — it can silently disconnect (happened 2026-08-17) with no notification; pushes succeed on GitHub's side but nothing builds. Check the Pages project dashboard for a "disconnected from Git" banner if a deploy seems stuck.
+- **New `VITE_*` env vars need to be added to Cloudflare Pages' own dashboard, not just `.env`** — `.env` is gitignored and never reaches the deployed build. A webhook helper gated on a new env var that's only local will silently no-op in production with zero error, since `import.meta.env.VITE_X` is just `undefined` there. Hit this 2026-08-19/20 with `VITE_N8N_RECURRING_SYNC_WEBHOOK` — the button looked like it "did nothing," and the fix was two parts: add the var in Cloudflare's dashboard (Workers & Pages → mr-brush-app → Settings → Environment variables) *and* redeploy (env var changes don't apply retroactively to an already-built deployment).
+- **A webhook helper that's the direct subject of user-facing success/failure feedback must throw on missing config, not silently no-op** — the existing `postX()` helpers in `lib/webhooks.ts` intentionally no-op when their URL is unset (they're fire-and-forget side effects after some other action already succeeded). `postRecurringSync()` is different: the button's entire purpose *is* that call, so a silent no-op produced a false "Synced!" message. Match the no-op-vs-throw behavior to whether the caller shows the user a direct success/failure state.
+- **`Permissions-Policy` in `public/_headers` can silently kill `getUserMedia` app-wide** — it shipped with `camera=(), microphone=()...` from an earlier security pass, before any feature used the camera. Once `VideoRecorder.tsx` needed it, every `getUserMedia` call failed with `NotAllowedError` *before the browser ever showed a permission prompt* — indistinguishable from a real user-denied permission unless you think to check this header. Fixed to `camera=(self)`; microphone stays blocked since video capture is `audio: false`. Check this header first for any future feature needing camera/mic/geolocation/payment.
+- **CSP needs an explicit `media-src` directive for any `<video>`/`<audio>` playback** — `img-src` already allowed `blob:` (why photo previews always worked), but there was no `media-src` at all, so it fell back to `default-src 'self'`, which blocks both `blob:` URLs (the in-page recording preview) *and* cross-origin Supabase Storage URLs (the actual uploaded evidence video). Chrome reports a CSP-blocked media source as the generic `MEDIA_ERR_SRC_NOT_SUPPORTED` (error code 4) on the `<video>` element — indistinguishable from a genuinely corrupt/unsupported file unless you check the CSP directly. Fixed: `media-src 'self' blob: https://*.supabase.co https://*.supabase.in;`.
+- **`MediaRecorder.start()` with no timeslice can produce a blob Chrome-on-Android's own `<video>` element refuses to play** — even though the exact same bytes decode fine in a native video player outside the page (confirmed by downloading and opening it directly). Symptom is `MEDIA_ERR_SRC_NOT_SUPPORTED` despite a real, non-empty, correctly-typed blob. Recording with an explicit timeslice (`recorder.start(1000)`) instead of relying on the single stop-time chunk fixed it. This took three failed hypotheses to isolate (codecs-qualified Blob type, missing CSP `media-src`) — both were verified-deployed-but-ineffective before landing on this one, which is why the download-and-test-natively step was the decisive piece of evidence.
+- **A ref can't be attached to a conditionally-rendered element before that render happens** — `VideoRecorder`'s live preview `<video>` only mounts once `stage === 'live'`, but the code originally set `liveVideoRef.current.srcObject = stream` synchronously *before* calling `setStage('live')`, while the element didn't exist yet. The guard (`if (liveVideoRef.current)`) silently no-op'd rather than erroring, producing a permanently black preview with no error at all. Fix: attach the stream in a `useEffect` keyed on the state that reveals the element, not inline in the async function that fetches the stream.
 
 ---
 
@@ -337,13 +355,14 @@ Scope TBD — likely: cross-company overview, user management, company-wide repo
 | `VITE_N8N_WEBHOOK_URL` | n8n → Proof of Cleaning (WF-5) webhook URL |
 | `VITE_N8N_SHIFT_COMPLETE_WEBHOOK` | n8n → Shift Completion + Pay Record (WF-6) webhook URL |
 | `VITE_N8N_RECLEAN_ACK_WEBHOOK` | n8n → Reclean Acknowledgement (WF-12) webhook URL |
+| `VITE_N8N_RECURRING_SYNC_WEBHOOK` | n8n → Recurring Zone Auto-Assignment (WF-16) manual-trigger webhook URL |
 | `VITE_GOOGLE_TRANSLATE_API_KEY` | Google Cloud Console → Translate API |
 
-**All three n8n webhook domains must be in `public/_headers`' CSP `connect-src`, and `data:` must be there too** (the offline queue converts saved photos back to blobs via `fetch(dataUrl)`, which needs it) — see Known Patterns & Gotchas.
+**Every n8n webhook domain must be in `public/_headers`' CSP `connect-src`, and `data:` must be there too** (the offline queue converts saved photos back to blobs via `fetch(dataUrl)`, which needs it). **`media-src` must separately allow `blob:` and the Supabase Storage domains** for video playback (see Known Patterns & Gotchas). **New `VITE_*` vars must also be added directly in Cloudflare Pages' dashboard** — `.env` is gitignored and never reaches the deployed build.
 
 ---
 
-## Current Status (as of 2026-08-17)
+## Current Status (as of 2026-08-20 — see session updates below for detail)
 
 **All three portals complete and production-ready:** Cleaner (`/cleaner/*`), Supervisor (`/supervisor/*`), Client (`/client/*`).
 
@@ -366,14 +385,15 @@ All four are seeded directly via SQL (`crypt()` + `gen_salt('bf')` on `auth.user
 
 **Cloudflare hosting:** Deliberately staying on the kevindigitalinflux@gmail.com personal account for now (not mrbrushandco@gmail.com) — a migration was scoped (new Pages project + `app.mrbrushandco.co.uk` custom domain + n8n CORS allowlist update, since Cloudflare has no native cross-account Pages transfer) but shelved because it needs SSH access to the Hostinger VPS that wasn't available in the moment. Revisit once that access is sorted and things are less time-pressured.
 
-**n8n automations — all live and re-verified 2026-08-17:**
-- WF-5: Proof of Cleaning submission ✓
-- WF-6: Shift Completion + Pay Record creation ✓
+**n8n automations — all live:**
+- WF-5: Proof of Cleaning submission ✓ (updated 2026-08-20 for video evidence)
+- WF-6: Shift Completion + Pay Record creation ✓ (updated 2026-08-19 for per-facility hours lookup)
 - WF-8: Monthly Payslip Roll-up ✓
 - WF-10: Zone Assignment Notification ✓
 - WF-11: Evidence Feedback Notification ✓
 - WF-12: Reclean Acknowledgement ✓
 - WF-15: Weekly Report Compilation ✓
+- WF-16: Recurring Zone Auto-Assignment ✓ (built 2026-08-19, activated 2026-08-20 — daily 5am schedule + manual webhook trigger)
 - WF-A/B/C: WhatsApp absence flows — built, still need Google Sheets → Supabase node swap
 
 **Known plan limitations (free tier — revisit as Journey's usage grows):**
@@ -401,7 +421,29 @@ Journey's rolling contract had its first officially-used shift today. Feedback s
 
 **n8n — WF-16 built (NEW, inactive pending test run):** "Recurring Zone Auto-Assignment" — daily 05:00 schedule trigger that turns `recurring_zone_rules` into real `job_zones` each matching day. Built via direct REST API calls (id `24EqOIbqQiQze45K`), no interactive editor testing was possible from this session. **Left inactive deliberately** — recommend an "Execute Workflow" test run in the n8n editor before activating. Low risk either way right now since `recurring_zone_rules` has 0 rows in production (the app UI for supervisors to create rules lives on the still-parked `feature/recurring-zone-assignments` branch, not yet merged) — activating it today would just be a harmless no-op daily until that branch lands. Export at `n8n/WF-16-recurring-zone-auto-assignment.json`. Uses direct PostgREST HTTP Request calls (not the Supabase node) for the job/zone bulk reads and inserts, matching WF-6's `Insert Pay Record` pattern — needed because `job_zones` has real historical duplicate `(job_id, zone_name, cleaner_id)` rows (from the app's own "Duplicate Zone" feature) so a DB unique-constraint-based upsert wasn't safe to add; dedup is done explicitly in a Code node instead.
 
-**Still pending:** WF-5 update for video evidence (`file_type='video'` row) — belongs to the *separate*, still-unmerged `feature/multi-photo-video-evidence` branch, explicitly deferred, not touched this session.
+---
+
+## Session update (2026-08-19/20) — recurring zones shipped, pay records locked to assigned facilities, video evidence built and debugged end-to-end
+
+Continuation of the same day's work above. Three previously-parked/half-built things landed, plus a real multi-fix debugging chain on video evidence.
+
+**1. Recurring zone assignments — merged and live.** The `feature/recurring-zone-assignments` branch (Recurring Schedule screen, `RecurringRuleForm`, `DayOfWeekPicker`) is merged to `main`. WF-16 is now **active** (was deliberately left inactive in the 2026-08-19 note above — its 5am schedule had never actually fired until this). Added a webhook trigger alongside its schedule trigger so a supervisor can materialize today's due zones on demand via a "Sync Today's Zones Now" button on the Recurring Schedule screen — this button is global (fires WF-16 for every due facility company-wide, not just the one you're viewing), styled as a filled Muted Brass CTA distinct from the primary black "Add Recurring Zone +" button. Two real bugs surfaced and got fixed post-merge:
+   - The button silently no-op'd in production because its webhook URL env var was never added to Cloudflare Pages' dashboard (see Known Patterns & Gotchas) — also fixed `postRecurringSync()` to throw rather than silently succeed when unconfigured.
+   - The button only rendered on desktop — a `replace_all` string-edit meant to add it to both desktop and mobile layouts silently missed the mobile one due to differing surrounding whitespace. Always verify both layouts individually rather than trusting a single find/replace across near-duplicate JSX blocks.
+
+**2. Pay records facility-scoped.** Supervisors could previously see/edit any company's pay record regardless of facility assignment. Scoped `PayRecords.tsx` (list, filters, Log Pay modal's job dropdown) and tightened the `pay_records` RLS policies (select/update/insert) to require a matching `supervisor_facilities` row — verified against live data first (zero orphaned records) before tightening.
+
+**3. Manage Facilities worker-hours UX.** Replaced the "every cleaner listed inline under every facility card" pattern with the existing searchable `CleanerPicker` (imported from `Jobs.tsx`) plus a single hours field for whichever cleaner is selected — avoids an ever-growing list as the roster scales.
+
+**4. Video/photo evidence — merged, WF-5 updated, multiple real bugs fixed.** `feature/multi-photo-video-evidence` (up to 5 photos and/or one 15s live-recorded video per zone) is merged to `main`. WF-5 updated to insert an `evidence_files` row for video the same way it already does for photos (extended the "Build Evidence Items" code node), and fixed a real correctness bug in the process: the "Has Photos?" no-evidence flagging branch only checked `image_urls.length`, which would have wrongly flagged every video-only submission (explicitly allowed by the app — `canSubmit = photos.length > 0 || video !== null`) as having no evidence and falsely alerted the supervisor.
+
+   Getting the recorder actually working end-to-end on a real Android phone took five sequential bugs, each confirmed with real evidence before moving to the next (not guessed) — see the corresponding entries in Known Patterns & Gotchas for the technical detail on each: `Permissions-Policy: camera=()` blocking the permission prompt outright; a `<video>` ref attached before its conditionally-rendered element existed (permanently black live preview); a missing CSP `media-src` directive (blocked both blob: preview and the eventual Supabase-hosted playback); a `MediaRecorder.start()`-with-no-timeslice quirk on Android Chrome that produced a blob no in-page `<video>` element would play despite being valid, non-empty, correctly-typed data (confirmed by downloading and playing it natively before landing on the fix). Two intermediate hypotheses (stripping the Blob's codecs-qualified type, adding CSP media-src) were each verified deployed-and-ineffective via direct evidence before moving on, rather than stacking speculative fixes.
+
+**Rollback tag:** `checkpoint-before-video-evidence` on `main`, pointing at the commit immediately before the video-evidence merge — `git reset --hard checkpoint-before-video-evidence && git push origin main --force` if needed.
+
+**Still pending / not yet done:**
+- Stale local n8n JSON exports (`n8n/WF-16-...json` reflects an early v1 design, not the final working version; WF-5 has no local export at all) — only matters if you want them as accurate reference docs, not functionally load-bearing.
+- Branch cleanup — `feature/recurring-zone-assignments`, `feature/wf16-trigger-facility-scoping-dropdown`, and `feature/multi-photo-video-evidence` are all fully merged into `main` and could be deleted (local + GitHub) for tidiness.
 
 ---
 
