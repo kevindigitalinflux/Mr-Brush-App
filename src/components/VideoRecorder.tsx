@@ -151,16 +151,10 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
     const containerType = (mimeTypeRef.current || 'video/webm').split(';')[0]
     const blob = new Blob(chunksRef.current, { type: containerType })
     const url = URL.createObjectURL(blob)
-    console.error('[VideoRecorder] recording stopped:', {
-      chunkCount: chunksRef.current.length,
-      blobSize: blob.size,
-      blobType: blob.type,
-      mimeTypeUsed: mimeTypeRef.current,
-    })
     setPreviewBlob(blob)
     setPreviewUrl(url)
     if (blob.size === 0) {
-      setError(`Debug: recording produced 0 bytes (${chunksRef.current.length} chunks, mimeType: ${mimeTypeRef.current || 'default'})`)
+      setError(t('video_playback_failed'))
     }
     setStage('preview')
   }
@@ -181,7 +175,7 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
   function handlePreviewError() {
     const mediaError = previewVideoRef.current?.error
     console.error('[VideoRecorder] preview playback error:', mediaError?.code, mediaError?.message)
-    setError(`Debug: playback error code ${mediaError?.code ?? '?'} — blob ${previewBlob?.size ?? '?'} bytes, type ${previewBlob?.type ?? '?'}, recorded with ${mimeTypeRef.current || 'default'}`)
+    setError(t('video_playback_failed'))
   }
 
   function retake() {
@@ -259,15 +253,7 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
             className="max-w-full max-h-[70vh] object-contain rounded-[12px]" />
 
           {error && (
-            <>
-              <p className="font-['Lato',sans-serif] text-[13px] text-[#FF8A80] text-center max-w-xs">{error}</p>
-              {previewUrl && (
-                <a href={previewUrl} download={`debug-recording.${mimeTypeRef.current.includes('mp4') ? 'mp4' : 'webm'}`}
-                  className="font-['Lato',sans-serif] text-[12px] text-white underline">
-                  Debug: download raw recording to test in another app
-                </a>
-              )}
-            </>
+            <p className="font-['Lato',sans-serif] text-[13px] text-[#FF8A80] text-center max-w-xs">{error}</p>
           )}
 
           <div className="flex items-center gap-4">

@@ -142,6 +142,7 @@ export const strings: Record<Language, Record<string, string>> = {
     video_needs_signal: 'Needs a signal to record',
     video_too_long: 'Video must be 15 seconds or under. Please record again.',
     video_too_large: 'Video file is too large. Please record a shorter clip.',
+    video_playback_failed: "Couldn't preview this video. Please retake it.",
     camera_permission_denied: 'Camera access is needed to record video. Check your browser permissions.',
 
     // No photo note
@@ -544,6 +545,7 @@ export const strings: Record<Language, Record<string, string>> = {
     video_needs_signal: 'Necesita señal para grabar',
     video_too_long: 'El video debe durar 15 segundos o menos. Por favor, grábalo de nuevo.',
     video_too_large: 'El archivo de video es demasiado grande. Graba un clip más corto.',
+    video_playback_failed: 'No se pudo previsualizar este video. Vuelve a grabarlo.',
     camera_permission_denied: 'Se necesita acceso a la cámara para grabar video. Comprueba los permisos de tu navegador.',
 
     // No photo note
@@ -941,6 +943,7 @@ export const strings: Record<Language, Record<string, string>> = {
     video_needs_signal: 'Precisa de sinal para gravar',
     video_too_long: 'O vídeo deve ter 15 segundos ou menos. Por favor, grave novamente.',
     video_too_large: 'O arquivo de vídeo é muito grande. Grave um clipe mais curto.',
+    video_playback_failed: 'Não foi possível pré-visualizar este vídeo. Grave novamente.',
     camera_permission_denied: 'É necessário acesso à câmera para gravar vídeo. Verifique as permissões do seu navegador.',
 
     // No photo note

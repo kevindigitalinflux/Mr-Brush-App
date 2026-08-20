@@ -316,6 +316,7 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
         </div>
         <div className="flex flex-col gap-4">
           {addButton}
+          {syncButton}
           {body}
         </div>
       </div>
