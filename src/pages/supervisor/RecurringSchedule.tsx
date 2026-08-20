@@ -20,6 +20,14 @@ function BackIcon() {
   )
 }
 
+function SyncIcon({ spinning = false }: { spinning?: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={spinning ? 'animate-spin' : ''}>
+      <path d="M4 4v6h6M20 20v-6h-6M5.5 9a7 7 0 0 1 12.3-3M18.5 15a7 7 0 0 1-12.3 3" stroke="#1A1C19" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function RuleRow({ rule, cleanerName, onEdit, onToggleActive, onDeleteClick, confirming, mutating, t }: {
   rule: RecurringRule
   cleanerName: string
@@ -252,7 +260,8 @@ export function RecurringSchedule({ facilityId }: { facilityId: string }) {
   const syncButton = (
     <div className="flex flex-col gap-1.5">
       <button onClick={handleSyncNow} disabled={syncing}
-        className="w-full h-11 border border-[#D0CFCA] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-[13px] text-[#434844] hover:border-[#B8A77A] transition-colors disabled:opacity-50">
+        className="w-full h-[52px] bg-[#B8A77A] rounded-[10px] font-['Poppins',sans-serif] font-semibold text-sm text-[#1A1C19] hover:bg-[#a8976a] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+        <SyncIcon spinning={syncing} />
         {syncing ? t('sv_recurring_syncing') : t('sv_recurring_sync_now')}
       </button>
       <p className="font-['Lato',sans-serif] text-[11px] text-[#9E9E9E] text-center">

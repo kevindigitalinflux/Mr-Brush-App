@@ -62,9 +62,15 @@ export async function postShiftComplete(payload: ShiftCompletePayload): Promise<
   if (!res.ok) throw new Error(`Webhook error: ${res.status}`)
 }
 
-/** Manually trigger WF-16 to materialize today's due recurring zone assignments. No-ops if the URL is not yet configured. */
+/**
+ * Manually trigger WF-16 to materialize today's due recurring zone assignments.
+ * Unlike the other webhook helpers, this is the entire point of a user-facing
+ * button with explicit success/failure feedback — so a missing URL throws
+ * instead of silently no-oping, which would otherwise show a false "Synced!"
+ * message while doing nothing.
+ */
 export async function postRecurringSync(): Promise<void> {
-  if (!N8N_RECURRING_SYNC_URL) return
+  if (!N8N_RECURRING_SYNC_URL) throw new Error('Recurring sync webhook URL is not configured.')
   const res = await fetch(N8N_RECURRING_SYNC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
