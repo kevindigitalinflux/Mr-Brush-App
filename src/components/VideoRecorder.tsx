@@ -176,7 +176,7 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
   function handlePreviewError() {
     const mediaError = previewVideoRef.current?.error
     console.error('[VideoRecorder] preview playback error:', mediaError?.code, mediaError?.message)
-    setError(`Debug: playback error code ${mediaError?.code ?? '?'} — blob ${previewBlob?.size ?? '?'} bytes, type ${previewBlob?.type ?? '?'}`)
+    setError(`Debug: playback error code ${mediaError?.code ?? '?'} — blob ${previewBlob?.size ?? '?'} bytes, type ${previewBlob?.type ?? '?'}, recorded with ${mimeTypeRef.current || 'default'}`)
   }
 
   function retake() {
@@ -254,7 +254,15 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
             className="max-w-full max-h-[70vh] object-contain rounded-[12px]" />
 
           {error && (
-            <p className="font-['Lato',sans-serif] text-[13px] text-[#FF8A80] text-center max-w-xs">{error}</p>
+            <>
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#FF8A80] text-center max-w-xs">{error}</p>
+              {previewUrl && (
+                <a href={previewUrl} download={`debug-recording.${mimeTypeRef.current.includes('mp4') ? 'mp4' : 'webm'}`}
+                  className="font-['Lato',sans-serif] text-[12px] text-white underline">
+                  Debug: download raw recording to test in another app
+                </a>
+              )}
+            </>
           )}
 
           <div className="flex items-center gap-4">
