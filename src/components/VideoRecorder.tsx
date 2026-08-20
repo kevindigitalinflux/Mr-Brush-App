@@ -137,7 +137,14 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
 
   function handleRecordingStopped() {
     stopStream()
-    const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current || 'video/webm' })
+    // Blob.type must be the bare container type (e.g. "video/webm"), not the
+    // codecs-qualified string used for MediaRecorder's capability check
+    // (e.g. "video/webm;codecs=vp9") — some Chrome/Android builds reject
+    // <video src="blob:..."> playback with MEDIA_ERR_SRC_NOT_SUPPORTED when
+    // the Blob carries a codecs parameter, even though the underlying data
+    // is valid and MediaRecorder itself accepted that exact mimeType.
+    const containerType = (mimeTypeRef.current || 'video/webm').split(';')[0]
+    const blob = new Blob(chunksRef.current, { type: containerType })
     const url = URL.createObjectURL(blob)
     console.error('[VideoRecorder] recording stopped:', {
       chunkCount: chunksRef.current.length,
