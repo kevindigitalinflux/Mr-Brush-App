@@ -92,7 +92,6 @@
 html,
 body,
 #root {
-  height: 100%;
   margin: 0;
   padding: 0;
   background-color: #F5F4EF;
@@ -101,10 +100,25 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body {
+  height: 100%;
+}
+
+/*
+ * #root uses min-height, not height, so it can grow taller than one
+ * viewport to match its actual rendered content (desktop pages routinely
+ * exceed 100vh). A fixed height:100% left #root's own box permanently
+ * capped at one viewport — its child still rendered its full content
+ * below that via normal overflow, but past #root's own boundary the
+ * background was no longer reliably #root's own painted box, showing up
+ * as a visible seam on any desktop page taller than the viewport.
+ */
 #root {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  min-height: 100%;
 }
 
 /* Invisible scrollbar — gutter always reserved, no visible track or thumb */

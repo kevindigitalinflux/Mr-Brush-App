@@ -368,10 +368,10 @@ function DesktopZoneSubmission() {
   }, [photos])
 
   return (
-    <div className="min-h-screen bg-[#FAFAF4]" style={{ outline: '4px solid red', outlineOffset: '-4px' }}>
+    <div className="min-h-screen bg-[#FAFAF4]">
       <DesktopSidebar active="jobs" />
-      <main className="pl-60" style={{ outline: '4px solid blue', outlineOffset: '-8px' }}>
-        <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 pb-24 flex flex-col gap-8" style={{ outline: '4px solid lime', outlineOffset: '-12px' }}>
+      <main className="pl-60">
+        <div ref={containerRef} className="max-w-2xl mx-auto px-8 py-8 pb-24 flex flex-col gap-8">
 
           <div className="dzs-header flex items-center gap-4">
             <button onClick={() => navigate(-1)} aria-label="Go back"
