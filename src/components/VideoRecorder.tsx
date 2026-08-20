@@ -118,7 +118,12 @@ export function VideoRecorder({ onCapture, onCancel }: Props) {
     recorder.onstop = handleRecordingStopped
 
     recorderRef.current = recorder
-    recorder.start()
+    // A timeslice forces periodic dataavailable events instead of a single
+    // chunk assembled at stop() — on some Android Chrome builds, a blob
+    // built from a single no-timeslice chunk lacks metadata <video> needs
+    // for its initial playability probe, failing with SRC_NOT_SUPPORTED
+    // even though the same bytes decode fine outside the page.
+    recorder.start(1000)
     setStage('recording')
     setSecondsLeft(MAX_DURATION_MS / 1000)
 
