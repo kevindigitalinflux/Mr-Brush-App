@@ -246,7 +246,7 @@ The app must **never** write directly to `cleaning_logs` during initial submissi
 |---|---|---|
 | Dashboard | `/supervisor/dashboard` | Complete — live data, realtime, bell badge |
 | Jobs (facility list + zone builder) | `/supervisor/jobs` | Complete |
-| Pending Approvals / Job Evidence | `/supervisor/evidence` + `/supervisor/evidence/:jobId` | Complete — pagination, realtime |
+| Pending Approvals / Job Evidence | `/supervisor/evidence` + `/supervisor/evidence/:jobId` | Complete — pagination, realtime, retroactive "Mark Shift Complete" banner for unpaid cleaners |
 | Job History | `/supervisor/history` | Complete |
 | Workers | `/supervisor/workers` | Complete |
 | Cleaner Profile + Ratings | `/supervisor/workers/:cleanerId` | Complete |
@@ -311,6 +311,7 @@ Scope TBD — likely: cross-company overview, user management, company-wide repo
 - **CSP needs an explicit `media-src` directive for any `<video>`/`<audio>` playback** — `img-src` already allowed `blob:` (why photo previews always worked), but there was no `media-src` at all, so it fell back to `default-src 'self'`, which blocks both `blob:` URLs (the in-page recording preview) *and* cross-origin Supabase Storage URLs (the actual uploaded evidence video). Chrome reports a CSP-blocked media source as the generic `MEDIA_ERR_SRC_NOT_SUPPORTED` (error code 4) on the `<video>` element — indistinguishable from a genuinely corrupt/unsupported file unless you check the CSP directly. Fixed: `media-src 'self' blob: https://*.supabase.co https://*.supabase.in;`.
 - **`MediaRecorder.start()` with no timeslice can produce a blob Chrome-on-Android's own `<video>` element refuses to play** — even though the exact same bytes decode fine in a native video player outside the page (confirmed by downloading and opening it directly). Symptom is `MEDIA_ERR_SRC_NOT_SUPPORTED` despite a real, non-empty, correctly-typed blob. Recording with an explicit timeslice (`recorder.start(1000)`) instead of relying on the single stop-time chunk fixed it. This took three failed hypotheses to isolate (codecs-qualified Blob type, missing CSP `media-src`) — both were verified-deployed-but-ineffective before landing on this one, which is why the download-and-test-natively step was the decisive piece of evidence.
 - **A ref can't be attached to a conditionally-rendered element before that render happens** — `VideoRecorder`'s live preview `<video>` only mounts once `stage === 'live'`, but the code originally set `liveVideoRef.current.srcObject = stream` synchronously *before* calling `setStage('live')`, while the element didn't exist yet. The guard (`if (liveVideoRef.current)`) silently no-op'd rather than erroring, producing a permanently black preview with no error at all. Fix: attach the stream in a `useEffect` keyed on the state that reveals the element, not inline in the async function that fetches the stream.
+- **A job showing "Part" in History even with every zone done doesn't mean zones are incomplete — it means WF-6 (shift completion + pay record) never fired.** Until 2026-09-14 that webhook could only be triggered from the live Jobs screen's per-cleaner "Mark Complete" button, scoped to *today's* job only — a supervisor who forgot on the day had no in-app way to recover it, and the cleaner's `pay_records` row silently never got created. Fixed with a completion banner on `/supervisor/evidence/:jobId` — see session update below.
 - **`#root` in `src/index.css` must use `align-items: stretch` and `min-height: 100%`, never `center`/`height: 100%`** — `align-items: center` shrinks every flex-child page to its own content width instead of stretching to the viewport (desktop `min-h-screen` layouts affected; mobile's `fixed inset-0` layouts are immune, since fixed positioning ignores the parent's flex alignment entirely). `height: 100%` (fixed, not `min-`) caps `#root`'s own box at exactly one viewport even when a page's actual content is taller — the page still renders fully via normal overflow, but past that boundary the background is no longer reliably painted, showing up as a seam. Confirm any suspected instance of this via DevTools measuring `#root`'s actual box against the page's real content height — a from-scratch CSS repro of the bug description didn't reproduce the height half, so this needs real measurement, not just reasoning about the CSS.
 
 ---
@@ -452,6 +453,18 @@ Continuation of the same day's work above. Three previously-parked/half-built th
 
 **Still pending / not yet done:**
 - Stale local n8n JSON exports (`n8n/WF-16-...json` reflects an early v1 design, not the final working version; WF-5 has no local export at all) — only matters if you want them as accurate reference docs, not functionally load-bearing.
+
+---
+
+## Session update (2026-09-14) — retroactive "Mark Shift Complete" on supervisor History/Evidence
+
+The only way to fire WF-6 (shift completion + pay record) was the live Jobs screen's per-cleaner "Mark Complete" button, scoped to *today's* job only. When a supervisor misses that click, the job stays permanently stuck as "Part" in History with zero in-app recovery path — the only prior fix was a direct DB edit. Hit for real this session: Christian Chiliquinga's 10 Sept shift at Journey had all 7/7 zones done and approved, but the supervisor (S0003) never clicked complete that day, so no pay record was ever created.
+
+Added a completion banner to `/supervisor/evidence/:jobId` (reached from any History row) that surfaces for any cleaner on that job who still has no `pay_records` row: zones done, a "Mark Shift Complete" button, and an inline "This will log pay for this shift — confirm?" step before it fires. Wired to the exact same `job_zones` update + `postShiftComplete` (WF-6) webhook call the Jobs screen already uses — no new n8n workflow, no schema changes. New i18n keys added for en/es/pt (`sv_shift_not_logged_title`, `sv_shift_not_logged_body`, `sv_shift_complete_confirm_body/yes/cancel`, `sv_pay_logged`); reused the existing `mark_shift_complete` label for the button itself.
+
+Verified live against Christian's real 10 Sept shift and used to actually fix his missing pay record. Built on `feature/retroactive-shift-complete`, merged to `main` and deployed 2026-09-14.
+
+**Process note:** an unstaged, unread `CLAUDE.md` edit from before this session started was accidentally lost mid-session via `git reset --hard origin/main` (run to move a mistaken direct-to-main commit onto a feature branch, without stashing first). Unrecoverable — no commit, no stash, no editor local history existed for it. If anything about this file reads as missing recent context, that's most likely where it went.
 
 ---
 
