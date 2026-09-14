@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
+import { postShiftComplete } from '../../lib/webhooks'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -26,6 +27,118 @@ interface EvidenceLog {
   zone_name: string
   media: { url: string; type: 'image' | 'video' }[]
   existing_feedback: { status: string; comment: string } | null
+}
+
+interface CleanerCompletion {
+  cleaner_id: string
+  cleaner_name: string
+  done: number
+  total: number
+  zone_ids: string[]
+}
+
+// ─── Shift completion card ─────────────────────────────────────────────────────
+
+function ShiftCompletionCard({ entry, jobId, supervisorId, marked, onMarked }: {
+  entry: CleanerCompletion
+  jobId: string
+  supervisorId: string
+  marked: boolean
+  onMarked: (cleanerId: string) => void
+}) {
+  const t = useTranslation()
+  const [confirming, setConfirming] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleConfirm() {
+    setSubmitting(true)
+    setError('')
+    try {
+      if (entry.zone_ids.length > 0) {
+        const { error: updErr } = await supabase
+          .from('job_zones')
+          .update({ status: 'completed' })
+          .in('id', entry.zone_ids)
+        if (updErr) throw updErr
+      }
+      void postShiftComplete({ job_id: jobId, cleaner_id: entry.cleaner_id, supervisor_id: supervisorId })
+      onMarked(entry.cleaner_id)
+    } catch (err) {
+      console.error('Failed to mark shift complete', err)
+      setError(t('sv_failed_mark_complete'))
+      setSubmitting(false)
+      setConfirming(false)
+    }
+  }
+
+  return (
+    <div className="shift-complete-card bg-[#FBF6EC] border border-[#B8A77A] rounded-[12px] p-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-['Poppins',sans-serif] font-semibold text-[15px] text-[#1A1C19] truncate">
+            {entry.cleaner_name}
+          </p>
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
+            {entry.done}/{entry.total} {t('zones')}
+          </p>
+        </div>
+        {marked && (
+          <span className="flex items-center gap-1 font-['Lato',sans-serif] font-bold text-[11px] tracking-[0.5px] text-[#2F4A3D] bg-[#D7E6DB] px-2.5 py-1 rounded-full shrink-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5" stroke="#2F4A3D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t('sv_pay_logged')}
+          </span>
+        )}
+      </div>
+
+      {!marked && (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="font-['Lato',sans-serif] font-bold text-[10px] tracking-[0.8px] text-[#B8A77A] uppercase">
+              {t('sv_shift_not_logged_title')}
+            </span>
+          </div>
+          <p className="font-['Lato',sans-serif] text-[13px] text-[#737874]">
+            {t('sv_shift_not_logged_body')}
+          </p>
+
+          {!confirming ? (
+            <button
+              onClick={() => setConfirming(true)}
+              className="h-10 px-4 bg-[#2F4A3D] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#3d6152] transition-colors self-start"
+            >
+              {t('mark_shift_complete')}
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="font-['Lato',sans-serif] text-[13px] text-[#1A1C19]">
+                {t('sv_shift_complete_confirm_body')}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleConfirm}
+                  disabled={submitting}
+                  className="flex-1 h-10 bg-[#2F4A3D] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-white hover:bg-[#3d6152] transition-colors disabled:opacity-50"
+                >
+                  {submitting ? '…' : t('sv_shift_complete_confirm_yes')}
+                </button>
+                <button
+                  onClick={() => setConfirming(false)}
+                  disabled={submitting}
+                  className="flex-1 h-10 border border-[#C3C8C2] rounded-[8px] font-['Poppins',sans-serif] font-semibold text-sm text-[#434844] hover:border-[#B8A77A] transition-colors disabled:opacity-50"
+                >
+                  {t('sv_shift_complete_confirm_cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+          {error && <p className="font-['Lato',sans-serif] text-[13px] text-[#BA1A1A]">{error}</p>}
+        </>
+      )}
+    </div>
+  )
 }
 
 // ─── Evidence ticket ──────────────────────────────────────────────────────────
@@ -256,8 +369,54 @@ export function Evidence() {
   const [logs, setLogs] = useState<EvidenceLog[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
+  const [completion, setCompletion] = useState<CleanerCompletion[]>([])
+  const [markedIds, setMarkedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => { setPage(0) }, [logs.length])
+
+  const loadCompletion = useCallback(async () => {
+    if (!user || !jobId) { setCompletion([]); return }
+
+    const [zonesRes, payRes, cleanersRes] = await Promise.all([
+      supabase.from('job_zones').select('id, status, cleaner_id').eq('job_id', jobId),
+      supabase.from('pay_records').select('cleaner_id').eq('job_id', jobId),
+      supabase.from('profiles').select('id, full_name, display_id').eq('company_id', user.company_id).eq('role', 'cleaner'),
+    ])
+
+    const zones = (zonesRes.data ?? []) as unknown as { id: string; status: string; cleaner_id: string | null }[]
+    const paidCleanerIds = new Set(
+      (payRes.data ?? []).map((r) => (r as { cleaner_id: string }).cleaner_id)
+    )
+    const cleanerMap = new Map<string, string>()
+    for (const c of (cleanersRes.data ?? []) as unknown as { id: string; full_name: string; display_id: string }[]) {
+      cleanerMap.set(c.id, c.full_name ?? c.display_id)
+    }
+
+    const byCleaner = new Map<string, { done: number; total: number; zone_ids: string[] }>()
+    for (const z of zones) {
+      if (!z.cleaner_id || z.status === 'deleted') continue
+      const entry = byCleaner.get(z.cleaner_id) ?? { done: 0, total: 0, zone_ids: [] }
+      entry.total += 1
+      entry.zone_ids.push(z.id)
+      if (z.status === 'completed' || z.status === 'flagged_no_photo') entry.done += 1
+      byCleaner.set(z.cleaner_id, entry)
+    }
+
+    const unpaid: CleanerCompletion[] = []
+    for (const [cleanerId, v] of byCleaner) {
+      if (paidCleanerIds.has(cleanerId)) continue
+      unpaid.push({
+        cleaner_id: cleanerId,
+        cleaner_name: cleanerMap.get(cleanerId) ?? 'Unknown',
+        done: v.done,
+        total: v.total,
+        zone_ids: v.zone_ids,
+      })
+    }
+    setCompletion(unpaid)
+  }, [user, jobId])
+
+  useEffect(() => { if (user) loadCompletion() }, [user, loadCompletion])
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
@@ -341,6 +500,20 @@ export function Evidence() {
 
   const content = (
     <div ref={containerRef}>
+      {completion.length > 0 && (
+        <div className="flex flex-col gap-3 mb-5">
+          {completion.map((entry) => (
+            <ShiftCompletionCard
+              key={entry.cleaner_id}
+              entry={entry}
+              jobId={jobId!}
+              supervisorId={user!.id}
+              marked={markedIds.has(entry.cleaner_id)}
+              onMarked={(cleanerId) => setMarkedIds((prev) => new Set(prev).add(cleanerId))}
+            />
+          ))}
+        </div>
+      )}
       {loading ? (
         <div className="flex flex-col gap-4">
           {[1, 2].map((i) => (

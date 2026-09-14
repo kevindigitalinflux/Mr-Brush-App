@@ -238,6 +238,12 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_undo_mark_complete: 'Undo',
     sv_unassigned_zones: 'Unassigned',
     sv_failed_mark_complete: 'Failed to mark complete. Try again.',
+    sv_shift_not_logged_title: 'Not marked complete',
+    sv_shift_not_logged_body: "Pay hasn't been logged for this shift yet.",
+    sv_shift_complete_confirm_body: 'This will log pay for this shift — confirm?',
+    sv_shift_complete_confirm_yes: 'Confirm',
+    sv_shift_complete_confirm_cancel: 'Cancel',
+    sv_pay_logged: 'Pay logged',
 
     // Supervisor — Zone editing
     sv_edit_zone_title: 'Edit Zone',
@@ -636,6 +642,12 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_zone_name_required: 'El nombre de la zona es obligatorio.',
     sv_failed_add_zone: 'Error al añadir zona. Inténtalo de nuevo.',
     sv_could_not_create: 'No se pudo crear el trabajo. Inténtalo de nuevo.',
+    sv_shift_not_logged_title: 'No marcado como completo',
+    sv_shift_not_logged_body: 'El pago de este turno aún no se ha registrado.',
+    sv_shift_complete_confirm_body: 'Esto registrará el pago de este turno — ¿confirmar?',
+    sv_shift_complete_confirm_yes: 'Confirmar',
+    sv_shift_complete_confirm_cancel: 'Cancelar',
+    sv_pay_logged: 'Pago registrado',
 
     // Supervisor — Zone editing
     sv_edit_zone_title: 'Editar zona',
@@ -1034,6 +1046,12 @@ export const strings: Record<Language, Record<string, string>> = {
     sv_zone_name_required: 'O nome da zona é obrigatório.',
     sv_failed_add_zone: 'Falha ao adicionar zona. Tente novamente.',
     sv_could_not_create: 'Não foi possível criar o trabalho. Tente novamente.',
+    sv_shift_not_logged_title: 'Não marcado como concluído',
+    sv_shift_not_logged_body: 'O pagamento deste turno ainda não foi registado.',
+    sv_shift_complete_confirm_body: 'Isto irá registar o pagamento deste turno — confirmar?',
+    sv_shift_complete_confirm_yes: 'Confirmar',
+    sv_shift_complete_confirm_cancel: 'Cancelar',
+    sv_pay_logged: 'Pagamento registado',
 
     // Supervisor — Zone editing
     sv_edit_zone_title: 'Editar zona',
