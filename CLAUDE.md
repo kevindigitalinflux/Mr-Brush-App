@@ -485,6 +485,8 @@ Christian Chiliquinga (`C0008`) left Journey London Office; Cristina Arichavala 
 
 **How to apply:** any future "cleaner leaves, replacement starts" case can follow this same pattern — clone `profiles` shape, move `recurring_zone_rules` + `cleaner_facility_hours`, move only non-completed future `job_zones`, ban (don't delete) the old `auth.users` row unless it's verified to have zero linked data anywhere, as Myriam's did here.
 
+**Status: DONE.** Login for `C0007` confirmed working by Kevin on 2026-09-27, after two follow-up fixes to the account-seeding pattern (see Known Patterns & Gotchas above) — the account-seeding SQL pattern documented elsewhere in this file (`crypt()`/`gen_salt('bf')` on `auth.users` alone) is now known-incomplete; any future manual account creation should also add the `auth.identities` row and the `''`-not-`NULL` token columns from the start.
+
 ---
 
 ## Do Not Touch
