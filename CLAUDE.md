@@ -468,6 +468,19 @@ Verified live against Christian's real 10 Sept shift and used to actually fix hi
 
 ---
 
+## Session update (2026-09-27) — Journey cleaner swap: Christian Chiliquinga -> Cristina Arichavala
+
+Christian Chiliquinga (`C0008`) left Journey London Office; Cristina Arichavala replaces him 1:1 (same role, facility, supervisor, recurring schedule). No in-app account-management flow exists yet, so done directly via SQL against `bstohwxzufebufbybxtd`, same seeding pattern as prior accounts:
+
+- Created `C0009` — Cristina Arichavala (`c0009@internal.mrbrush.app`, temp password `Welcome123!`, same convention as other seeded accounts) — cloned Christian's `company_id`, `supervisor_id` (`S0003`), `contract_type` (`contracted`), `language_preference` (`en`).
+- Moved all 9 of Christian's `recurring_zone_rules` rows to Cristina — WF-16 will materialize her jobs from these going forward. He had 0 future/in-progress `job_zones` at the time, so no job reassignment was needed there.
+- Copied his 1 `cleaner_facility_hours` row (Journey) to her.
+- Banned Christian's `auth.users` row (`banned_until = infinity`) rather than deleting — his historical `cleaning_logs`, `evidence_files`, and `pay_records` (including the 10 Sept fix from the prior session) stay intact and attributed to him for audit/payroll history.
+
+**How to apply:** any future "cleaner leaves, replacement starts" case can follow this same pattern — clone `profiles` shape, move `recurring_zone_rules` + `cleaner_facility_hours`, move only non-completed future `job_zones`, ban rather than delete the old `auth.users` row.
+
+---
+
 ## Do Not Touch
 - Data flow architecture — app sends to n8n, n8n writes to Supabase. No direct `cleaning_logs` writes from the app during submission.
 - Role routing logic in `lib/auth.ts` — the C/S/M prefix system is fixed
