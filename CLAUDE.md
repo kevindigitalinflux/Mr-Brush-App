@@ -472,12 +472,13 @@ Verified live against Christian's real 10 Sept shift and used to actually fix hi
 
 Christian Chiliquinga (`C0008`) left Journey London Office; Cristina Arichavala replaces him 1:1 (same role, facility, supervisor, recurring schedule). No in-app account-management flow exists yet, so done directly via SQL against `bstohwxzufebufbybxtd`, same seeding pattern as prior accounts:
 
-- Created `C0009` — Cristina Arichavala (`c0009@internal.mrbrush.app`, temp password `Welcome123!`, same convention as other seeded accounts) — cloned Christian's `company_id`, `supervisor_id` (`S0003`), `contract_type` (`contracted`), `language_preference` (`en`).
-- Moved all 9 of Christian's `recurring_zone_rules` rows to Cristina — WF-16 will materialize her jobs from these going forward. He had 0 future/in-progress `job_zones` at the time, so no job reassignment was needed there.
+- Initially created her as `C0009`, then per Kevin's request re-pointed her to **`C0007`** instead (`c0007@internal.mrbrush.app`; password set separately by Kevin, not recorded here — see project secrets handling) — that ID had belonged to Myriam, a seeded `es`-language cleaner who never actually used the account (verified zero rows across `job_zones`, `cleaning_logs`, `pay_records`, `recurring_zone_rules`, `cleaner_facility_hours` before removing her `profiles`/`auth.users` rows entirely). `C0009` no longer exists.
+- Cloned Christian's `company_id`, `supervisor_id` (`S0003`), `contract_type` (`contracted`), `language_preference` (`en`) onto her profile.
+- Moved all 9 of Christian's `recurring_zone_rules` rows to her — WF-16 will materialize her jobs from these going forward. He had 0 future/in-progress `job_zones` at the time, so no job reassignment was needed there.
 - Copied his 1 `cleaner_facility_hours` row (Journey) to her.
 - Banned Christian's `auth.users` row (`banned_until = infinity`) rather than deleting — his historical `cleaning_logs`, `evidence_files`, and `pay_records` (including the 10 Sept fix from the prior session) stay intact and attributed to him for audit/payroll history.
 
-**How to apply:** any future "cleaner leaves, replacement starts" case can follow this same pattern — clone `profiles` shape, move `recurring_zone_rules` + `cleaner_facility_hours`, move only non-completed future `job_zones`, ban rather than delete the old `auth.users` row.
+**How to apply:** any future "cleaner leaves, replacement starts" case can follow this same pattern — clone `profiles` shape, move `recurring_zone_rules` + `cleaner_facility_hours`, move only non-completed future `job_zones`, ban (don't delete) the old `auth.users` row unless it's verified to have zero linked data anywhere, as Myriam's did here.
 
 ---
 
