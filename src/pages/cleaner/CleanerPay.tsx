@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { useTranslation } from '../../lib/useTranslation'
 import { supabase } from '../../lib/supabase'
+import { monthRange } from '../../lib/dateRange'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -69,9 +70,7 @@ function usePayData(filterMonth: string) {
       .limit(200)
 
     if (filterMonth) {
-      const [yr, mo] = filterMonth.split('-').map(Number)
-      const start = `${yr}-${String(mo).padStart(2, '0')}-01`
-      const end = new Date(yr, mo, 0).toISOString().slice(0, 10)
+      const { start, end } = monthRange(filterMonth)
       q = q.gte('shift_date', start).lte('shift_date', end)
     }
 

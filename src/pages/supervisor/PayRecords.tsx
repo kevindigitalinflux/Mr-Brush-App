@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
+import { monthRange } from '../../lib/dateRange'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -109,9 +110,7 @@ function usePayData(filterCleaner: string, filterMonth: string) {
 
     if (filterCleaner) q = q.eq('cleaner_id', filterCleaner)
     if (filterMonth) {
-      const [yr, mo] = filterMonth.split('-').map(Number)
-      const start = `${yr}-${String(mo).padStart(2, '0')}-01`
-      const end = new Date(yr, mo, 0).toISOString().slice(0, 10)
+      const { start, end } = monthRange(filterMonth)
       q = q.gte('shift_date', start).lte('shift_date', end)
     }
 
@@ -255,7 +254,14 @@ function LogPayModal({ cleaners, companyId, facilityIds, onClose, onSaved }: Log
       company_id: companyId,
     })
 
-    if (error) { setForm((f) => ({ ...f, saving: false, error: 'Could not save. Try again.' })); return }
+    if (error) {
+      console.error('Failed to insert pay record:', error)
+      const message = error.code === '23505'
+        ? 'A pay record already exists for this cleaner and shift. Find it in the list (check the month filter) and edit it instead.'
+        : 'Could not save. Try again.'
+      setForm((f) => ({ ...f, saving: false, error: message }))
+      return
+    }
     onSaved()
   }
 

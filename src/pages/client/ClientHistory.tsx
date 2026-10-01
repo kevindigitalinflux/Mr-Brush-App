@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
+import { monthRange } from '../../lib/dateRange'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -68,9 +69,7 @@ function useHistoryData(filterMonth: string): HistoryState & { reload: () => voi
 
     const facilityMap = Object.fromEntries(facilities.map((f) => [f.id, f.name]))
 
-    const [yr, mo] = filterMonth.split('-').map(Number)
-    const from = `${yr}-${String(mo).padStart(2, '0')}-01`
-    const to = new Date(yr, mo, 0).toISOString().slice(0, 10)
+    const { start: from, end: to } = monthRange(filterMonth)
 
     const { data: jobRows } = await supabase
       .from('jobs')

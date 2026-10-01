@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { supabase } from '../../lib/supabase'
+import { monthRange, currentMonthKey } from '../../lib/dateRange'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { FacilityLiveView } from '../../components/client/FacilityLiveView'
@@ -147,9 +148,7 @@ function useOverviewData(): OverviewState {
       return
     }
 
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    const monthStartStr = monthStart.toISOString().slice(0, 10)
+    const monthStartStr = monthRange(currentMonthKey()).start
 
     // Step 2 — parallel data fetch
     const [openCmp, monthJobs, lastJob, lastResolved, recentJobs] = await Promise.all([

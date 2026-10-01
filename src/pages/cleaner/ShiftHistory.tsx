@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
+import { monthRange } from '../../lib/dateRange'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -40,9 +41,7 @@ function useShiftHistoryData(filterMonth: string) {
     if (!user || !filterMonth) return
     setLoading(true)
 
-    const [yr, mo] = filterMonth.split('-').map(Number)
-    const from = `${yr}-${String(mo).padStart(2, '0')}-01`
-    const to   = new Date(yr, mo, 0).toISOString().slice(0, 10)
+    const { start: from, end: to } = monthRange(filterMonth)
 
     const { data: zoneRows } = await supabase
       .from('job_zones')
