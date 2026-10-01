@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -31,7 +32,7 @@ interface ReportForm {
 }
 
 const BLANK_FORM: ReportForm = {
-  absentCleanerId: '', shiftDate: new Date().toISOString().slice(0, 10),
+  absentCleanerId: '', shiftDate: todayString(),
   replacementId: '', reassignZones: true,
   zones: [], loadingZones: false, saving: false, error: null,
 }

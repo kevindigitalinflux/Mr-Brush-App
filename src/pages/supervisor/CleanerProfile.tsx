@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -156,7 +157,7 @@ function AbsenceSheet({ cleaner, supervisorId, companyId, onClose }: AbsenceShee
     if (!selected) return
     setSubmitting(true)
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayString()
 
     const { error: err } = await supabase.from('absence_reports').insert({
       absent_cleaner_id: cleaner.id,

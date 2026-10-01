@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -98,7 +99,7 @@ function HistoryContent({ compact = false }: { compact?: boolean }) {
           job_zones ( id, status ),
           profiles!jobs_supervisor_id_fkey ( full_name )
         `)
-        .lte('scheduled_date', new Date().toISOString().slice(0, 10))
+        .lte('scheduled_date', todayString())
         .order('scheduled_date', { ascending: false })
         .limit(60)
 

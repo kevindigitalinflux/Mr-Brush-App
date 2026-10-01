@@ -1,3 +1,5 @@
+import { todayString, toDateString } from '../lib/dateRange'
+
 // ─── Mock supervisor user ─────────────────────────────────────────────────────
 
 export const MOCK_SUPERVISOR = {
@@ -44,7 +46,7 @@ export const MOCK_ZONE_STORE: {
 
 // Returns today's jobs with the current zone store — called fresh on every query
 export function getMockTodayJobs() {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayString()
   return [
     {
       id: 'job-today-001',
@@ -65,7 +67,7 @@ export function getMockTodayJobs() {
 
 // Returns zone list with the jobs join shape (for Workers page)
 export function getMockJobZones() {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayString()
   return MOCK_ZONE_STORE
     .filter(z => z.cleaner_id !== null)
     .map(z => ({ ...z, jobs: { scheduled_date: today } }))
@@ -77,7 +79,7 @@ export const MOCK_JOB_ZONES  = getMockJobZones()
 
 // ─── Mock cleaning logs for Evidence ─────────────────────────────────────────
 
-const today = new Date().toISOString().slice(0, 10)
+const today = todayString()
 
 export const MOCK_CLEANING_LOGS = [
   {
@@ -151,7 +153,7 @@ export const MOCK_SUPERVISOR_NOTIFICATIONS = [
   },
   {
     id: 'sv-notif-003',
-    created_at: new Date(Date.now() - 86400000).toISOString().slice(0, 10) + 'T16:44:00Z',
+    created_at: toDateString(new Date(Date.now() - 86400000)) + 'T16:44:00Z',
     client_name: 'Dr. Sara Patel',
     client_company: 'Westside Medical Centre',
     message: 'Reminder: clinical zones require hospital-grade disinfectant only. Please ensure your team is briefed before next week\'s shift.',
@@ -175,7 +177,7 @@ export const MOCK_ISSUES = [
   },
   {
     id: 'issue-002',
-    created_at: new Date(Date.now() - 86400000).toISOString().slice(0, 10) + 'T14:20:00Z',
+    created_at: toDateString(new Date(Date.now() - 86400000)) + 'T14:20:00Z',
     client_name: 'James Okafor',
     facility_name: 'Downtown Corporate Hub',
     title: 'Residue left on kitchen countertops',
@@ -188,7 +190,7 @@ export const MOCK_ISSUES = [
   },
   {
     id: 'issue-003',
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10) + 'T09:10:00Z',
+    created_at: toDateString(new Date(Date.now() - 3 * 86400000)) + 'T09:10:00Z',
     client_name: 'Dr. Sara Patel',
     facility_name: 'Westside Medical Centre',
     title: 'Cleaning protocol not followed in Ward 3',
@@ -242,7 +244,7 @@ export const MOCK_CLEANER_RATINGS: {
     rating: 3,
     notes: 'Kitchen was cleaned but grease marks left on the extractor fan. Needs more attention to detail.',
     evidence_urls: ['https://picsum.photos/seed/ev-003/400/300', 'https://picsum.photos/seed/ev-003b/400/300'],
-    created_at: new Date(Date.now() - 86400000).toISOString().slice(0, 10) + 'T14:00:00Z',
+    created_at: toDateString(new Date(Date.now() - 86400000)) + 'T14:00:00Z',
   },
   {
     id: 'rating-004',
@@ -253,7 +255,7 @@ export const MOCK_CLEANER_RATINGS: {
     rating: 4,
     notes: 'Meeting Room A cleaned efficiently and on time. Glass partition could use more polish next time.',
     evidence_urls: ['https://picsum.photos/seed/ev-004/400/300'],
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10) + 'T11:30:00Z',
+    created_at: toDateString(new Date(Date.now() - 2 * 86400000)) + 'T11:30:00Z',
   },
 ]
 
@@ -262,7 +264,7 @@ export const MOCK_CLEANER_RATINGS: {
 function daysAgo(n: number) {
   const d = new Date()
   d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
+  return toDateString(d)
 }
 
 export const MOCK_HISTORY_JOBS = [

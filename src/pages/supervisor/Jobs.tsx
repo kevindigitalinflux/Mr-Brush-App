@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -125,7 +126,7 @@ function StartShiftScreen({ facilityId }: { facilityId: string }) {
     const { data: jobData, error: jobErr } = await supabase.from('jobs').insert({
       supervisor_id: user.id,
       facility_id: facilityId,
-      scheduled_date: new Date().toISOString().slice(0, 10),
+      scheduled_date: todayString(),
       status: 'scheduled',
       company_id: user.company_id,
     }).select('id').single()
@@ -1110,7 +1111,7 @@ function FacilityZonesView({ facilityId, panelMode = false, onBack }: {
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayString()
     if (!silent) setLoading(true)
 
     const [facilityRes, jobsRes, cleanersRes] = await Promise.all([
@@ -1409,7 +1410,7 @@ function FacilitiesListView() {
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayString()
     if (!silent) setLoading(true)
 
     const [facilsRes, jobsRes] = await Promise.all([
@@ -1525,7 +1526,7 @@ function DesktopFacilitiesPanel({ selectedId = null, onSelect }: {
 
   useEffect(() => {
     if (!user) return
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayString()
 
     async function load() {
       setLoading(true)

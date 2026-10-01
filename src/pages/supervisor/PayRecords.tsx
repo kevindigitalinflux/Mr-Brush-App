@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
-import { monthRange } from '../../lib/dateRange'
+import { monthRange, todayString } from '../../lib/dateRange'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -49,7 +49,7 @@ function fmtDate(iso: string) {
 }
 
 async function lookupRate(facilityId: string, roleType: string): Promise<number | null> {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayString()
   const { data } = await supabase
     .from('facility_rates')
     .select('hourly_rate')
@@ -246,7 +246,7 @@ function LogPayModal({ cleaners, companyId, facilityIds, onClose, onSaved }: Log
       cleaner_id: form.cleanerId,
       job_id: form.jobId,
       facility_id: job?.facilityId ?? '',
-      shift_date: job?.scheduledDate ?? new Date().toISOString().slice(0, 10),
+      shift_date: job?.scheduledDate ?? todayString(),
       role_type: form.roleType,
       hours_worked: hours,
       hourly_rate: rate,

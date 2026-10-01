@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -72,7 +73,7 @@ function useJobData(userId: string | undefined) {
 
     async function load() {
       setLoading(true)
-      const today = new Date().toISOString().split('T')[0]
+      const today = todayString()
 
       // Round 1: all zones assigned to this cleaner
       const { data: zoneRows } = await supabase

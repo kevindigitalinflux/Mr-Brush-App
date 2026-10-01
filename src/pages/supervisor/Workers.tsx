@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -30,7 +31,7 @@ function useWorkersData() {
 
   const load = useCallback(async (silent = false) => {
     if (!user) return
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayString()
     if (!silent) setLoading(true)
 
     const { data: profiles } = await supabase

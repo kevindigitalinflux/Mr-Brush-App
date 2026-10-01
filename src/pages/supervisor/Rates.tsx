@@ -1,3 +1,4 @@
+import { todayString } from '../../lib/dateRange'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
@@ -52,7 +53,7 @@ function useRatesData() {
     const facilityIds = [...new Set((jobRows ?? []).map((j) => (j as { facility_id: string }).facility_id))]
     if (facilityIds.length === 0) { setFacilities([]); setCleaners([]); setLoading(false); return }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayString()
     const [{ data: facRows }, { data: rateRows }, { data: cleanerRows }, { data: hoursRows }] = await Promise.all([
       supabase.from('facilities').select('id, name, address').in('id', facilityIds),
       supabase.from('facility_rates').select('facility_id, role_type, hourly_rate, effective_from')
@@ -332,7 +333,7 @@ function RatesContent() {
       facility_id: facilityId,
       role_type: roleType,
       hourly_rate: rate,
-      effective_from: new Date().toISOString().slice(0, 10),
+      effective_from: todayString(),
       company_id: user.company_id,
     })
     if (error) { console.error('Failed to save facility rate:', error); return 'Could not save. Try again.' }
