@@ -379,7 +379,7 @@ Scope TBD — likely: cross-company overview, user management, company-wide repo
 - `CL0003` — Karis Reed (building manager)
 - `S0003` — Kevin Zamora-Saenz (2nd account, separate from his existing `C0004` cleaner account — supervises Journey remotely)
 - `C0006` — Andres Figuero (cleaner, es)
-- `C0007` — Myriam (cleaner, es; surname unknown, full_name to be updated when known)
+- `C0007` — Cristina Arichavala (cleaner, en; replaced the original seeded Myriam on 2026-09-27 — see the cleaner-swap session update below)
 
 All four are seeded directly via SQL (`crypt()` + `gen_salt('bf')` on `auth.users`, matching how earlier seed users were created) — there's no in-app account creation flow yet.
 
@@ -488,6 +488,24 @@ Christian Chiliquinga (`C0008`) left Journey London Office; Cristina Arichavala 
 **How to apply:** any future "cleaner leaves, replacement starts" case can follow this same pattern — clone `profiles` shape, move `recurring_zone_rules` + `cleaner_facility_hours`, move only non-completed future `job_zones`, ban (don't delete) the old `auth.users` row unless it's verified to have zero linked data anywhere, as Myriam's did here.
 
 **Status: DONE.** Login for `C0007` confirmed working by Kevin on 2026-09-27, after two follow-up fixes to the account-seeding pattern (see Known Patterns & Gotchas above) — the account-seeding SQL pattern documented elsewhere in this file (`crypt()`/`gen_salt('bf')` on `auth.users` alone) is now known-incomplete; any future manual account creation should also add the `auth.identities` row and the `''`-not-`NULL` token columns from the start.
+
+---
+
+## Session update (2026-10-01) — month-end date bug, n8n timezone audit
+
+**Scope decision:** the app is **UK-only** for now. Europe/London (GMT/BST) is the only timezone that matters; overseas/multi-timezone support is out of scope until expansion actually happens.
+
+**Bug (fixed, merged to `main` 2026-10-01):** Cristina's (`C0007`) first shift, 30 Sept, had a correct `draft` pay record in the DB (WF-6 worked) but it was invisible on Pay Records — the month filter computed September's end as `2026-09-29` (see the `toISOString` gotcha above for the mechanism and the three guards: `npm test`, the ESLint rule, `src/lib/dateRange.ts`). Her manual "Log Pay" attempt then failed on `UNIQUE (cleaner_id, job_id)` with a generic "Could not save". Fixed in Pay Records, cleaner Pay, Shift History, Client History, Client Overview, plus ~15 "today" sites; Log Pay now logs the real error and explains duplicates. Debugging was only possible because Kevin ran diagnostic SQL in the Supabase SQL Editor — **the Supabase MCP in Claude Code has no access to this project** (it's under the client-owned `mrbrushandco` account; every call returns "permission denied"). Ask Kevin to run queries rather than trying to work around it.
+
+**n8n timezone audit (read-only, via the REST API + `N8N_API_KEY`; nothing in n8n was changed):** 11 live workflows. Five use the same `toISOString()` idiom (WF-6, WF-8, WF-14, WF-15, WF-16) but all currently produce correct dates, because **n8n's Code nodes run in UTC while its schedule triggers run on the server's UTC+2 clock** (WF-8's `0 6 1 * *` cron actually fires at 04:00 UTC). Confirmed from real execution output — WF-8 computed `2026-09-01`→`2026-09-30`, WF-15 computed Mon 21→Sun 27 Sept. Left as-is deliberately (UK-only; works today); it would only break if the n8n server's process timezone were ever changed to something ahead of UTC. Local `n8n/*.json` exports are stale for WF-16 (early v1) and WF-5 (predates the video-evidence update) — the live instance is the source of truth.
+
+**Payroll gotchas learned:**
+- **WF-8 (monthly payslip roll-up) only counts `confirmed`/`paid` pay records.** A shift still in `draft` when it runs (1st of month, 04:00 UTC) is silently left out of that month's payslip. Approve the month's draft pay records *before* the 1st, or add any late ones to the payslip manually afterwards.
+- **Don't re-trigger WF-8 to catch up a single cleaner** — its payslip upsert (`on_conflict=cleaner_id,period_start`) appears to write `status: draft`, which could reset payslips already sent/acknowledged. (Seen in the node's body, not fully confirmed — check before relying on it.)
+- **Approving evidence in History ≠ completing the shift.** Pay records are only created by WF-6, triggered by "Mark Shift Complete" (the banner on `/supervisor/evidence/:jobId` or the Jobs-screen button). The banner's `postShiftComplete` call is fire-and-forget (`Evidence.tsx:65`) so a failed webhook still shows "Pay logged" — known, not yet fixed.
+- WF-6's rate lookup compares `effective_from` to UTC "today", not the shift date — only matters for a rate created and a shift completed within the same day edge case; left as-is.
+
+**Open:** Cristina's September payslip — her 30 Sept record was still `draft` when WF-8 ran today, so it was excluded. Approve the record, then add her payslip from the Payslips screen.
 
 ---
 
