@@ -392,7 +392,7 @@ All four are seeded directly via SQL (`crypt()` + `gen_salt('bf')` on `auth.user
 
 **Rollback tags** left on each commit from this session (`pre-csp-webhook-fix-20260816`, `pre-evidence-status-fix-20260816`, `pre-facility-scoping-20260817`, `pre-offline-queue-fix-20260817`) in case any need reverting.
 
-**Cloudflare hosting:** Deliberately staying on the kevindigitalinflux@gmail.com personal account for now (not mrbrushandco@gmail.com) — a migration was scoped (new Pages project + `app.mrbrushandco.co.uk` custom domain + n8n CORS allowlist update, since Cloudflare has no native cross-account Pages transfer) but shelved because it needs SSH access to the Hostinger VPS that wasn't available in the moment. Revisit once that access is sorted and things are less time-pressured.
+**Cloudflare hosting:** The app's Pages project (`mr-brush-app`) stays on the kevindigitalinflux@gmail.com account — no full migration to mrbrushandco@gmail.com was needed. **Update 2026-10-01: the app is now also served at `https://app.mrbrushandco.co.uk`** (the old `mr-brush-app.pages.dev` still works and is kept deliberately). Done by adding `app.mrbrushandco.co.uk` as a custom domain on the `mr-brush-app` Pages project (kevindigitalinflux account) plus a proxied CNAME `app` → `mr-brush-app.pages.dev` in the `mrbrushandco.co.uk` zone (mrbrushandco account) — cross-account works. The n8n CORS step from the earlier migration plan was not needed: none of the 8 live webhooks restrict origins (default `*`), confirmed by a preflight from the new origin. Kevin's Cloudflare login has super-admin on the mrbrushandco account. To undo: delete the custom domain on the Pages project and the `app` CNAME.
 
 **n8n automations — all live:**
 - WF-5: Proof of Cleaning submission ✓ (updated 2026-08-20 for video evidence)
@@ -505,7 +505,11 @@ Christian Chiliquinga (`C0008`) left Journey London Office; Cristina Arichavala 
 - **Approving evidence in History ≠ completing the shift.** Pay records are only created by WF-6, triggered by "Mark Shift Complete" (the banner on `/supervisor/evidence/:jobId` or the Jobs-screen button). The banner's `postShiftComplete` call is fire-and-forget (`Evidence.tsx:65`) so a failed webhook still shows "Pay logged" — known, not yet fixed.
 - WF-6's rate lookup compares `effective_from` to UTC "today", not the shift date — only matters for a rate created and a shift completed within the same day edge case; left as-is.
 
-**Open:** Cristina's September payslip — her 30 Sept record was still `draft` when WF-8 ran today, so it was excluded. Approve the record, then add her payslip from the Payslips screen.
+**Open:** Cristina's September payslip — her 30 Sept record was still `draft` when WF-8 ran on 1 Oct, so it was excluded. Approve the record, then add her payslip from the Payslips screen.
+
+**Also done this session (2026-10-01):**
+- **New subdomain live** — `https://app.mrbrushandco.co.uk` (details under "Cloudflare hosting" above); Kevin tested it and it works. Supabase Auth → URL Configuration was not checked (login is ID + password, so low risk) — if any auth redirect ever misbehaves on the new domain, check there first.
+- **Sales/context document** — `docs/MR-BRUSH-APP-SALES-CONTEXT.md`: a detailed, fact-checked description of everything the app does per role, the automations, security, a "what it does NOT do" list, demo script and prospect Q&A, written to be pasted into other AI chats/platforms. Re-check it against the code whenever features change. Section 12 is internal-only — strip it before sharing externally. Notable accuracy points: client-portal screens are English-only; WhatsApp absence flows (WF-A/B/C) and emailed payslips (WF-9) are not live; the app calculates pay but does not make payments.
 
 ---
 
