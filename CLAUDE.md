@@ -513,6 +513,17 @@ Christian Chiliquinga (`C0008`) left Journey London Office; Cristina Arichavala 
 
 ---
 
+## Session update (2026-11-20) — Journey cover (R001), Journey guide, tutorial video (IN PROGRESS)
+
+Full detail and exact next steps: **`docs/HANDOFF.md`** (read it first). Short version:
+- **Branch `feature/cleaner-tutorial-video`** (HEAD 94731e4 plus the handoff commit, not merged): cleaner tutorial video (Loom, Spanish) with a first-visit Watch/Skip prompt and a permanent Home card. Needs `docs/sql/2026-11-20-tutorial-seen.sql` run first (not applied), then a localhost and phone test. `public/_headers` gained `frame-src https://www.loom.com`.
+- **R001 (Ze Roberto Mejia) covers Journey's in-house cleaner Miryam**: Mon-Fri 7-18 Dec 2026 and 4-15 Jan 2027, 06:30-14:30, 8 paid hours assumed at £14.80/h (client rate answer pending). Zones are numbered in the name in chronological order, with Spanish notes. Cristina's rules are NOT touched (she still does "Helping Myriam", Wed/Thu). R001 does the reception zones only Mon/Tue/Fri. 18 Dec is a separate, later-start set, times pending. No database change has been made yet. The draft zone list is not yet approved.
+- **Journey guide (planned)**: Spanish and English, Journey staff only, built from the client's Vyner cover guide. It contains door codes, which must live in the database behind RLS and a private storage bucket, never in `.env` or the repo (`VITE_*` values are public in the built JavaScript).
+- **Supabase access**: the plugin connector cannot reach this project. A separate local-scope connector `supabase-mrbrush` was added and needs a Claude Code restart and a `/mcp` sign-in as mrbrushandco@gmail.com. If it fails, Kevin runs SQL in the SQL Editor.
+- **Later**: notifications (supervisors and cleaners) and an in-app absence-and-cover flow to replace WF-A/B/C. Decide SMS versus WhatsApp first, then plan with Opus in Fable mode.
+
+---
+
 ## Do Not Touch
 - Data flow architecture — app sends to n8n, n8n writes to Supabase. No direct `cleaning_logs` writes from the app during submission.
 - Role routing logic in `lib/auth.ts` — the C/S/M prefix system is fixed
