@@ -15,6 +15,8 @@ import { ShiftCompleted } from './pages/cleaner/ShiftCompleted'
 import { ShiftHistory } from './pages/cleaner/ShiftHistory'
 import { ShiftDetail } from './pages/cleaner/ShiftDetail'
 import { Notifications } from './pages/cleaner/Notifications'
+import { Guide } from './pages/cleaner/Guide'
+import { SupervisorGuide } from './pages/supervisor/Guide'
 import { NotificationDetail } from './pages/cleaner/NotificationDetail'
 import { CleanerPay } from './pages/cleaner/CleanerPay'
 import { ZoneOfflineQueued } from './pages/cleaner/ZoneOfflineQueued'
@@ -62,6 +64,7 @@ export default function App() {
             <Route path="/cleaner/notifications" element={<Notifications />} />
             <Route path="/cleaner/notifications/:id" element={<NotificationDetail />} />
             <Route path="/cleaner/pay" element={<CleanerPay />} />
+            <Route path="/cleaner/guide" element={<Guide />} />
             <Route path="/cleaner/offline-queued" element={<ZoneOfflineQueued />} />
             {/* Supervisor */}
             <Route path="/supervisor/dashboard" element={<Dashboard />} />
@@ -77,6 +80,7 @@ export default function App() {
             <Route path="/supervisor/pay-records" element={<PayRecords />} />
             <Route path="/supervisor/payslips" element={<Payslips />} />
             <Route path="/supervisor/absence" element={<Absence />} />
+            <Route path="/supervisor/guide" element={<SupervisorGuide />} />
             {/* Client */}
             <Route path="/client/overview"          element={<Overview />}            />
             <Route path="/client/evidence"          element={<EvidenceFeed />}        />
