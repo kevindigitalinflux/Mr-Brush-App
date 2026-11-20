@@ -5,6 +5,7 @@ import { useApp } from '../../context/AppContext'
 import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
+import { TutorialVideo } from '../../components/cleaner/TutorialVideo'
 import { supabase } from '../../lib/supabase'
 import { useTranslation } from '../../lib/useTranslation'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -312,6 +313,8 @@ function DesktopHome() {
             </div>
           )}
 
+          <TutorialVideo />
+
           <div>
             <div className="dh-section flex items-center justify-between mb-5">
               <h2 className="font-['Poppins',sans-serif] font-semibold text-[28px] text-[#1A1C19] tracking-[-0.3px]">{t('home_active_assignments')}</h2>
@@ -398,6 +401,10 @@ function MobileHome() {
                 <StatBubble value={String(totalZones - doneZones)} label={t('remaining')} ring="gray" />
               </div>
             )}
+          </div>
+
+          <div className="w-full px-6">
+            <TutorialVideo />
           </div>
 
           <div className="home-heading w-full px-6 pt-4">
