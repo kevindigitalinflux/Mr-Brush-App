@@ -86,3 +86,6 @@ Original design notes (before the build):
 - Usage reading: not available to Claude in this session. Checkpoint written at a natural milestone, not at a measured limit.
 - Exact next action: tutorial branch (step 4), then the Journey guide (step 5). Kevin's order on 2026-11-20: login test, handoff update, tutorial branch, then the user-friendly, interactive Journey guide.
 - Needs Kevin's confirmation before: any database write, any n8n change, any merge or deploy, any role change.
+
+## Update 2026-11-23: Journey guide MERGED and LIVE
+feature/journey-guide merged to main (b01cc92, pushed; live bundle verified to contain the guide; rollback tag pre-journey-guide-20261123). 26/26 photos in the private facility-guide bucket, 15 sections seeded. Still to do: phone test; confirm alarm A vs ENT, "change code", big bins location, 06:30 vs 06:45 with the client.

@@ -529,3 +529,6 @@ Full detail and exact next steps: **`docs/HANDOFF.md`** (read it first). Short v
 - Role routing logic in `lib/auth.ts` — the C/S/M prefix system is fixed
 - RLS policies once set — any change requires a full security review
 - Brand colour tokens — exact hex values only
+
+## Update 2026-11-23: Journey guide MERGED and LIVE
+feature/journey-guide merged to main (b01cc92, pushed; live bundle verified to contain the guide; rollback tag pre-journey-guide-20261123). 26/26 photos in the private facility-guide bucket, 15 sections seeded. Still to do: phone test; confirm alarm A vs ENT, "change code", big bins location, 06:30 vs 06:45 with the client.
