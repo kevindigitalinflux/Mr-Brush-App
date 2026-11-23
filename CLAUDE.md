@@ -532,3 +532,5 @@ Full detail and exact next steps: **`docs/HANDOFF.md`** (read it first). Short v
 
 ## Update 2026-11-23: Journey guide MERGED and LIVE
 feature/journey-guide merged to main (b01cc92, pushed; live bundle verified to contain the guide; rollback tag pre-journey-guide-20261123). 26/26 photos in the private facility-guide bucket, 15 sections seeded. Still to do: phone test; confirm alarm A vs ENT, "change code", big bins location, 06:30 vs 06:45 with the client.
+
+## Update 2026-11-23 (later): Kevin tested the guide on his phone and is happy ("looks amazing"). Guide wording changed live in the database (not in git): alarm steps on all three floors now say press A, or ENT if the keypad shows ENT, and call the Building Manager if unsure (EN and ES). Start time confirmed 06:30 (task list from 06:45 is the client schedule). Still open for the client email: pay rate/8h, handover day, 18 Dec times, meaning of "change code", big bins location. To-do note: vault "Mr Brush & Co/To-do 2026-11-24.md" (kept open for Kevin to send the questions).
