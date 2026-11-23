@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase'
 import { SupervisorNav } from '../../components/supervisor/SupervisorNav'
 import { SupervisorDesktopSidebar } from '../../components/supervisor/SupervisorDesktopSidebar'
 import { LanguageSheet } from '../../components/supervisor/LanguageSheet'
+import { GuideEntryCard } from '../../components/guide/GuideEntryCard'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
 import { gsap, useGSAP } from '../../lib/gsap'
 
@@ -381,6 +382,8 @@ function DesktopDashboard() {
             />
           </div>
 
+          <GuideEntryCard to="/supervisor/guide" />
+
           {/* Today's sites */}
           <div>
             <div className="dd-section flex items-center justify-between mb-6">
@@ -529,6 +532,8 @@ function MobileDashboard() {
           </div>
           <div className="shrink-0 w-6" aria-hidden="true" />
         </div>
+
+        <div className="mb-4"><GuideEntryCard to="/supervisor/guide" /></div>
 
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-['Poppins',sans-serif] font-semibold text-[18px] text-[#1A1C19]">

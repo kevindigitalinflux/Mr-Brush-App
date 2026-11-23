@@ -15,7 +15,8 @@ Written 2026-11-20 by Claude (Sonnet 5.5) for Kevin. This is the authoritative t
 
 ## Current state
 
-### C. Tutorial video (built, committed, not tested in a browser, not merged)
+### C. Tutorial video: MERGED to `main` and LIVE 2026-11-20 (merge `feeb5ea`, rollback tag `pre-tutorial-video-20261120`)
+SQL `docs/sql/2026-11-20-tutorial-seen.sql` applied; `tsc`, tests (10/10) and build passed; Kevin tested desktop on localhost (works); phone layout not yet tested. Live bundle and the `frame-src https://www.loom.com` header verified on app.mrbrushandco.co.uk. R001's `tutorial_seen_at` was reset to null after tests so he still gets the first-visit prompt. Original notes:
 - Loom link: https://www.loom.com/share/69bcfaf6516340d7b8b866d866e099f0 (embedded as `/embed/69bcfaf6516340d7b8b866d866e099f0`). The video is in Spanish. Shown to all cleaners.
 - Files: `src/components/cleaner/TutorialVideo.tsx` (new), `src/pages/cleaner/Home.tsx` (adds the component on the mobile and desktop layouts), `src/lib/i18n/index.ts` (keys `tutorial_*` in en/es/pt), `public/_headers` (adds `frame-src https://www.loom.com`).
 - Behaviour: a first-visit Watch/Skip prompt per account (stored in `profiles.tutorial_seen_at`), and a permanent "How to use the app" card. Any read error is treated as "seen", so the prompt never blocks the app.
@@ -45,7 +46,16 @@ Original investigation notes (before the changes): facts read from Kevin's SQL r
 Draft zones (not approved), Mon to Fri, names in English, notes in Spanish:
 1. 06:30 Open studio, Ground floor; 2. 06:40 Open studio, First floor; 3. 06:50 Open studio, Second floor (different alarm code); 4. Dishwashers, empty all floors; 5. Desks and meeting rooms; 6. Reception area, lower and upper (Mon/Tue/Fri); 7. Kitchen reception area (Mon/Tue/Fri); 8. Fruit bowls; 9. 08:00 Hoovering first floor and meeting rooms (before 09:00); 10. 08:20 Bins; 11. 08:40 Dishwashers, reload; 12. 09:00 Toilets x5 and floors; 13. Showers x2 (every 2 days); 14. Popcorn machine (Mon/Tue/Fri); 15. 10:30 Coffee machines and general check; 16. Groceries (Tue and Thu only); 17. 14:00 Afternoon check, kitchen tables, final dishwasher load (note: may be asked to open the reception door at lunch); 18. Taking out rubbish. Numbers get added to the names when approved. Dec 18 set is separate and pending times.
 
-### B. Journey guide (designed, not built)
+### B. Journey guide: BUILT on `feature/journey-guide` (commit `b048652`, not merged; Kevin tested on localhost: looks great)
+**What exists (2026-11-21):**
+- DB (live): table `facility_guide_sections` (RLS), function `can_view_facility_guide(text)` (SECURITY DEFINER: facility supervisors via `supervisor_facilities`, cleaners via `cleaner_facility_hours`, or any cleaner with a shift at the facility from 14 days ago onward), private bucket `facility-guide` with a read policy on the same function. Schema file in git: `docs/sql/2026-11-20-facility-guide.sql`. 15 Journey sections seeded (6 getting-in, 9 task list) in English and Spanish; codes live only in the table. The seed SQL was NOT saved to git; to see or change content, query or update the table (title/summary/steps are jsonb `{en, es}`).
+- Photos: 26 compressed JPEGs uploaded by Kevin to `facility-guide/<facility_id>/` (all 26 referenced files verified present; R001 can fetch a signed URL, anonymous cannot). Upload-ready copy: `C:/Users/kevin/OneDrive/Desktop/Journey guide photos`.
+- UI: `src/lib/facilityGuide.ts`, `src/components/guide/{GuideView,GuideSection,GuideStep,GuideEntryCard}.tsx`, pages `src/pages/cleaner/Guide.tsx` (`/cleaner/guide`) and `src/pages/supervisor/Guide.tsx` (`/supervisor/guide`), a card on cleaner Home (mobile + desktop) and the supervisor Dashboard (shown only if the user can read a guide), i18n keys `guide_*` in en/es/pt. Sections with `sort >= 10` are the tickable daily task list (ticks stored per device per day in localStorage); EN/ES switch (Portuguese defaults to EN).
+- Checks: tsc clean, ESLint clean on new files (a pre-existing `set-state-in-effect` error exists in `supervisor/Dashboard.tsx` on main too), `npm test` 10/10, build OK, no codes in the repo.
+- Interpretations to confirm with the client: alarm key A (English) vs ENT (Spanish) (guide says A, or ENT if the keypad says ENT); "put keys back and change code" (written as put keys back and spin the numbers); big bins location (written as the ground floor back door by Ombra); 06:30 vs 06:45 start.
+- Phone layout of the guide not yet tested. To add another facility's guide: insert rows into `facility_guide_sections` and upload photos to `facility-guide/<facility_id>/`.
+
+Original design notes (before the build):
 - Source: `C:\Users\kevin\Downloads\Cleaner Cover Vyner.md` and `.pdf` (14 pages, 39 photos, 93 MB), from the client. Contains real door codes: keep the codes out of git, the vault and chat summaries.
 - Decisions: visible to cleaners linked to Journey (R001, Cristina, Andres) and Journey supervisors only; codes always visible once inside; Spanish and English, switchable, with fresh natural Spanish written for the whole guide (the client's Spanish covers only the task list and omits the fruit bowls and the grocery days); photos reused from the PDF; very user friendly.
 - Codes must not be in `.env` or the code. `VITE_*` values are baked into the public JavaScript, so they would reach everyone. Design: guide text and codes in a database table with RLS limited by facility, photos in a private Supabase Storage bucket served by signed URLs. The seed SQL containing codes is kept outside git (not yet written).
@@ -57,7 +67,7 @@ Draft zones (not approved), Mon to Fri, names in English, notes in Spanish:
 2. DONE 2026-11-20: Kevin approved the 18 zones, the reception rule (none on Wed/Thu) and direct creation (WF-16 untouched).
 3. DONE 2026-11-20: R001 profile, hours, password, 20 jobs and 316 zones created; login tested (HTTP 200). His auth identity and token columns were already correct.
 4. Next: run `docs/sql/2026-11-20-tutorial-seen.sql`, test the tutorial video on localhost and a phone, run `npm test` and `npm run build`, then merge only with Kevin's OK.
-5. Build the Journey guide: table, RLS, private bucket, screens, Spanish and English text, and a "Guide" entry for Journey staff on Home. Needs Kevin's photo upload.
+5. DONE 2026-11-21 on `feature/journey-guide` (not merged): table, RLS, private bucket, screens, Spanish and English text, Home/Dashboard entry; photos uploaded. Next: Kevin's phone test, then merge only with his OK.
 6. Later, after Kevin discusses the logistics: plan the two new features with Opus in Fable mode. (a) In-app notifications: supervisors told when shifts need checking and when clients file complaints; cleaners told when a shift is accepted or a reclean is flagged. (b) Absence flow: a cleaner reports an absence with a reason; the supervisor is notified; replacement cleaners are messaged (SMS from the company phone versus WhatsApp, which has per-message API costs) with pay, start time and days; those who accept are listed for the supervisor to choose. Decide the channel first.
 
 ## Access

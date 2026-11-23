@@ -6,6 +6,7 @@ import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { BottomNav } from '../../components/BottomNav'
 import { DesktopSidebar } from '../../components/DesktopSidebar'
 import { TutorialVideo } from '../../components/cleaner/TutorialVideo'
+import { GuideEntryCard } from '../../components/guide/GuideEntryCard'
 import { supabase } from '../../lib/supabase'
 import { useTranslation } from '../../lib/useTranslation'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -314,6 +315,7 @@ function DesktopHome() {
           )}
 
           <TutorialVideo />
+          <GuideEntryCard to="/cleaner/guide" />
 
           <div>
             <div className="dh-section flex items-center justify-between mb-5">
@@ -403,8 +405,9 @@ function MobileHome() {
             )}
           </div>
 
-          <div className="w-full px-6">
+          <div className="w-full px-6 flex flex-col gap-4">
             <TutorialVideo />
+            <GuideEntryCard to="/cleaner/guide" />
           </div>
 
           <div className="home-heading w-full px-6 pt-4">
