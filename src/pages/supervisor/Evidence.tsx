@@ -148,13 +148,13 @@ type Decision = 'approved' | 'rejected' | null
 function EvidenceTicket({ log, supervisorId }: { log: EvidenceLog; supervisorId: string }) {
   const t = useTranslation()
   const [decision, setDecision] = useState<Decision>(
-    log.existing_feedback?.status === 'approved' ? 'approved'
+    log.existing_feedback?.status === 'approved' || log.status === 'approved' ? 'approved'
     : log.existing_feedback?.status === 'rejected' ? 'rejected'
     : null
   )
   const [comment, setComment] = useState(log.existing_feedback?.comment ?? '')
   const [submitting, setSubmitting]   = useState(false)
-  const [submitted, setSubmitted]     = useState(!!log.existing_feedback)
+  const [submitted, setSubmitted]     = useState(!!log.existing_feedback || log.status === 'approved')
   const [submitErr, setSubmitErr]     = useState('')
   const [lightbox, setLightbox]       = useState<{ url: string; type: 'image' | 'video' } | null>(null)
 

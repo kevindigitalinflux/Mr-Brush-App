@@ -172,6 +172,7 @@ function useJobOptions(open: boolean, facilityIds: string[]) {
         .from('jobs')
         .select('id, facility_id, scheduled_date')
         .in('facility_id', facilityIds)
+        .lte('scheduled_date', todayString())
         .order('scheduled_date', { ascending: false })
         .limit(60)
 

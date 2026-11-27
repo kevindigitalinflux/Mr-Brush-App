@@ -7,6 +7,7 @@ import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { ImageViewer } from '../../components/ImageViewer'
 import { RateCleanModal } from '../../components/client/RateCleanModal'
 import { gsap, useGSAP } from '../../lib/gsap'
+import { todayString } from '../../lib/dateRange'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ function useEvidenceData() {
       .from('jobs')
       .select('id')
       .in('facility_id', facilityIds)
+      .lte('scheduled_date', todayString())
       .order('scheduled_date', { ascending: false })
       .limit(30)
 

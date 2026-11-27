@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { todayString } from '../../lib/dateRange'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,7 @@ function useFacilityZones(facilityId: string) {
         .from('jobs')
         .select('id')
         .eq('facility_id', facilityId)
+        .lte('scheduled_date', todayString())
         .order('scheduled_date', { ascending: false })
         .limit(1)
         .maybeSingle()

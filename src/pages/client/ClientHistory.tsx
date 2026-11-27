@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { supabase } from '../../lib/supabase'
-import { monthRange } from '../../lib/dateRange'
+import { monthRange, todayString } from '../../lib/dateRange'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { useIsDesktop } from '../../hooks/useIsDesktop'
@@ -76,7 +76,7 @@ function useHistoryData(filterMonth: string): HistoryState & { reload: () => voi
       .select('id, facility_id, scheduled_date, status')
       .in('facility_id', facilityIds)
       .gte('scheduled_date', from)
-      .lte('scheduled_date', to)
+      .lte('scheduled_date', to < todayString() ? to : todayString())
       .order('scheduled_date', { ascending: false })
 
     if (!jobRows || jobRows.length === 0) { setState({ loading: false, shifts: [] }); return }
@@ -84,18 +84,22 @@ function useHistoryData(filterMonth: string): HistoryState & { reload: () => voi
     const jobIds = jobRows.map((j) => j.id as string)
 
     // Fetch zones + cleaner names in one query via FK join
-    const { data: zoneRows } = await supabase
+    const { data: zoneRows, error: zoneError } = await supabase
       .from('job_zones')
-      .select('job_id, status, cleaner_id, profiles(id, full_name)')
+      // job_zones has two foreign keys to profiles, so the embed must name one
+      .select('job_id, status, cleaner_id, profiles!job_zones_cleaner_id_fkey(id, full_name)')
       .in('job_id', jobIds)
+      .neq('status', 'deleted')
 
-    type ZoneRow = { job_id: string; status: string; cleaner_id: string | null; profiles: { id: string; full_name: string }[] }
+    if (zoneError) console.error('Client history zones query failed', zoneError)
+
+    type ZoneRow = { job_id: string; status: string; cleaner_id: string | null; profiles: { id: string; full_name: string } | null }
 
     const cleanerNameMap: Record<string, string> = {}
     for (const z of (zoneRows ?? [])) {
       const zr = z as unknown as ZoneRow
-      if (zr.cleaner_id && zr.profiles?.[0]?.full_name) {
-        cleanerNameMap[zr.cleaner_id] = zr.profiles[0].full_name
+      if (zr.cleaner_id && zr.profiles?.full_name) {
+        cleanerNameMap[zr.cleaner_id] = zr.profiles.full_name
       }
     }
 
