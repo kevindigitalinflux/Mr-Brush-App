@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { SignOutConfirmButton } from '../../components/SignOutConfirmButton'
 import { supabase } from '../../lib/supabase'
-import { monthRange, currentMonthKey } from '../../lib/dateRange'
+import { monthRange, currentMonthKey, todayString } from '../../lib/dateRange'
 import { ClientNav } from '../../components/client/ClientNav'
 import { ClientSidebar } from '../../components/client/ClientSidebar'
 import { FacilityLiveView } from '../../components/client/FacilityLiveView'
@@ -156,7 +156,7 @@ function useOverviewData(): OverviewState {
       supabase.from('jobs').select('id').in('facility_id', facilityIds).eq('status', 'completed').gte('scheduled_date', monthStartStr),
       supabase.from('jobs').select('scheduled_date').in('facility_id', facilityIds).eq('status', 'completed').order('scheduled_date', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('complaints').select('resolved_at').in('facility_id', facilityIds).eq('status', 'resolved').not('resolved_at', 'is', null).order('resolved_at', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('jobs').select('id').in('facility_id', facilityIds).order('scheduled_date', { ascending: false }).limit(10),
+      supabase.from('jobs').select('id').in('facility_id', facilityIds).lte('scheduled_date', todayString()).order('scheduled_date', { ascending: false }).limit(10),
     ])
 
     // Step 3 — evidence via recent job IDs
